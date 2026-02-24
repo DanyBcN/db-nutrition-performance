@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import date
 
 st.set_page_config(page_title="DB Nutrition & Performance", layout="centered")
 
@@ -14,16 +15,29 @@ if trigger == "NUOVO ATLETA":
     st.success("Sistema attivato correttamente.")
 
     # =========================
-    # RACCOLTA DATI
+    # ANAGRAFICA
     # =========================
     st.subheader("Anagrafica")
+
     nome = st.text_input("Nome")
     cognome = st.text_input("Cognome")
-    eta = st.number_input("Età", min_value=0, step=1)
+
+    data_nascita = st.date_input("Data di nascita")
+    oggi = date.today()
+
+    if data_nascita:
+        eta = oggi.year - data_nascita.year - (
+            (oggi.month, oggi.day) < (data_nascita.month, data_nascita.day)
+        )
+        st.info(f"Età calcolata: {eta} anni")
 
     st.markdown("---")
 
+    # =========================
+    # COMPOSIZIONE CORPOREA
+    # =========================
     st.subheader("Composizione corporea")
+
     peso = st.number_input("Peso (kg)", min_value=0.0, step=0.1)
     fm_perc = st.number_input("Fat Mass (%)", min_value=0.0, max_value=100.0, step=0.1)
     ffm = st.number_input("FFM (kg)", min_value=0.0, step=0.1)
@@ -35,6 +49,9 @@ if trigger == "NUOVO ATLETA":
 
     st.markdown("---")
 
+    # =========================
+    # TEST DI POTENZA
+    # =========================
     st.subheader("Test di Potenza")
 
     tipo_test = st.selectbox(
@@ -60,6 +77,27 @@ if trigger == "NUOVO ATLETA":
         if ftp_input > 0:
             ftp = ftp_input
 
+    if ftp:
+        st.success(f"FTP: {ftp:.2f} W")
+
+    # =========================
+    # FREQUENZA CARDIACA
+    # =========================
+    st.markdown("---")
+    st.subheader("Frequenza Cardiaca")
+
+    uso_cardio = st.selectbox("Ha indossato il cardio?", ["No", "Sì"])
+
+    fthr = None
+
+    if uso_cardio == "Sì":
+        fc_media = st.number_input("FC media del test (bpm)", min_value=0)
+        fc_max = st.number_input("FC max (opzionale)", min_value=0)
+
+        if fc_media > 0:
+            fthr = fc_media
+            st.info(f"FTHR calcolata: {fthr:.0f} bpm")
+
     # =========================
     # ELABORAZIONE
     # =========================
@@ -69,20 +107,6 @@ if trigger == "NUOVO ATLETA":
         wkg_ffm = ftp / ffm if ffm > 0 else None
         pot_spec = ftp / massa_muscolare if massa_muscolare > 0 else None
 
-        # Classificazione profilo
-        if fm_perc > 18 and wkg < 4:
-            profilo = "Migliorabile per ricomposizione"
-        elif fm_perc <= 12 and wkg >= 4.5:
-            profilo = "Ottimizzato"
-        elif fm_perc <= 15 and wkg < 4:
-            profilo = "Migliorabile per incremento potenza"
-        else:
-            profilo = "Approccio combinato consigliato"
-
-        # =========================
-        # OUTPUT REFERTO
-        # =========================
-
         st.markdown("---")
         st.header("REFERTO ANALITICO")
 
@@ -90,11 +114,13 @@ if trigger == "NUOVO ATLETA":
         st.write(f"Peso: {peso:.2f} kg")
         st.write(f"Massa grassa: {fm_perc:.1f}% ({fm_kg:.2f} kg)")
         st.write(f"Massa magra (FFM): {ffm:.2f} kg")
+        st.write(f"Età: {eta} anni")
 
         st.markdown("### 2. Valutazione Funzionale")
         st.write(f"Functional Threshold Power (FTP): {ftp:.2f} W")
 
         st.markdown("### 3. Zone di Allenamento – Potenza")
+
         zone = {
             "Z1 (<55%)": (0, ftp * 0.55),
             "Z2 (56–75%)": (ftp * 0.56, ftp * 0.75),
@@ -108,28 +134,23 @@ if trigger == "NUOVO ATLETA":
         for nome_zona, valori in zone.items():
             st.write(f"{nome_zona}: {valori[0]:.0f} – {valori[1]:.0f} W")
 
-        st.markdown("### 4. Indici di Performance Relativa")
+        if fthr:
+            st.markdown("### 4. Zone di Allenamento – Frequenza Cardiaca")
+
+            zone_fc = {
+                "Z1 (<81%)": (0, fthr * 0.81),
+                "Z2 (81–89%)": (fthr * 0.81, fthr * 0.89),
+                "Z3 (90–93%)": (fthr * 0.90, fthr * 0.93),
+                "Z4 (94–99%)": (fthr * 0.94, fthr * 0.99),
+                "Z5 (>100%)": (fthr * 1.00, fthr * 1.10),
+            }
+
+            for nome_zona, valori in zone_fc.items():
+                st.write(f"{nome_zona}: {valori[0]:.0f} – {valori[1]:.0f} bpm")
+
+        st.markdown("### 5. Indici di Performance Relativa")
         st.write(f"W/kg: {wkg:.2f}")
         if wkg_ffm:
             st.write(f"W/kg FFM: {wkg_ffm:.2f}")
         if pot_spec:
             st.write(f"Potenza specifica muscolare: {pot_spec:.2f}")
-
-        st.markdown("### 5. Analisi Interpretativa Specialistica")
-        st.write(f"Classificazione del profilo fisiologico: {profilo}")
-
-        st.markdown("### 6. Inquadramento Metabolico-Funzionale")
-        st.write(
-            "L’integrazione tra composizione corporea e potenza relativa "
-            "consente di delineare un profilo adattativo specifico, "
-            "utile per l’ottimizzazione della performance attraverso "
-            "strategie mirate di ricomposizione corporea e/o incremento della capacità funzionale."
-        )
-
-        st.markdown("### 7. Proiezione Strategica Personalizzata")
-        st.write(
-            "Eventuali interventi correttivi dovranno essere modulati "
-            "in funzione del rapporto tra massa grassa, massa magra "
-            "e potenza espressa, mantenendo coerenza con i principi "
-            "di fisiologia dell’esercizio e adattamento metabolico."
-        )
