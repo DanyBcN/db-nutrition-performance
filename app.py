@@ -6,6 +6,10 @@ st.set_page_config(page_title="DB Nutrition & Performance", layout="centered")
 st.title("DB Nutrition & Performance")
 st.markdown("---")
 
+# =========================
+# ATTIVAZIONE
+# =========================
+
 st.header("Inserimento dati analitici")
 
 nome = st.text_input("Digita il nome dell’atleta per iniziare")
@@ -115,15 +119,12 @@ if nome:
     if ftp and peso > 0 and fm_kg is not None:
 
         wkg = ftp / peso
+        wkg_ffm = ftp / ffm if ffm > 0 else None
+        pot_spec = ftp / massa_muscolare if massa_muscolare > 0 else None
 
-        if fm_perc > 18 and wkg < 4:
-            profilo = "Migliorabile per ricomposizione"
-        elif fm_perc <= 12 and wkg >= 4.5:
-            profilo = "Ottimizzato"
-        elif fm_perc <= 15 and wkg < 4:
-            profilo = "Migliorabile per incremento potenza"
-        else:
-            profilo = "Approccio combinato consigliato"
+        # =========================
+        # REFERTO
+        # =========================
 
         st.markdown("---")
         st.header("REFERTO ANALITICO")
@@ -140,21 +141,22 @@ if nome:
 
         st.markdown("### 3. Indici di Performance Relativa")
         st.write(f"W/kg: {wkg:.2f}")
-
-        st.markdown("### 4. Analisi Interpretativa Specialistica")
-        st.write(f"Classificazione del profilo fisiologico: {profilo}")
+        if wkg_ffm:
+            st.write(f"W/kg FFM: {wkg_ffm:.2f}")
+        if pot_spec:
+            st.write(f"Potenza specifica muscolare: {pot_spec:.2f}")
 
         # =========================
-        # TARGET E SIMULAZIONE
+        # PROIEZIONE STRATEGICA
         # =========================
 
         st.markdown("---")
-        st.subheader("Impostazione Target Strategico")
+        st.subheader("Impostazione Target")
 
         target_fm = st.number_input("Target massa grassa (%)", min_value=0.0, step=0.1)
         incremento_ftp = st.number_input("Incremento FTP (%)", min_value=0.0, step=0.1)
 
-        if st.button("Calcola Proiezione Strategica"):
+        if st.button("Calcola Proiezione"):
 
             nuovo_peso = peso
             nuova_ftp = ftp
@@ -169,18 +171,13 @@ if nome:
 
             nuovo_wkg = nuova_ftp / nuovo_peso
 
-            st.markdown("### 5. Proiezione Strategica Personalizzata")
-            st.write(f"Nuovo peso teorico: {nuovo_peso:.2f} kg")
-            st.write(f"Nuova FTP stimata: {nuova_ftp:.2f} W")
+            st.markdown("### 4. Proiezione Strategica Personalizzata")
+
+            if target_fm > 0:
+                st.write(f"Nuova percentuale massa grassa: {target_fm:.1f}%")
+                st.write(f"Nuovo peso teorico: {nuovo_peso:.2f} kg")
+
+            if incremento_ftp > 0:
+                st.write(f"Nuova FTP stimata: {nuova_ftp:.2f} W")
+
             st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-
-            if incremento_ftp <= 5 and target_fm <= 2:
-                livello = "Conservativo"
-            elif incremento_ftp <= 10 and target_fm <= 4:
-                livello = "Moderato"
-            elif incremento_ftp <= 15 and target_fm <= 6:
-                livello = "Aggressivo ma plausibile"
-            else:
-                livello = "Non realistico"
-
-            st.warning(f"Classificazione intervento: {livello}")
