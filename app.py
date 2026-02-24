@@ -4,9 +4,64 @@ from PIL import Image
 from fpdf import FPDF
 import pandas as pd
 import numpy as np
-from codicefiscale import codicefiscale
+import string
 
 st.set_page_config(layout="wide")
+
+# =========================
+# DATABASE COMUNI (estratto essenziale)
+# =========================
+
+codici_comuni = {
+    "CUNEO": "D205",
+    "TORINO": "L219",
+    "MILANO": "F205",
+    "ROMA": "H501",
+    "GENOVA": "D969",
+    "BOLOGNA": "A944",
+    "FIRENZE": "D612",
+    "NAPOLI": "F839"
+}
+
+# =========================
+# FUNZIONI CODICE FISCALE
+# =========================
+
+def estrai_consonanti(s):
+    return "".join([c for c in s.upper() if c in "BCDFGHJKLMNPQRSTVWXYZ"])
+
+def estrai_vocali(s):
+    return "".join([c for c in s.upper() if c in "AEIOU"])
+
+def genera_cf(nome, cognome, data, sesso, comune):
+
+    cognome = cognome.upper()
+    nome = nome.upper()
+    comune = comune.upper()
+
+    cons_cogn = estrai_consonanti(cognome)
+    voc_cogn = estrai_vocali(cognome)
+    cod_cogn = (cons_cogn + voc_cogn + "XXX")[:3]
+
+    cons_nome = estrai_consonanti(nome)
+    if len(cons_nome) >= 4:
+        cod_nome = cons_nome[0] + cons_nome[2] + cons_nome[3]
+    else:
+        cod_nome = (cons_nome + estrai_vocali(nome) + "XXX")[:3]
+
+    anno = str(data.year)[2:]
+
+    mesi = "ABCDEHLMPRST"
+    mese = mesi[data.month - 1]
+
+    giorno = data.day
+    if sesso == "F":
+        giorno += 40
+    giorno = f"{giorno:02d}"
+
+    codice_catastale = codici_comuni.get(comune, "XXXX")
+
+    return cod_cogn + cod_nome + anno + mese + giorno + codice_catastale
 
 # =========================
 # LOGO CENTRATO
@@ -35,11 +90,10 @@ with col1:
     cognome = st.text_input("Cognome")
     sesso = st.selectbox("Sesso", ["M","F"])
     comune = st.text_input("Comune di nascita")
-    provincia = st.text_input("Provincia (sigla es. CN)")
 
 with col2:
-    data_nascita = st.date_input("Data di nascita", 
-                                 min_value=date(1920,1,1), 
+    data_nascita = st.date_input("Data di nascita",
+                                 min_value=date(1920,1,1),
                                  max_value=date.today())
     email = st.text_input("Email")
     telefono = st.text_input("Telefono")
@@ -48,29 +102,16 @@ with col2:
 eta = date.today().year - data_nascita.year
 st.write(f"Età: {eta} anni")
 
-# =========================
-# CODICE FISCALE UFFICIALE
-# =========================
-
 cf = ""
-if nome and cognome and comune and provincia:
-    try:
-        cf = codicefiscale.encode(
-            lastname=cognome,
-            firstname=nome,
-            gender=sesso,
-            birthdate=data_nascita,
-            birthplace=comune
-        )
-    except:
-        cf = "Errore comune non riconosciuto"
+if nome and cognome and comune:
+    cf = genera_cf(nome, cognome, data_nascita, sesso, comune)
 
 st.write(f"Codice Fiscale: {cf}")
 
 st.markdown("---")
 
 # =========================
-# DATI ANTROPOMETRICI
+# ANTROPOMETRIA
 # =========================
 
 st.header("Valutazione Antropometrica")
@@ -120,11 +161,11 @@ if ftp > 0:
     st.subheader("Zone Potenza")
 
     zone_potenza = {
-        "Z1 Recupero": (0.55 * ftp),
-        "Z2 Endurance": (0.75 * ftp),
-        "Z3 Tempo": (0.90 * ftp),
-        "Z4 Soglia": (1.05 * ftp),
-        "Z5 VO2max": (1.20 * ftp)
+        "Z1 Recupero": 0.55 * ftp,
+        "Z2 Endurance": 0.75 * ftp,
+        "Z3 Tempo": 0.90 * ftp,
+        "Z4 Soglia": 1.05 * ftp,
+        "Z5 VO2max": 1.20 * ftp
     }
 
     df_potenza = pd.DataFrame(zone_potenza.items(), columns=["Zona","Limite W"])
@@ -138,11 +179,11 @@ if fthr > 0:
     st.subheader("Zone Cardio")
 
     zone_cardio = {
-        "Z1": (0.81 * fthr),
-        "Z2": (0.89 * fthr),
-        "Z3": (0.93 * fthr),
-        "Z4": (0.99 * fthr),
-        "Z5": (1.05 * fthr)
+        "Z1": 0.81 * fthr,
+        "Z2": 0.89 * fthr,
+        "Z3": 0.93 * fthr,
+        "Z4": 0.99 * fthr,
+        "Z5": 1.05 * fthr
     }
 
     df_cardio = pd.DataFrame(zone_cardio.items(), columns=["Zona","Limite bpm"])
@@ -151,7 +192,7 @@ if fthr > 0:
 st.markdown("---")
 
 # =========================
-# PDF COMPLETO
+# PDF
 # =========================
 
 if st.button("Genera PDF"):
@@ -165,11 +206,6 @@ if st.button("Genera PDF"):
 
     pdf.cell(0,8,f"Nome: {nome} {cognome}", ln=True)
     pdf.cell(0,8,f"Codice Fiscale: {cf}", ln=True)
-    pdf.cell(0,8,f"Email: {email}", ln=True)
-    pdf.cell(0,8,f"Telefono: {telefono}", ln=True)
-    pdf.cell(0,8,f"Indirizzo: {indirizzo}", ln=True)
-    pdf.ln(5)
-
     pdf.cell(0,8,f"BMI: {bmi:.2f} ({classificazione})", ln=True)
     pdf.cell(0,8,f"FTP: {ftp} W", ln=True)
     pdf.cell(0,8,f"W/kg: {wkg:.2f}", ln=True)
