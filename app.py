@@ -3,50 +3,51 @@ from PIL import Image
 from datetime import date
 from fpdf import FPDF
 import io
-import hashlib
+import string
 
-# ------------------------------
-# CONFIG
-# ------------------------------
 st.set_page_config(layout="centered")
 
-# ------------------------------
-# LOGO CENTRATO
-# ------------------------------
+# ------------------ LOGO ------------------
 logo = Image.open("logo.png")
-col1, col2, col3 = st.columns([1,2,1])
-with col2:
+c1,c2,c3 = st.columns([1,2,1])
+with c2:
     st.image(logo, width=250)
 
 st.markdown("---")
 
-# ------------------------------
-# FUNZIONI
-# ------------------------------
+# ------------------ FUNZIONI ------------------
 
-def calcola_codice_fiscale(nome, cognome, data_nascita, luogo):
-    base = nome + cognome + luogo + str(data_nascita)
-    return hashlib.md5(base.encode()).hexdigest()[:16].upper()
+def estrai_consonanti(testo):
+    return ''.join([c for c in testo.upper() if c in "BCDFGHJKLMNPQRSTVWXYZ"])
 
-def genera_pdf(contenuto):
+def estrai_vocali(testo):
+    return ''.join([c for c in testo.upper() if c in "AEIOU"])
+
+def codice_fiscale_base(nome, cognome, data):
+    c1 = (estrai_consonanti(cognome) + estrai_vocali(cognome) + "XXX")[:3]
+    n1 = (estrai_consonanti(nome) + estrai_vocali(nome) + "XXX")[:3]
+    anno = str(data.year)[2:]
+    mese = "ABCDEHLMPRST"[data.month-1]
+    giorno = f"{data.day:02d}"
+    return (c1+n1+anno+mese+giorno+"X000").upper()
+
+def genera_pdf(righe):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=10)
-    for riga in contenuto:
-        pdf.multi_cell(0, 6, riga)
+    for r in righe:
+        pdf.multi_cell(0,6,r)
     return pdf.output(dest="S").encode("latin-1")
 
-# ------------------------------
-# INSERIMENTO DATI
-# ------------------------------
+# ------------------ ANAGRAFICA ------------------
 
-st.header("Inserimento dati anagrafici")
+st.header("Dati Anagrafici")
 
 nome = st.text_input("Nome")
 cognome = st.text_input("Cognome")
-luogo_nascita = st.text_input("Luogo di nascita")
+luogo = st.text_input("Luogo di nascita")
 data_nascita = st.date_input(
-    "Data di nascita (gg/mm/aaaa)",
+    "Data di nascita",
     min_value=date(1940,1,1),
     max_value=date.today(),
     format="DD/MM/YYYY"
@@ -54,141 +55,154 @@ data_nascita = st.date_input(
 
 email = st.text_input("Email")
 telefono = st.text_input("Telefono")
-indirizzo = st.text_input("Indirizzo di residenza")
+indirizzo = st.text_input("Indirizzo")
 
-if nome and cognome and luogo_nascita:
-    codice_fiscale = calcola_codice_fiscale(nome, cognome, data_nascita, luogo_nascita)
-    st.write(f"Codice Fiscale generato: **{codice_fiscale}**")
+codice_fiscale = None
+
+if nome and cognome:
+    codice_fiscale = codice_fiscale_base(nome,cognome,data_nascita)
+    st.write(f"Codice Fiscale: **{codice_fiscale}**")
 
 today = date.today()
 eta = today.year - data_nascita.year - (
-    (today.month, today.day) < (data_nascita.month, data_nascita.day)
+    (today.month,today.day) < (data_nascita.month,data_nascita.day)
 )
-
 st.write(f"Età: **{eta} anni**")
 
 st.markdown("---")
 
-# ------------------------------
-# ANTROPOMETRIA
-# ------------------------------
+# ------------------ ANTROPOMETRIA ------------------
 
-st.header("Composizione corporea")
+st.header("Composizione Corporea")
 
-peso = st.number_input("Peso (kg)", min_value=30.0, max_value=200.0, step=0.1)
-altezza_cm = st.number_input("Altezza (cm)", min_value=120.0, max_value=220.0, step=0.1)
-fm_perc = st.number_input("Massa grassa (%)", min_value=3.0, max_value=50.0, step=0.1)
+peso = st.number_input("Peso (kg)",30.0,200.0,step=0.1)
+altezza = st.number_input("Altezza (cm)",120.0,220.0,step=0.1)
+fm = st.number_input("Massa grassa (%)",3.0,50.0,step=0.1)
 
-altezza_m = altezza_cm / 100
-bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
+altezza_m = altezza/100
+bmi = peso/(altezza_m**2) if altezza_m>0 else 0
 
-if bmi < 18.5:
-    bmi_class = "Sottopeso"
-elif bmi < 25:
-    bmi_class = "Normopeso"
-elif bmi < 30:
-    bmi_class = "Sovrappeso"
+if bmi<18.5:
+    classe="Sottopeso"
+elif bmi<25:
+    classe="Normopeso"
+elif bmi<30:
+    classe="Sovrappeso"
 else:
-    bmi_class = "Obesità"
+    classe="Obesità"
 
-st.write(f"BMI: **{bmi:.2f}** ({bmi_class})")
+st.write(f"BMI: **{bmi:.2f}** ({classe})")
 
-fm_kg = peso * (fm_perc / 100)
-massa_magra = peso - fm_kg
+fm_kg = peso*(fm/100)
+massa_magra = peso-fm_kg
 
-st.write(f"Massa grassa: **{fm_kg:.2f} kg**")
 st.write(f"Massa magra: **{massa_magra:.2f} kg**")
 
 st.markdown("---")
 
-# ------------------------------
-# FTP
-# ------------------------------
+# ------------------ FTP ------------------
 
 st.header("Test di Potenza")
 
-tipo_test = st.selectbox(
-    "Tipo test",
-    ["20 minuti", "2x8 minuti", "FTP disponibile"]
-)
+tipo = st.selectbox("Tipo test",["20 minuti","2x8 minuti","FTP diretto"])
+ftp=0
 
-ftp = 0
+if tipo=="20 minuti":
+    p=st.number_input("Potenza media 20' (W)",0.0)
+    ftp=p*0.95
+elif tipo=="2x8 minuti":
+    p1=st.number_input("8' prova 1",0.0)
+    p2=st.number_input("8' prova 2",0.0)
+    ftp=((p1+p2)/2)*0.90
+else:
+    ftp=st.number_input("FTP (W)",0.0)
 
-if tipo_test == "20 minuti":
-    media20 = st.number_input("Potenza media 20' (W)", min_value=0.0)
-    ftp = media20 * 0.95
-
-elif tipo_test == "2x8 minuti":
-    p1 = st.number_input("8' prova 1 (W)", min_value=0.0)
-    p2 = st.number_input("8' prova 2 (W)", min_value=0.0)
-    ftp = ((p1 + p2) / 2) * 0.90
-
-elif tipo_test == "FTP disponibile":
-    ftp = st.number_input("FTP (W)", min_value=0.0)
-
-if ftp > 0:
-    wkg = ftp / peso
+if ftp>0:
+    wkg=ftp/peso
     st.write(f"FTP: **{ftp:.2f} W**")
-    st.write(f"W/kg: **{wkg:.2f} W/kg**")
+    st.write(f"W/kg: **{wkg:.2f}**")
+
+    st.subheader("Zone di Potenza (Coggan)")
+    st.table({
+        "Zona":[
+            "Z1 Recupero","Z2 Endurance","Z3 Tempo",
+            "Z4 Soglia","Z5 VO2max","Z6 Anaerobica","Z7 Neuromuscolare"
+        ],
+        "Range Watt":[
+            f"< {ftp*0.55:.0f}",
+            f"{ftp*0.56:.0f}-{ftp*0.75:.0f}",
+            f"{ftp*0.76:.0f}-{ftp*0.90:.0f}",
+            f"{ftp*0.91:.0f}-{ftp*1.05:.0f}",
+            f"{ftp*1.06:.0f}-{ftp*1.20:.0f}",
+            f"{ftp*1.21:.0f}-{ftp*1.50:.0f}",
+            f"> {ftp*1.50:.0f}"
+        ]
+    })
 
 st.markdown("---")
 
-# ------------------------------
-# FREQUENZA CARDIACA
-# ------------------------------
+# ------------------ CARDIO ------------------
 
 st.header("Frequenza Cardiaca")
 
-uso_cardio = st.selectbox("Ha indossato il cardio?", ["No", "Sì"])
+cardio=st.selectbox("Ha indossato il cardio?",["No","Sì"])
 
-if uso_cardio == "Sì":
-    fc_media = st.number_input("FC media test (bpm)", min_value=0)
-    if fc_media > 0:
-        st.write(f"FTHR: **{fc_media} bpm**")
+fthr=None
+
+if cardio=="Sì":
+    fc=st.number_input("FC media test (bpm)",0)
+    if fc>0:
+        fthr=fc
+        st.write(f"FTHR: **{fthr} bpm**")
+
+        st.subheader("Zone Cardiache")
+        st.table({
+            "Zona":["Z1","Z2","Z3","Z4","Z5"],
+            "Range bpm":[
+                f"< {fthr*0.81:.0f}",
+                f"{fthr*0.81:.0f}-{fthr*0.89:.0f}",
+                f"{fthr*0.90:.0f}-{fthr*0.93:.0f}",
+                f"{fthr*0.94:.0f}-{fthr*0.99:.0f}",
+                f"> {fthr:.0f}"
+            ]
+        })
 
 st.markdown("---")
 
-# ------------------------------
-# PROIEZIONE
-# ------------------------------
+# ------------------ PROIEZIONE ------------------
 
 st.header("Proiezione Strategica")
 
-target_fm = st.number_input("Target massa grassa (%)", min_value=3.0, max_value=20.0, step=0.1)
-incremento_ftp = st.number_input("Incremento FTP (%)", min_value=0.0, max_value=50.0, step=0.5)
+target_fm=st.number_input("Target FM (%)",3.0,20.0,step=0.1)
+inc_ftp=st.number_input("Incremento FTP (%)",0.0,50.0,step=0.5)
 
-nuova_fm_kg = massa_magra * (target_fm / (100 - target_fm))
-nuovo_peso = massa_magra + nuova_fm_kg
-nuova_ftp = ftp * (1 + incremento_ftp / 100)
-nuovo_wkg = nuova_ftp / nuovo_peso if nuovo_peso > 0 else 0
+nuova_fm_kg = massa_magra*(target_fm/(100-target_fm))
+nuovo_peso = massa_magra+nuova_fm_kg
+nuova_ftp = ftp*(1+inc_ftp/100)
+nuovo_wkg = nuova_ftp/nuovo_peso if nuovo_peso>0 else 0
 
-st.write(f"Nuovo peso: **{nuovo_peso:.2f} kg**")
-st.write(f"Nuova FTP: **{nuova_ftp:.2f} W**")
-st.write(f"Nuovo W/kg: **{nuovo_wkg:.2f} W/kg**")
+st.write(f"Nuovo W/kg: **{nuovo_wkg:.2f}**")
 
 st.markdown("---")
 
-# ------------------------------
-# PDF DOWNLOAD
-# ------------------------------
+# ------------------ PDF ------------------
 
 if st.button("Genera PDF"):
-    contenuto = [
+
+    righe=[
         f"Nome: {nome} {cognome}",
-        f"Codice Fiscale: {codice_fiscale}",
-        f"Età: {eta}",
-        f"Peso: {peso} kg",
-        f"Altezza: {altezza_cm} cm",
-        f"BMI: {bmi:.2f} ({bmi_class})",
+        f"Codice Fiscale: {codice_fiscale if codice_fiscale else ''}",
+        f"BMI: {bmi:.2f} ({classe})",
         f"FTP: {ftp:.2f} W",
-        f"W/kg: {wkg:.2f}",
+        f"W/kg: {wkg if ftp>0 else 0:.2f}",
         f"Nuovo W/kg: {nuovo_wkg:.2f}"
     ]
-    pdf_bytes = genera_pdf(contenuto)
+
+    pdf_bytes=genera_pdf(righe)
 
     st.download_button(
-        label="Scarica PDF",
-        data=pdf_bytes,
-        file_name="DB_Nutrition_Performance_Report.pdf",
-        mime="application/pdf"
+        "Scarica PDF",
+        pdf_bytes,
+        "Report_DB_Nutrition_Performance.pdf",
+        "application/pdf"
     )
