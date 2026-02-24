@@ -1,251 +1,181 @@
 import streamlit as st
-from PIL import Image
 from datetime import date
+from PIL import Image
 from fpdf import FPDF
+import pandas as pd
+import numpy as np
+from codicefiscale import codicefiscale
 
-st.set_page_config(layout="centered")
+st.set_page_config(layout="wide")
 
-# ===============================
+# =========================
 # LOGO CENTRATO
-# ===============================
-logo = Image.open("logo.png")
-c1, c2, c3 = st.columns([1,2,1])
-with c2:
-    st.image(logo, width=250)
+# =========================
+
+try:
+    logo = Image.open("logo.png")
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        st.image(logo, width=250)
+except:
+    pass
 
 st.markdown("---")
 
-# ===============================
-# FUNZIONI
-# ===============================
-
-def estrai_consonanti(testo):
-    return ''.join([c for c in testo.upper() if c in "BCDFGHJKLMNPQRSTVWXYZ"])
-
-def estrai_vocali(testo):
-    return ''.join([c for c in testo.upper() if c in "AEIOU"])
-
-def genera_codice_fiscale(nome, cognome, data):
-    c = (estrai_consonanti(cognome) + estrai_vocali(cognome) + "XXX")[:3]
-    n = (estrai_consonanti(nome) + estrai_vocali(nome) + "XXX")[:3]
-    anno = str(data.year)[2:]
-    mesi = "ABCDEHLMPRST"
-    mese = mesi[data.month - 1]
-    giorno = f"{data.day:02d}"
-    return (c + n + anno + mese + giorno + "X000").upper()
-
-def genera_pdf(righe):
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=10)
-    for r in righe:
-        pdf.multi_cell(0,6,r)
-    return pdf.output(dest="S").encode("latin-1")
-
-# ===============================
+# =========================
 # DATI ANAGRAFICI
-# ===============================
+# =========================
 
 st.header("Dati Anagrafici")
 
-nome = st.text_input("Nome")
-cognome = st.text_input("Cognome")
-luogo = st.text_input("Luogo di nascita")
-data_nascita = st.date_input(
-    "Data di nascita",
-    min_value=date(1940,1,1),
-    max_value=date.today(),
-    format="DD/MM/YYYY"
-)
+col1, col2 = st.columns(2)
 
-email = st.text_input("Email")
-telefono = st.text_input("Telefono")
-indirizzo = st.text_input("Indirizzo")
+with col1:
+    nome = st.text_input("Nome")
+    cognome = st.text_input("Cognome")
+    sesso = st.selectbox("Sesso", ["M","F"])
+    comune = st.text_input("Comune di nascita")
+    provincia = st.text_input("Provincia (sigla es. CN)")
 
-codice_fiscale = None
+with col2:
+    data_nascita = st.date_input("Data di nascita", 
+                                 min_value=date(1920,1,1), 
+                                 max_value=date.today())
+    email = st.text_input("Email")
+    telefono = st.text_input("Telefono")
+    indirizzo = st.text_input("Indirizzo")
 
-if nome and cognome:
-    codice_fiscale = genera_codice_fiscale(nome, cognome, data_nascita)
-    st.write(f"Codice Fiscale: **{codice_fiscale}**")
+eta = date.today().year - data_nascita.year
+st.write(f"Età: {eta} anni")
 
-today = date.today()
-eta = today.year - data_nascita.year - (
-    (today.month,today.day) < (data_nascita.month,data_nascita.day)
-)
+# =========================
+# CODICE FISCALE UFFICIALE
+# =========================
 
-st.write(f"Età: **{eta} anni**")
+cf = ""
+if nome and cognome and comune and provincia:
+    try:
+        cf = codicefiscale.encode(
+            lastname=cognome,
+            firstname=nome,
+            gender=sesso,
+            birthdate=data_nascita,
+            birthplace=comune
+        )
+    except:
+        cf = "Errore comune non riconosciuto"
 
-st.markdown("---")
-
-# ===============================
-# COMPOSIZIONE CORPOREA
-# ===============================
-
-st.header("Composizione Corporea")
-
-peso = st.number_input("Peso (kg)", 30.0, 200.0, step=0.1)
-altezza = st.number_input("Altezza (cm)", 120.0, 220.0, step=0.1)
-fm = st.number_input("Massa grassa (%)", 3.0, 50.0, step=0.1)
-
-altezza_m = altezza / 100
-bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
-
-if bmi < 18.5:
-    classe_bmi = "Sottopeso"
-elif bmi < 25:
-    classe_bmi = "Normopeso"
-elif bmi < 30:
-    classe_bmi = "Sovrappeso"
-else:
-    classe_bmi = "Obesità"
-
-st.write(f"BMI: **{bmi:.2f}** ({classe_bmi})")
-
-fm_kg = peso * (fm/100)
-massa_magra = peso - fm_kg
-
-st.write(f"Massa grassa: **{fm_kg:.2f} kg**")
-st.write(f"Massa magra: **{massa_magra:.2f} kg**")
+st.write(f"Codice Fiscale: {cf}")
 
 st.markdown("---")
 
-# ===============================
-# TEST FTP
-# ===============================
+# =========================
+# DATI ANTROPOMETRICI
+# =========================
 
-st.header("Test di Potenza")
+st.header("Valutazione Antropometrica")
 
-tipo_test = st.selectbox("Tipo test", ["20 minuti", "2x8 minuti", "FTP diretto"])
+peso = st.number_input("Peso (kg)", 30.0, 200.0)
+altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
 
-ftp = 0
+bmi = 0
+classificazione = ""
 
-if tipo_test == "20 minuti":
-    p = st.number_input("Potenza media 20' (W)", 0.0)
-    ftp = p * 0.95
+if peso and altezza:
+    altezza_m = altezza / 100
+    bmi = peso / (altezza_m ** 2)
 
-elif tipo_test == "2x8 minuti":
-    p1 = st.number_input("8' prova 1 (W)", 0.0)
-    p2 = st.number_input("8' prova 2 (W)", 0.0)
-    ftp = ((p1 + p2) / 2) * 0.90
+    if bmi < 18.5:
+        classificazione = "Sottopeso"
+    elif 18.5 <= bmi < 25:
+        classificazione = "Normopeso"
+    elif 25 <= bmi < 30:
+        classificazione = "Sovrappeso"
+    else:
+        classificazione = "Obesità"
 
-else:
-    ftp = st.number_input("FTP (W)", 0.0)
+    st.write(f"BMI: {bmi:.2f} ({classificazione})")
+
+st.markdown("---")
+
+# =========================
+# PERFORMANCE
+# =========================
+
+st.header("Performance")
+
+ftp = st.number_input("FTP (W)", 0.0, 1000.0)
+fthr = st.number_input("FTHR (bpm)", 0.0, 220.0)
+
+wkg = 0
+if peso > 0:
+    wkg = ftp / peso
+    st.write(f"W/kg: {wkg:.2f}")
+
+# =========================
+# ZONE POTENZA
+# =========================
 
 if ftp > 0:
-    wkg = ftp / peso
-    st.write(f"FTP: **{ftp:.2f} W**")
-    st.write(f"W/kg: **{wkg:.2f}**")
+    st.subheader("Zone Potenza")
 
-    st.subheader("Zone di Potenza (Coggan)")
-    st.table({
-        "Zona":[
-            "Z1 Recupero","Z2 Endurance","Z3 Tempo",
-            "Z4 Soglia","Z5 VO2max","Z6 Anaerobica","Z7 Neuromuscolare"
-        ],
-        "Range Watt":[
-            f"< {ftp*0.55:.0f}",
-            f"{ftp*0.56:.0f}-{ftp*0.75:.0f}",
-            f"{ftp*0.76:.0f}-{ftp*0.90:.0f}",
-            f"{ftp*0.91:.0f}-{ftp*1.05:.0f}",
-            f"{ftp*1.06:.0f}-{ftp*1.20:.0f}",
-            f"{ftp*1.21:.0f}-{ftp*1.50:.0f}",
-            f"> {ftp*1.50:.0f}"
-        ]
-    })
+    zone_potenza = {
+        "Z1 Recupero": (0.55 * ftp),
+        "Z2 Endurance": (0.75 * ftp),
+        "Z3 Tempo": (0.90 * ftp),
+        "Z4 Soglia": (1.05 * ftp),
+        "Z5 VO2max": (1.20 * ftp)
+    }
 
-st.markdown("---")
+    df_potenza = pd.DataFrame(zone_potenza.items(), columns=["Zona","Limite W"])
+    st.table(df_potenza)
 
-# ===============================
-# CARDIO
-# ===============================
+# =========================
+# ZONE CARDIO
+# =========================
 
-st.header("Frequenza Cardiaca")
+if fthr > 0:
+    st.subheader("Zone Cardio")
 
-uso_cardio = st.selectbox("Ha indossato il cardio?", ["No","Sì"])
+    zone_cardio = {
+        "Z1": (0.81 * fthr),
+        "Z2": (0.89 * fthr),
+        "Z3": (0.93 * fthr),
+        "Z4": (0.99 * fthr),
+        "Z5": (1.05 * fthr)
+    }
 
-fthr = None
-
-if uso_cardio == "Sì":
-    fc = st.number_input("FC media test (bpm)", 0)
-    if fc > 0:
-        fthr = fc
-        st.write(f"FTHR: **{fthr} bpm**")
-
-        st.subheader("Zone Cardiache")
-        st.table({
-            "Zona":["Z1","Z2","Z3","Z4","Z5"],
-            "Range bpm":[
-                f"< {fthr*0.81:.0f}",
-                f"{fthr*0.81:.0f}-{fthr*0.89:.0f}",
-                f"{fthr*0.90:.0f}-{fthr*0.93:.0f}",
-                f"{fthr*0.94:.0f}-{fthr*0.99:.0f}",
-                f"> {fthr:.0f}"
-            ]
-        })
+    df_cardio = pd.DataFrame(zone_cardio.items(), columns=["Zona","Limite bpm"])
+    st.table(df_cardio)
 
 st.markdown("---")
 
-# ===============================
-# PROIEZIONE STRATEGICA
-# ===============================
-
-st.header("Proiezione Strategica")
-
-target_fm = st.number_input("Target FM (%)", 3.0, 20.0, step=0.1)
-inc_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0, step=0.5)
-
-nuova_fm_kg = massa_magra * (target_fm/(100-target_fm))
-nuovo_peso = massa_magra + nuova_fm_kg
-nuova_ftp = ftp * (1 + inc_ftp/100)
-nuovo_wkg = nuova_ftp/nuovo_peso if nuovo_peso>0 else 0
-
-st.write(f"Nuovo peso: **{nuovo_peso:.2f} kg**")
-st.write(f"Nuova FTP: **{nuova_ftp:.2f} W**")
-st.write(f"Nuovo W/kg: **{nuovo_wkg:.2f}**")
-
-st.markdown("---")
-
-# ===============================
+# =========================
 # PDF COMPLETO
-# ===============================
+# =========================
 
 if st.button("Genera PDF"):
 
-    if not nome or not cognome:
-        st.warning("Inserire almeno nome e cognome.")
-    else:
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=11)
 
-        cf = genera_codice_fiscale(nome, cognome, data_nascita)
+    pdf.cell(0,8,"REPORT VALUTAZIONE", ln=True)
+    pdf.ln(5)
 
-        righe = [
-            "----- REPORT DB NUTRITION & PERFORMANCE -----",
-            "",
-            "DATI ANAGRAFICI",
-            f"Nome: {nome} {cognome}",
-            f"Luogo: {luogo}",
-            f"Data nascita: {data_nascita.strftime('%d/%m/%Y')}",
-            f"Codice Fiscale: {cf}",
-            f"Email: {email}",
-            f"Telefono: {telefono}",
-            f"Indirizzo: {indirizzo}",
-            "",
-            "COMPOSIZIONE CORPOREA",
-            f"Peso: {peso} kg",
-            f"Altezza: {altezza} cm",
-            f"BMI: {bmi:.2f} ({classe_bmi})",
-            f"Massa magra: {massa_magra:.2f} kg",
-            "",
-            "PERFORMANCE",
-            f"FTP: {ftp:.2f} W",
-            f"W/kg: {ftp/peso if ftp>0 else 0:.2f}",
-            f"Nuovo W/kg: {nuovo_wkg:.2f}"
-        ]
+    pdf.cell(0,8,f"Nome: {nome} {cognome}", ln=True)
+    pdf.cell(0,8,f"Codice Fiscale: {cf}", ln=True)
+    pdf.cell(0,8,f"Email: {email}", ln=True)
+    pdf.cell(0,8,f"Telefono: {telefono}", ln=True)
+    pdf.cell(0,8,f"Indirizzo: {indirizzo}", ln=True)
+    pdf.ln(5)
 
-        pdf_bytes = genera_pdf(righe)
+    pdf.cell(0,8,f"BMI: {bmi:.2f} ({classificazione})", ln=True)
+    pdf.cell(0,8,f"FTP: {ftp} W", ln=True)
+    pdf.cell(0,8,f"W/kg: {wkg:.2f}", ln=True)
+    pdf.cell(0,8,f"FTHR: {fthr} bpm", ln=True)
 
-        st.download_button(
-            "Scarica PDF",
-            pdf_bytes,
-            "Report_DB_Nutrition_Performance.pdf",
-            "application/pdf"
-        )
+    pdf.output("report.pdf")
+
+    with open("report.pdf", "rb") as f:
+        st.download_button("Scarica PDF", f, file_name="report.pdf")
