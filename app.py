@@ -6,24 +6,24 @@ st.set_page_config(page_title="DB Nutrition & Performance", layout="centered")
 st.title("DB Nutrition & Performance")
 st.markdown("---")
 
-st.header("Attivazione sistema")
+st.header("Inserimento dati analitici")
 
-trigger = st.text_input("Scrivi 'NUOVO ATLETA' per attivare il sistema")
+nome = st.text_input("Digita il nome dell’atleta per iniziare")
 
-if trigger == "NUOVO ATLETA":
+if nome:
 
-    st.success("Sistema attivato correttamente.")
+    st.success("Modulo valutazione attivato")
 
     # =========================
     # ANAGRAFICA
     # =========================
     st.subheader("Anagrafica")
 
-    nome = st.text_input("Nome")
     cognome = st.text_input("Cognome")
-
     data_nascita = st.date_input("Data di nascita")
+
     oggi = date.today()
+    eta = None
 
     if data_nascita:
         eta = oggi.year - data_nascita.year - (
@@ -46,6 +46,7 @@ if trigger == "NUOVO ATLETA":
     fm_kg = None
     if peso > 0 and fm_perc > 0:
         fm_kg = peso * fm_perc / 100
+        st.info(f"Fat Mass calcolata: {fm_kg:.2f} kg")
 
     st.markdown("---")
 
@@ -80,10 +81,11 @@ if trigger == "NUOVO ATLETA":
     if ftp:
         st.success(f"FTP: {ftp:.2f} W")
 
+    st.markdown("---")
+
     # =========================
     # FREQUENZA CARDIACA
     # =========================
-    st.markdown("---")
     st.subheader("Frequenza Cardiaca")
 
     uso_cardio = st.selectbox("Ha indossato il cardio?", ["No", "Sì"])
@@ -99,22 +101,33 @@ if trigger == "NUOVO ATLETA":
             st.info(f"FTHR calcolata: {fthr:.0f} bpm")
 
     # =========================
-    # ELABORAZIONE
+    # ELABORAZIONE E REFERTO
     # =========================
-    if ftp and peso > 0 and fm_kg is not None:
+    if ftp and peso > 0 and fm_kg is not None and eta is not None:
 
         wkg = ftp / peso
         wkg_ffm = ftp / ffm if ffm > 0 else None
         pot_spec = ftp / massa_muscolare if massa_muscolare > 0 else None
 
+        # Classificazione profilo
+        if fm_perc > 18 and wkg < 4:
+            profilo = "Migliorabile per ricomposizione"
+        elif fm_perc <= 12 and wkg >= 4.5:
+            profilo = "Ottimizzato"
+        elif fm_perc <= 15 and wkg < 4:
+            profilo = "Migliorabile per incremento potenza"
+        else:
+            profilo = "Approccio combinato consigliato"
+
         st.markdown("---")
         st.header("REFERTO ANALITICO")
 
         st.markdown("### 1. Parametri Antropometrici")
+        st.write(f"Nome: {nome} {cognome}")
+        st.write(f"Età: {eta} anni")
         st.write(f"Peso: {peso:.2f} kg")
         st.write(f"Massa grassa: {fm_perc:.1f}% ({fm_kg:.2f} kg)")
         st.write(f"Massa magra (FFM): {ffm:.2f} kg")
-        st.write(f"Età: {eta} anni")
 
         st.markdown("### 2. Valutazione Funzionale")
         st.write(f"Functional Threshold Power (FTP): {ftp:.2f} W")
@@ -154,3 +167,14 @@ if trigger == "NUOVO ATLETA":
             st.write(f"W/kg FFM: {wkg_ffm:.2f}")
         if pot_spec:
             st.write(f"Potenza specifica muscolare: {pot_spec:.2f}")
+
+        st.markdown("### 6. Analisi Interpretativa Specialistica")
+        st.write(f"Classificazione del profilo fisiologico: {profilo}")
+
+        st.markdown("### 7. Inquadramento Metabolico-Funzionale")
+        st.write(
+            "L’integrazione tra composizione corporea e potenza relativa consente "
+            "di delineare un profilo adattativo specifico, utile per l’ottimizzazione "
+            "della performance attraverso strategie mirate di ricomposizione "
+            "corporea e/o incremento della capacità funzionale."
+        )
