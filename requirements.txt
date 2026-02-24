@@ -1,3 +1,5 @@
 streamlit
 pillow
 fpdf
+pandas
+numpy
