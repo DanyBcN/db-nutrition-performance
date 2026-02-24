@@ -1,10 +1,14 @@
 import streamlit as st
-from datetime import date
+from datetime import datetime
 
 st.set_page_config(page_title="DB Nutrition & Performance", layout="centered")
 
 st.title("DB Nutrition & Performance")
 st.markdown("---")
+
+# =========================
+# ATTIVAZIONE TRAMITE NOME
+# =========================
 
 st.header("Inserimento dati analitici")
 
@@ -17,25 +21,33 @@ if nome:
     # =========================
     # ANAGRAFICA
     # =========================
+
     st.subheader("Anagrafica")
 
     cognome = st.text_input("Cognome")
-    data_nascita = st.date_input("Data di nascita")
 
-    oggi = date.today()
-    eta = None
+    data_nascita = st.date_input(
+        "Data di nascita (gg/mm/aaaa)",
+        value=datetime(1990, 1, 1),
+        min_value=datetime(1950, 1, 1),
+        max_value=datetime.today(),
+        format="DD/MM/YYYY"
+    )
 
-    if data_nascita:
-        eta = oggi.year - data_nascita.year - (
-            (oggi.month, oggi.day) < (data_nascita.month, data_nascita.day)
-        )
-        st.info(f"Età calcolata: {eta} anni")
+    oggi = datetime.today()
+
+    eta = oggi.year - data_nascita.year - (
+        (oggi.month, oggi.day) < (data_nascita.month, data_nascita.day)
+    )
+
+    st.info(f"Età calcolata: {eta} anni")
 
     st.markdown("---")
 
     # =========================
     # COMPOSIZIONE CORPOREA
     # =========================
+
     st.subheader("Composizione corporea")
 
     peso = st.number_input("Peso (kg)", min_value=0.0, step=0.1)
@@ -53,6 +65,7 @@ if nome:
     # =========================
     # TEST DI POTENZA
     # =========================
+
     st.subheader("Test di Potenza")
 
     tipo_test = st.selectbox(
@@ -79,13 +92,14 @@ if nome:
             ftp = ftp_input
 
     if ftp:
-        st.success(f"FTP: {ftp:.2f} W")
+        st.success(f"FTP calcolata: {ftp:.2f} W")
 
     st.markdown("---")
 
     # =========================
     # FREQUENZA CARDIACA
     # =========================
+
     st.subheader("Frequenza Cardiaca")
 
     uso_cardio = st.selectbox("Ha indossato il cardio?", ["No", "Sì"])
@@ -103,7 +117,8 @@ if nome:
     # =========================
     # ELABORAZIONE E REFERTO
     # =========================
-    if ftp and peso > 0 and fm_kg is not None and eta is not None:
+
+    if ftp and peso > 0 and fm_kg is not None:
 
         wkg = ftp / peso
         wkg_ffm = ftp / ffm if ffm > 0 else None
