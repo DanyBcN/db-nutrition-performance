@@ -6,10 +6,6 @@ st.set_page_config(page_title="DB Nutrition & Performance", layout="centered")
 st.title("DB Nutrition & Performance")
 st.markdown("---")
 
-# =========================
-# ATTIVAZIONE TRAMITE NOME
-# =========================
-
 st.header("Inserimento dati analitici")
 
 nome = st.text_input("Digita il nome dell’atleta per iniziare")
@@ -108,23 +104,18 @@ if nome:
 
     if uso_cardio == "Sì":
         fc_media = st.number_input("FC media del test (bpm)", min_value=0)
-        fc_max = st.number_input("FC max (opzionale)", min_value=0)
-
         if fc_media > 0:
             fthr = fc_media
             st.info(f"FTHR calcolata: {fthr:.0f} bpm")
 
     # =========================
-    # ELABORAZIONE E REFERTO
+    # ELABORAZIONE
     # =========================
 
     if ftp and peso > 0 and fm_kg is not None:
 
         wkg = ftp / peso
-        wkg_ffm = ftp / ffm if ffm > 0 else None
-        pot_spec = ftp / massa_muscolare if massa_muscolare > 0 else None
 
-        # Classificazione profilo
         if fm_perc > 18 and wkg < 4:
             profilo = "Migliorabile per ricomposizione"
         elif fm_perc <= 12 and wkg >= 4.5:
@@ -147,49 +138,49 @@ if nome:
         st.markdown("### 2. Valutazione Funzionale")
         st.write(f"Functional Threshold Power (FTP): {ftp:.2f} W")
 
-        st.markdown("### 3. Zone di Allenamento – Potenza")
-
-        zone = {
-            "Z1 (<55%)": (0, ftp * 0.55),
-            "Z2 (56–75%)": (ftp * 0.56, ftp * 0.75),
-            "Z3 (76–90%)": (ftp * 0.76, ftp * 0.90),
-            "Z4 (91–105%)": (ftp * 0.91, ftp * 1.05),
-            "Z5 (106–120%)": (ftp * 1.06, ftp * 1.20),
-            "Z6 (121–150%)": (ftp * 1.21, ftp * 1.50),
-            "Z7 (>150%)": (ftp * 1.50, ftp * 2),
-        }
-
-        for nome_zona, valori in zone.items():
-            st.write(f"{nome_zona}: {valori[0]:.0f} – {valori[1]:.0f} W")
-
-        if fthr:
-            st.markdown("### 4. Zone di Allenamento – Frequenza Cardiaca")
-
-            zone_fc = {
-                "Z1 (<81%)": (0, fthr * 0.81),
-                "Z2 (81–89%)": (fthr * 0.81, fthr * 0.89),
-                "Z3 (90–93%)": (fthr * 0.90, fthr * 0.93),
-                "Z4 (94–99%)": (fthr * 0.94, fthr * 0.99),
-                "Z5 (>100%)": (fthr * 1.00, fthr * 1.10),
-            }
-
-            for nome_zona, valori in zone_fc.items():
-                st.write(f"{nome_zona}: {valori[0]:.0f} – {valori[1]:.0f} bpm")
-
-        st.markdown("### 5. Indici di Performance Relativa")
+        st.markdown("### 3. Indici di Performance Relativa")
         st.write(f"W/kg: {wkg:.2f}")
-        if wkg_ffm:
-            st.write(f"W/kg FFM: {wkg_ffm:.2f}")
-        if pot_spec:
-            st.write(f"Potenza specifica muscolare: {pot_spec:.2f}")
 
-        st.markdown("### 6. Analisi Interpretativa Specialistica")
+        st.markdown("### 4. Analisi Interpretativa Specialistica")
         st.write(f"Classificazione del profilo fisiologico: {profilo}")
 
-        st.markdown("### 7. Inquadramento Metabolico-Funzionale")
-        st.write(
-            "L’integrazione tra composizione corporea e potenza relativa consente "
-            "di delineare un profilo adattativo specifico, utile per l’ottimizzazione "
-            "della performance attraverso strategie mirate di ricomposizione "
-            "corporea e/o incremento della capacità funzionale."
-        )
+        # =========================
+        # TARGET E SIMULAZIONE
+        # =========================
+
+        st.markdown("---")
+        st.subheader("Impostazione Target Strategico")
+
+        target_fm = st.number_input("Target massa grassa (%)", min_value=0.0, step=0.1)
+        incremento_ftp = st.number_input("Incremento FTP (%)", min_value=0.0, step=0.1)
+
+        if st.button("Calcola Proiezione Strategica"):
+
+            nuovo_peso = peso
+            nuova_ftp = ftp
+
+            if target_fm > 0:
+                massa_mag = peso - fm_kg
+                nuova_fm_kg = peso * target_fm / 100
+                nuovo_peso = massa_mag + nuova_fm_kg
+
+            if incremento_ftp > 0:
+                nuova_ftp = ftp * (1 + incremento_ftp / 100)
+
+            nuovo_wkg = nuova_ftp / nuovo_peso
+
+            st.markdown("### 5. Proiezione Strategica Personalizzata")
+            st.write(f"Nuovo peso teorico: {nuovo_peso:.2f} kg")
+            st.write(f"Nuova FTP stimata: {nuova_ftp:.2f} W")
+            st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+
+            if incremento_ftp <= 5 and target_fm <= 2:
+                livello = "Conservativo"
+            elif incremento_ftp <= 10 and target_fm <= 4:
+                livello = "Moderato"
+            elif incremento_ftp <= 15 and target_fm <= 6:
+                livello = "Aggressivo ma plausibile"
+            else:
+                livello = "Non realistico"
+
+            st.warning(f"Classificazione intervento: {livello}")
