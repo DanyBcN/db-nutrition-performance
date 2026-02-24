@@ -74,7 +74,7 @@ if trigger == "NUOVO ATLETA":
             st.success(f"FTP inserita: {ftp:.2f} W")
     
     # ----------------------
-    # INDICI AVANZATI
+    # INDICI E ZONE POTENZA
     # ----------------------
     if ftp and peso > 0:
         st.markdown("---")
@@ -91,9 +91,6 @@ if trigger == "NUOVO ATLETA":
             pot_spec = ftp / massa_muscolare
             st.write(f"Potenza specifica muscolare: {pot_spec:.2f}")
         
-        # ----------------------
-        # ZONE DI POTENZA (COGGAN)
-        # ----------------------
         st.markdown("---")
         st.subheader("Zone di Potenza (Coggan)")
         
@@ -109,3 +106,51 @@ if trigger == "NUOVO ATLETA":
         
         for nome_zona, valori in zone.items():
             st.write(f"{nome_zona}: {valori[0]:.0f} - {valori[1]:.0f} W")
+        
+        # ----------------------
+        # FREQUENZA CARDIACA
+        # ----------------------
+        st.markdown("---")
+        st.subheader("Frequenza Cardiaca")
+        
+        uso_cardio = st.selectbox("Ha usato cardio?", ["No", "Sì"])
+        
+        if uso_cardio == "Sì":
+            fc_media = st.number_input("FC media test (bpm)", min_value=0)
+            fc_max = st.number_input("FC max (opzionale)", min_value=0)
+            
+            if fc_media > 0:
+                fthr = fc_media
+                st.success(f"FTHR: {fthr:.0f} bpm")
+                
+                st.subheader("Zone Cardiache (su FTHR)")
+                
+                zone_fc = {
+                    "Z1 (<81%)": (0, fthr * 0.81),
+                    "Z2 (81-89%)": (fthr * 0.81, fthr * 0.89),
+                    "Z3 (90-93%)": (fthr * 0.90, fthr * 0.93),
+                    "Z4 (94-99%)": (fthr * 0.94, fthr * 0.99),
+                    "Z5 (>100%)": (fthr * 1.00, fthr * 1.10),
+                }
+                
+                for nome_zona, valori in zone_fc.items():
+                    st.write(f"{nome_zona}: {valori[0]:.0f} - {valori[1]:.0f} bpm")
+        
+        # ----------------------
+        # CLASSIFICAZIONE PROFILO BASE
+        # ----------------------
+        st.markdown("---")
+        st.subheader("Analisi Profilo")
+        
+        profilo = "Non determinabile"
+        
+        if fm_perc > 18 and wkg < 4:
+            profilo = "Migliorabile per ricomposizione"
+        elif fm_perc <= 12 and wkg >= 4.5:
+            profilo = "Ottimizzato"
+        elif fm_perc <= 15 and wkg < 4:
+            profilo = "Migliorabile per incremento potenza"
+        else:
+            profilo = "Approccio combinato consigliato"
+        
+        st.info(f"Classificazione: {profilo}")
