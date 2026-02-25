@@ -151,3 +151,19 @@ def create_pdf(nome, eta, sesso, peso, altezza, ftp, bmi, bf, incremento, new_ft
         pdf_bytes = pdf_bytes.encode("latin-1")
 
     return pdf_bytes
+
+if st.button("📄 Genera PDF Professionale"):
+
+    pdf_data = create_pdf(
+        nome, eta, sesso, peso, altezza, ftp,
+        bmi, bf, incremento, new_ftp,
+        ftp_zones, hr_zones,
+        fig_bmi, fig_bf
+    )
+
+    st.download_button(
+        "Scarica PDF",
+        data=pdf_data,
+        file_name="report_performance.pdf",
+        mime="application/pdf"
+    )
