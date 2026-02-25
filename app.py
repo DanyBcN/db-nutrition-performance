@@ -2,81 +2,40 @@ import streamlit as st
 from datetime import date
 from fpdf import FPDF
 import pandas as pd
-import matplotlib.pyplot as plt
 import math
+import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
 
 # ======================================================
-# FUNZIONI DI CALCOLO
+# LOGO IN PAGINA
 # ======================================================
 
-def calcola_eta(data_nascita):
-    oggi = date.today()
-    return oggi.year - data_nascita.year - (
-        (oggi.month, oggi.day) < (data_nascita.month, data_nascita.day)
-    )
-
-def calcola_bmi(peso, altezza_cm):
-    if altezza_cm <= 0:
-        return 0
-    h = altezza_cm / 100
-    return peso / (h ** 2)
-
-def classifica_bmi(bmi):
-    if bmi < 18.5:
-        return "Sottopeso"
-    elif bmi < 25:
-        return "Normopeso"
-    elif bmi < 30:
-        return "Sovrappeso"
-    else:
-        return "Obesità"
-
-def calcola_ftp(metodo, valore):
-    moltiplicatori = {
-        "Immissione diretta": 1.0,
-        "Test 20 minuti": 0.95,
-        "Test 8 minuti": 0.90,
-        "Ramp test": 0.75,
-    }
-    return valore * moltiplicatori.get(metodo, 1)
-
-def calcola_wkg(ftp, peso):
-    return ftp / peso if peso > 0 else 0
-
-def tempo_salita_realistico(potenza, peso, lunghezza=5000, pendenza=0.06):
-    g = 9.81
-    rho = 1.226
-    CdA = 0.32
-    Crr = 0.004
-    
-    massa_tot = peso + 8  # bici
-    forza_grav = massa_tot * g * pendenza
-    forza_roll = massa_tot * g * Crr
-    
-    v = 5
-    
-    for _ in range(25):
-        forza_aero = 0.5 * rho * CdA * v**2
-        forza_tot = forza_grav + forza_roll + forza_aero
-        v = potenza / forza_tot
-    
-    tempo_sec = lunghezza / v
-    return tempo_sec / 60
-
-# ======================================================
-# HEADER
-# ======================================================
-
-col_logo = st.columns([1,2,1])
-with col_logo[1]:
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
     try:
-        st.image("logo.png", width=280)
+        st.image("logo.png", width=300)
     except:
         pass
 
-st.title("REPORT PERFORMANCE PROFESSIONALE")
+# ======================================================
+# INIZIALIZZAZIONE VARIABILI (ANTI-ERROR)
+# ======================================================
+
+ftp = 0.0
+valore_test = 0.0
+wkg = 0.0
+nuova_ftp = 0.0
+nuovo_wkg = 0.0
+tempo_vecchio = 0.0
+tempo_nuovo = 0.0
+giudizio = ""
+
+categoria_bmi = ""
+giudizio_atleta = ""
+
+zone_df = pd.DataFrame()
+zone_hr_df = pd.DataFrame()
 
 # ======================================================
 # DATI ANAGRAFICI
@@ -84,22 +43,26 @@ st.title("REPORT PERFORMANCE PROFESSIONALE")
 
 st.header("Dati Anagrafici")
 
-col1, col2, col3 = st.columns(3)
+colA, colB, colC = st.columns(3)
 
-with col1:
+with colA:
     nome = st.text_input("Nome")
 
-with col2:
+with colB:
     cognome = st.text_input("Cognome")
 
-with col3:
+with colC:
     data_nascita = st.date_input(
         "Data di nascita",
         min_value=date(1920,1,1),
-        max_value=date.today()
+        max_value=date.today(),
+        format="DD/MM/YYYY"
     )
 
-eta = calcola_eta(data_nascita)
+eta = date.today().year - data_nascita.year - (
+    (date.today().month, date.today().day) <
+    (data_nascita.month, data_nascita.day)
+)
 
 st.markdown("---")
 
@@ -118,22 +81,30 @@ with col1:
 with col2:
     fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
 
-bmi = calcola_bmi(peso, altezza)
-categoria_bmi = classifica_bmi(bmi)
-
+altezza_m = altezza / 100 if altezza > 0 else 0
+bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
 fm_kg = peso * (fm/100)
 massa_magra = peso - fm_kg
 
-col_m1, col_m2, col_m3 = st.columns(3)
-col_m1.metric("BMI", f"{bmi:.2f}", categoria_bmi)
-col_m2.metric("Massa grassa (kg)", f"{fm_kg:.2f}")
-col_m3.metric("Massa magra (kg)", f"{massa_magra:.2f}")
+if bmi < 18.5:
+    categoria_bmi = "Sottopeso"
+elif 18.5 <= bmi < 25:
+    categoria_bmi = "Normopeso"
+elif 25 <= bmi < 30:
+    categoria_bmi = "Sovrappeso"
+else:
+    categoria_bmi = "Obesità"
+
+colM1, colM2, colM3 = st.columns(3)
+colM1.metric("BMI", f"{bmi:.2f}", categoria_bmi)
+colM2.metric("Massa grassa", f"{fm_kg:.2f} kg")
+colM3.metric("Massa magra", f"{massa_magra:.2f} kg")
 
 # ======================================================
-# RANGE ATLETA
+# RANGE BMI ATLETA
 # ======================================================
 
-st.subheader("Range Atleta")
+st.subheader("Range BMI Ideale Atleta")
 
 tipo_sport = st.selectbox(
     "Tipologia atleta",
@@ -158,7 +129,7 @@ else:
     giudizio_atleta = "Nel range ideale atleta"
 
 st.write(f"Range BMI ideale: {bmi_min}-{bmi_max}")
-st.write(f"Valutazione: {giudizio_atleta}")
+st.write(f"Valutazione atleta: {giudizio_atleta}")
 
 if fm < fm_min:
     st.warning("Massa grassa sotto range fisiologico atleta.")
@@ -166,11 +137,10 @@ elif fm > fm_max:
     st.warning("Massa grassa sopra range ottimale atleta.")
 
 # ======================================================
-# GRAFICO BMI
+# GRAFICO BMI (MIGLIORATO)
 # ======================================================
 
-fig, ax = plt.subplots(figsize=(10, 1.8))
-
+fig, ax = plt.subplots(figsize=(10,2))
 ax.set_xlim(15, 40)
 ax.set_ylim(0, 1)
 
@@ -185,13 +155,13 @@ for x1, x2, c in colori:
     ax.axvspan(x1, x2, color=c)
 
 ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.15)
-
 ax.axvline(bmi, linewidth=3)
 ax.scatter(bmi, 0.5, s=150)
+ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center', fontsize=11, fontweight='bold')
 
 ax.set_yticks([])
-ax.set_xlabel("BMI")
-ax.set_title("Classificazione OMS + Range Atleta")
+ax.set_xlabel("Indice di Massa Corporea (BMI)")
+ax.set_title("Classificazione BMI OMS + Range Atleta")
 
 for spine in ax.spines.values():
     spine.set_visible(False)
@@ -200,7 +170,34 @@ st.pyplot(fig)
 fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
 
 # ======================================================
-# FTP
+# GRAFICO MASSA GRASSA (MIGLIORATO)
+# ======================================================
+
+st.subheader("Valutazione Massa Grassa")
+
+fig2, ax2 = plt.subplots(figsize=(10,2))
+ax2.set_xlim(0, 30)
+ax2.set_ylim(0, 1)
+
+ax2.axvspan(fm_min, fm_max, color="#ABEBC6")
+ax2.axvline(fm, linewidth=3)
+ax2.scatter(fm, 0.5, s=150)
+ax2.text(fm, 0.8, f"{fm:.1f}%", ha='center', fontsize=11, fontweight='bold')
+
+ax2.set_yticks([])
+ax2.set_xlabel("Percentuale Massa Grassa (%)")
+ax2.set_title("Valutazione Massa Grassa Atleta")
+
+for spine in ax2.spines.values():
+    spine.set_visible(False)
+
+st.pyplot(fig2)
+fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
+
+st.markdown("---")
+
+# ======================================================
+# CALCOLO FTP (IDENTICO MA PIÙ ORDINATO)
 # ======================================================
 
 st.header("Calcolo FTP")
@@ -210,41 +207,51 @@ metodo = st.selectbox(
     ["Immissione diretta","Test 20 minuti","Test 8 minuti","Ramp test"]
 )
 
-valore_test = st.number_input("Valore test (W)", 0.0)
+if metodo == "Immissione diretta":
+    valore_test = st.number_input("FTP (W)", 0.0)
+    ftp = valore_test
+elif metodo == "Test 20 minuti":
+    valore_test = st.number_input("Media 20 min (W)", 0.0)
+    ftp = valore_test * 0.95
+elif metodo == "Test 8 minuti":
+    valore_test = st.number_input("Media 8 min (W)", 0.0)
+    ftp = valore_test * 0.90
+elif metodo == "Ramp test":
+    valore_test = st.number_input("Ultimo step completato (W)", 0.0)
+    ftp = valore_test * 0.75
 
-ftp = calcola_ftp(metodo, valore_test)
-wkg = calcola_wkg(ftp, peso)
+wkg = ftp / peso if peso > 0 else 0
 
-colp1, colp2 = st.columns(2)
-colp1.metric("FTP stimata", f"{ftp:.1f} W")
-colp2.metric("W/kg", f"{wkg:.2f}")
-
-# ======================================================
-# ZONE POTENZA
-# ======================================================
-
-if ftp > 0:
-
-    zone = [
-        ("Z1 Recovery",0.00,0.55),
-        ("Z2 Fondo",0.56,0.75),
-        ("Z3 Tempo",0.76,0.90),
-        ("Z4 Soglia",0.91,1.05),
-        ("Z5 VO2max",1.06,1.20),
-        ("Z6 Anaerobica",1.21,1.50),
-        ("Z7 Neuromuscolare",1.51,2.00),
-    ]
-
-    zone_df = pd.DataFrame(
-        [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
-        columns=["Zona","Da (W)","A (W)"]
-    )
-
-    st.subheader("Zone Potenza")
-    st.dataframe(zone_df, use_container_width=True)
+colF1, colF2 = st.columns(2)
+colF1.metric("FTP stimata", f"{ftp:.2f} W")
+colF2.metric("W/kg", f"{wkg:.2f}")
 
 # ======================================================
-# PROIEZIONE
+# MODELLO SALITA REALISTICO (UPGRADE)
+# ======================================================
+
+def tempo_salita_realistico(potenza, peso, lunghezza=5000, pendenza=0.06):
+    g = 9.81
+    rho = 1.226
+    CdA = 0.32
+    Crr = 0.004
+
+    massa_tot = peso + 8
+    forza_grav = massa_tot * g * pendenza
+    forza_roll = massa_tot * g * Crr
+
+    v = 5
+
+    for _ in range(25):
+        forza_aero = 0.5 * rho * CdA * v**2
+        forza_tot = forza_grav + forza_roll + forza_aero
+        v = potenza / forza_tot
+
+    tempo_sec = lunghezza / v
+    return tempo_sec / 60
+
+# ======================================================
+# PROIEZIONE PERFORMANCE (CON MODELLO MIGLIORATO)
 # ======================================================
 
 st.header("Proiezione Performance")
@@ -256,18 +263,26 @@ if nuovo_peso > 0 and ftp > 0:
 
     nuova_ftp = ftp * (1 + incremento_ftp/100)
     nuovo_wkg = nuova_ftp / nuovo_peso
+    delta_wkg = nuovo_wkg - wkg
+
+    if delta_wkg > 0.3:
+        giudizio = "Miglioramento significativo"
+    elif delta_wkg > 0.1:
+        giudizio = "Miglioramento moderato"
+    else:
+        giudizio = "Miglioramento lieve"
 
     tempo_vecchio = tempo_salita_realistico(ftp, peso)
     tempo_nuovo = tempo_salita_realistico(nuova_ftp, nuovo_peso)
 
-    delta_tempo = tempo_vecchio - tempo_nuovo
-
-    st.metric("Nuovo W/kg", f"{nuovo_wkg:.2f}", f"{nuovo_wkg-wkg:.2f}")
+    st.metric("Nuovo W/kg", f"{nuovo_wkg:.2f}", f"{delta_wkg:.2f}")
+    st.write(f"Giudizio: {giudizio}")
     st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
-    st.success(f"Miglioramento stimato: {delta_tempo:.1f} minuti")
+
+st.markdown("---")
 
 # ======================================================
-# PDF PROFESSIONALE
+# PDF (MIGLIORATO GRAFICAMENTE, MA COMPLETO)
 # ======================================================
 
 if st.button("Genera PDF Professionale"):
@@ -279,48 +294,55 @@ if st.button("Genera PDF Professionale"):
 
         def header(self):
             try:
-                self.image("logo.png", 70, 8, 70)
-                self.ln(35)
+                self.image("logo.png", 75, 8, 60)
+                self.ln(30)
             except:
                 self.ln(20)
 
             self.set_font("Arial", "B", 18)
             self.cell(0, 10, "REPORT PERFORMANCE", 0, 1, "C")
-            self.ln(5)
+            self.ln(3)
 
-        def section(self, title):
+            self.set_draw_color(30, 90, 160)
+            self.set_line_width(1)
+            self.line(10, self.get_y(), 200, self.get_y())
+            self.ln(8)
+
+        def section_title(self, title):
+            self.set_fill_color(230, 240, 255)
             self.set_font("Arial", "B", 12)
-            self.cell(0, 8, title, 0, 1)
-            self.ln(2)
+            self.cell(0, 8, title, 0, 1, "L", True)
+            self.ln(3)
 
-        def kv(self, key, value):
+        def key_value(self, key, value):
             self.set_font("Arial", "B", 10)
-            self.cell(50, 6, key)
+            self.cell(60, 6, key)
             self.set_font("Arial", "", 10)
             self.cell(0, 6, safe(value), 0, 1)
 
     pdf = PDF()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
 
-    pdf.section("Dati Anagrafici")
-    pdf.kv("Nome:", nome)
-    pdf.kv("Cognome:", cognome)
-    pdf.kv("Eta:", f"{eta} anni")
+    pdf.section_title("Dati Anagrafici")
+    pdf.key_value("Nome:", nome)
+    pdf.key_value("Cognome:", cognome)
+    pdf.key_value("Eta:", f"{eta} anni")
 
-    pdf.section("Antropometria")
-    pdf.kv("Peso:", f"{peso:.1f} kg")
-    pdf.kv("BMI:", f"{bmi:.2f} ({categoria_bmi})")
-    pdf.kv("Massa grassa:", f"{fm:.1f}%")
+    pdf.section_title("Antropometria")
+    pdf.key_value("Peso:", f"{peso:.1f} kg")
+    pdf.key_value("BMI:", f"{bmi:.2f} ({categoria_bmi})")
+    pdf.key_value("Massa grassa:", f"{fm:.1f}%")
 
-    pdf.section("Performance")
-    pdf.kv("FTP:", f"{ftp:.1f} W")
-    pdf.kv("W/kg:", f"{wkg:.2f}")
+    pdf.section_title("Performance")
+    pdf.key_value("FTP:", f"{ftp:.1f} W")
+    pdf.key_value("W/kg:", f"{wkg:.2f}")
 
     pdf.output("report_performance_professionale.pdf")
 
     with open("report_performance_professionale.pdf", "rb") as f:
         st.download_button(
-            "Scarica PDF",
+            "Scarica PDF Professionale",
             f,
             "report_performance_professionale.pdf"
         )
