@@ -215,38 +215,116 @@ st.markdown("---")
 if st.button("Genera PDF Performance"):
 
     class PDF(FPDF):
+
         def header(self):
             try:
-                self.image("logo.png", 80, 8, 50)
-                self.ln(28)
+                self.image("logo.png", 75, 8, 60)
+                self.ln(30)
             except:
-                self.ln(18)
+                self.ln(20)
 
-            self.set_font("Arial","B",16)
+            self.set_font("Arial","B",18)
             self.cell(0,10,"PERFORMANCE REPORT",0,1,"C")
+            self.ln(5)
 
-            self.set_font("Arial","",11)
-            self.cell(0,6,f"{nome} {cognome}",0,1,"C")
-            self.cell(0,6,f"Nato il {data_nascita_it}",0,1,"C")
-            self.ln(6)
+        def section_title(self, title):
+            self.set_font("Arial","B",13)
+            self.cell(0,8,title,0,1)
+            self.ln(2)
+
+        def normal_text(self, text):
+            self.set_font("Arial","",10)
+            self.multi_cell(0,6,text)
+
+        def table(self, dataframe):
+            self.set_font("Arial","B",9)
+            col_width = self.w / (len(dataframe.columns) + 1)
+
+            for col in dataframe.columns:
+                self.cell(col_width,8,col,1,0,"C")
+            self.ln()
+
+            self.set_font("Arial","",9)
+            for row in dataframe.values:
+                for item in row:
+                    self.cell(col_width,8,str(item),1,0,"C")
+                self.ln()
 
         def footer(self):
             self.set_y(-12)
             self.set_font("Arial","I",8)
             self.cell(0,5,f"Pagina {self.page_no()}",0,0,"C")
 
+
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    pdf.set_font("Arial","B",12)
-    pdf.cell(0,8,"KPI",0,1)
+    # ======================================================
+    # ANAGRAFICA
+    # ======================================================
 
-    pdf.set_font("Arial","",10)
-    pdf.multi_cell(0,6,f"BMI: {bmi:.2f}")
-    pdf.multi_cell(0,6,f"FTP: {ftp:.0f} W")
-    pdf.multi_cell(0,6,f"W/kg: {wkg:.2f}")
-    pdf.multi_cell(0,6,f"Massa Grassa: {fm:.1f}%")
+    pdf.section_title("DATI ANAGRAFICI")
+
+    pdf.normal_text(
+        f"Nome: {nome}\n"
+        f"Cognome: {cognome}\n"
+        f"Data di nascita: {data_nascita_it}\n"
+        f"Sesso: {sesso}\n"
+        f"Email: {email}\n"
+        f"Telefono: {telefono}\n"
+        f"Indirizzo: {indirizzo}"
+    )
+
+    pdf.ln(4)
+
+    # ======================================================
+    # ANTROPOMETRIA
+    # ======================================================
+
+    pdf.section_title("VALUTAZIONE ANTROPOMETRICA")
+
+    pdf.normal_text(
+        f"Peso: {peso:.1f} kg\n"
+        f"Altezza: {altezza:.1f} cm\n"
+        f"BMI: {bmi:.2f} ({classificazione})\n"
+        f"Massa Grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
+        f"Massa Magra: {massa_magra:.2f} kg"
+    )
+
+    pdf.ln(4)
+
+    # ======================================================
+    # PERFORMANCE
+    # ======================================================
+
+    pdf.section_title("PARAMETRI PERFORMANCE")
+
+    pdf.normal_text(
+        f"FTP: {ftp:.0f} W\n"
+        f"W/kg: {wkg:.2f}\n"
+        f"FTHR: {fthr:.0f} bpm"
+    )
+
+    pdf.ln(4)
+
+    # ======================================================
+    # TABELLE
+    # ======================================================
+
+    pdf.section_title("ZONE POTENZA (FTP)")
+    pdf.table(zone_df)
+
+    pdf.ln(5)
+
+    pdf.section_title("ZONE CARDIO (FTHR)")
+    pdf.table(zone_hr_df)
+
+    pdf.ln(5)
+
+    # ======================================================
+    # GRAFICO
+    # ======================================================
 
     plt.figure(figsize=(6,3))
     plt.bar(zone_df["Zona"], zone_df["A (W)"])
@@ -255,14 +333,19 @@ if st.button("Genera PDF Performance"):
     plt.savefig("chart.png")
     plt.close()
 
+    pdf.section_title("DISTRIBUZIONE ZONE FTP")
     pdf.image("chart.png", x=pdf.l_margin, w=170)
     os.remove("chart.png")
+
+    # ======================================================
+    # OUTPUT
+    # ======================================================
 
     pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
     st.download_button(
-        "Scarica PDF",
+        "Scarica PDF Completo",
         data=pdf_bytes,
-        file_name="report_performance.pdf",
+        file_name="report_performance_completo.pdf",
         mime="application/pdf"
     )
