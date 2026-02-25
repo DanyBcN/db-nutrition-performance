@@ -214,6 +214,20 @@ st.write(f"W/kg: {wkg:.2f}")
 
 st.markdown("---")
 
+# Classificazione livello ciclistico
+
+if wkg < 2.5:
+    livello = "Principiante"
+elif wkg < 3.2:
+    livello = "Amatore"
+elif wkg < 4.0:
+    livello = "Buono"
+elif wkg < 5.0:
+    livello = "Avanzato"
+else:
+    livello = "Elite"
+
+st.write(f"Livello prestativo stimato: {livello}")
 # ======================================================
 # ZONE POTENZA
 # ======================================================
