@@ -296,6 +296,7 @@ if nuovo_peso > 0 and ftp > 0:
 
 st.markdown("---")
 
+
 # ======================================================
 # PDF PROFESSIONALE DEFINITIVO
 # ======================================================
@@ -338,6 +339,7 @@ if st.button("Genera PDF Professionale"):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
+    # DATI ANAGRAFICI
     pdf.section_title("Dati Anagrafici")
     pdf.normal(
         f"Nome: {nome}\n"
@@ -346,6 +348,7 @@ if st.button("Genera PDF Professionale"):
         f"Eta: {eta} anni"
     )
 
+    # ANTROPOMETRIA
     pdf.section_title("Antropometria")
     pdf.normal(
         f"Peso: {peso:.1f} kg\n"
@@ -357,12 +360,7 @@ if st.button("Genera PDF Professionale"):
         f"Massa magra: {massa_magra:.2f} kg"
     )
 
-    pdf.section_title("Grafico BMI")
-    pdf.image("bmi_chart.png", x=30, w=150)
-
-    pdf.section_title("Grafico Massa Grassa")
-    pdf.image("fm_chart.png", x=30, w=150)
-
+    # PERFORMANCE
     pdf.section_title("Performance")
     pdf.normal(
         f"Metodo FTP: {metodo}\n"
@@ -370,47 +368,44 @@ if st.button("Genera PDF Professionale"):
         f"FTP calcolata: {ftp:.2f} W\n"
         f"W/kg: {wkg:.2f}"
     )
-if not zone_df.empty:
 
+    # ZONE POTENZA
+    if not zone_df.empty:
 
-    
-    pdf.section_title("Zone Potenza")
+        pdf.section_title("Zone Potenza")
 
-    pdf.set_font("Arial", "B", 10)
-    pdf.set_fill_color(220, 230, 241)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(220, 230, 241)
 
-    pdf.cell(90, 8, "Zona", 1, 0, "C", True)
-    pdf.cell(30, 8, "Da (W)", 1, 0, "C", True)
-    pdf.cell(30, 8, "A (W)", 1, 1, "C", True)
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (W)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (W)", 1, 1, "C", True)
 
-    pdf.set_font("Arial", "", 10)
+        pdf.set_font("Arial", "", 10)
 
-    for _, row in zone_df.iterrows():
-        pdf.cell(90, 8, row["Zona"], 1)
-        pdf.cell(30, 8, str(row["Da (W)"]), 1, 0, "C")
-        pdf.cell(30, 8, str(row["A (W)"]), 1, 1, "C")
-    for _, row in zone_df.iterrows():
-        pdf.cell(90, 8, row["Zona"], 1)
-        pdf.cell(30, 8, str(row["Da (W)"]), 1, 0, "C")
-        pdf.cell(30, 8, str(row["A (W)"]), 1, 1, "C")
+        for _, row in zone_df.iterrows():
+            pdf.cell(90, 8, row["Zona"], 1)
+            pdf.cell(30, 8, str(row["Da (W)"]), 1, 0, "C")
+            pdf.cell(30, 8, str(row["A (W)"]), 1, 1, "C")
 
-   if not zone_hr_df.empty:
+    # ZONE CARDIO
+    if not zone_hr_df.empty:
 
-    pdf.section_title("Zone Cardio")
+        pdf.section_title("Zone Cardio")
 
-    pdf.set_font("Arial", "B", 10)
-    pdf.set_fill_color(220, 230, 241)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(220, 230, 241)
 
-    pdf.cell(90, 8, "Zona", 1, 0, "C", True)
-    pdf.cell(30, 8, "Da (bpm)", 1, 0, "C", True)
-    pdf.cell(30, 8, "A (bpm)", 1, 1, "C", True)
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (bpm)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (bpm)", 1, 1, "C", True)
 
-    pdf.set_font("Arial", "", 10)
+        pdf.set_font("Arial", "", 10)
 
-    for _, row in zone_hr_df.iterrows():
-        pdf.cell(90, 8, row["Zona"], 1)
-        pdf.cell(30, 8, str(row["Da (bpm)"]), 1, 0, "C")
-        pdf.cell(30, 8, str(row["A (bpm)"]), 1, 1, "C")
+        for _, row in zone_hr_df.iterrows():
+            pdf.cell(90, 8, row["Zona"], 1)
+            pdf.cell(30, 8, str(row["Da (bpm)"]), 1, 0, "C")
+            pdf.cell(30, 8, str(row["A (bpm)"]), 1, 1, "C")
 
     pdf.output("report_performance_professionale.pdf")
 
