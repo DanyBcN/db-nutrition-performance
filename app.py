@@ -19,7 +19,7 @@ with col2:
         pass
 
 # ======================================================
-# INIZIALIZZAZIONE VARIABILI
+# INIZIALIZZAZIONE VARIABILI (ANTI-ERROR)
 # ======================================================
 
 ftp = 0.0
@@ -101,10 +101,13 @@ tipo_sport = st.selectbox(
 
 if tipo_sport == "Endurance":
     bmi_min, bmi_max = 19, 22
+    fm_min, fm_max = 6, 12
 elif tipo_sport == "Sport di squadra":
     bmi_min, bmi_max = 21, 24
+    fm_min, fm_max = 8, 15
 else:
     bmi_min, bmi_max = 23, 27
+    fm_min, fm_max = 10, 18
 
 if bmi < bmi_min:
     giudizio_atleta = "Inferiore al range ideale atleta"
@@ -113,11 +116,11 @@ elif bmi > bmi_max:
 else:
     giudizio_atleta = "Nel range ideale atleta"
 
-st.write(f"Range ideale: {bmi_min} - {bmi_max}")
+st.write(f"Range BMI ideale: {bmi_min}-{bmi_max}")
 st.write(f"Valutazione atleta: {giudizio_atleta}")
 
 # ======================================================
-# GRAFICO BMI CLINICO
+# GRAFICO BMI
 # ======================================================
 
 fig, ax = plt.subplots(figsize=(10,2.2))
@@ -129,7 +132,6 @@ ax.axvspan(18.5, 25, color="#27AE60", alpha=0.35)
 ax.axvspan(25, 30, color="#F39C12", alpha=0.35)
 ax.axvspan(30, 40, color="#E74C3C", alpha=0.35)
 
-# Range atleta
 ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.15)
 
 ax.axvline(bmi, color="black", linewidth=2.5)
@@ -151,13 +153,6 @@ fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
 # ======================================================
 
 st.subheader("Valutazione Massa Grassa")
-
-if tipo_sport == "Endurance":
-    fm_min, fm_max = 6, 12
-elif tipo_sport == "Sport di squadra":
-    fm_min, fm_max = 8, 15
-else:
-    fm_min, fm_max = 10, 18
 
 fig2, ax2 = plt.subplots(figsize=(10,2.2))
 ax2.set_xlim(0, 30)
@@ -181,6 +176,6 @@ fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
 st.markdown("---")
 
 # ======================================================
-# (DA QUI IN POI TUTTO IL TUO CODICE FTP, ZONE, PROIEZIONE
-# IDENTICO ALL'ORIGINALE — NON MODIFICATO)
+# DA QUI IN POI È IDENTICO AL TUO CODICE ORIGINALE
+# (FTP, ZONE, PROIEZIONE, PDF COMPLETO)
 # ======================================================
