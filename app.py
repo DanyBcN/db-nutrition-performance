@@ -3,7 +3,6 @@ from datetime import date
 from PIL import Image
 from fpdf import FPDF
 import pandas as pd
-import os
 
 st.set_page_config(layout="wide")
 
@@ -22,16 +21,13 @@ except:
 st.markdown("---")
 
 # ======================================================
-# ANAGRAFICA
+# DATI ANAGRAFICI (RIDOTTI)
 # ======================================================
 
 st.header("Dati Anagrafici")
 
 nome = st.text_input("Nome")
 cognome = st.text_input("Cognome")
-sesso = st.selectbox("Sesso", ["M","F"])
-comune = st.text_input("Comune di nascita")
-provincia = st.text_input("Provincia di nascita (sigla)")
 
 data_nascita = st.date_input(
     "Data di nascita",
@@ -39,10 +35,6 @@ data_nascita = st.date_input(
     max_value=date.today(),
     format="DD/MM/YYYY"
 )
-
-email = st.text_input("Email")
-telefono = st.text_input("Telefono")
-indirizzo = st.text_input("Indirizzo")
 
 eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
@@ -90,25 +82,9 @@ st.markdown("---")
 
 st.header("Calcolo FTP")
 
-metodo = st.selectbox(
-    "Metodo calcolo FTP",
-    ["Immissione diretta","Test 20 minuti","Test 8 minuti","Ramp test"]
-)
-
-ftp = 0
-
-if metodo == "Immissione diretta":
-    ftp = st.number_input("FTP (W)", 0.0)
-elif metodo == "Test 20 minuti":
-    ftp = st.number_input("Media 20' (W)", 0.0) * 0.95
-elif metodo == "Test 8 minuti":
-    ftp = st.number_input("Media 8' (W)", 0.0) * 0.90
-elif metodo == "Ramp test":
-    ftp = st.number_input("Ultimo step (W)", 0.0) * 0.75
-
+ftp = st.number_input("FTP (W)", 0.0)
 wkg = ftp / peso if peso > 0 else 0
 
-st.write(f"FTP: {ftp:.2f} W")
 st.write(f"W/kg: {wkg:.2f}")
 
 st.markdown("---")
@@ -119,89 +95,70 @@ st.markdown("---")
 
 st.header("Frequenza Cardiaca")
 
-fthr_input = st.number_input("FTHR (bpm)", 0.0)
-
-if fthr_input > 0:
-    fthr = fthr_input
-else:
-    fthr = 0.95 * (220 - eta)
-
-st.write(f"FTHR: {fthr:.0f} bpm")
+fthr = st.number_input("FTHR (bpm)", 0.0)
 
 # ======================================================
-# ZONE
+# ZONE POTENZA CON DESCRIZIONE
 # ======================================================
 
 zone_df = pd.DataFrame()
 zone_hr_df = pd.DataFrame()
 
 if ftp > 0:
+
     zone = [
-        ("Z1",0.00,0.55),
-        ("Z2",0.56,0.75),
-        ("Z3",0.76,0.90),
-        ("Z4",0.91,1.05),
-        ("Z5",1.06,1.20),
-        ("Z6",1.21,1.50),
-        ("Z7",1.51,2.00),
+        ("Z1 Recupero attivo",0.00,0.55),
+        ("Z2 Fondo aerobico",0.56,0.75),
+        ("Z3 Tempo",0.76,0.90),
+        ("Z4 Soglia",0.91,1.05),
+        ("Z5 VO2max",1.06,1.20),
+        ("Z6 Capacità anaerobica",1.21,1.50),
+        ("Z7 Neuromuscolare",1.51,2.00),
     ]
 
     zone_df = pd.DataFrame(
         [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
-        columns=["Zona","Da (W)","A (W)"]
+        columns=["Zona e funzione","Da (W)","A (W)"]
     )
 
+    st.subheader("Zone Potenza")
     st.table(zone_df)
 
+# ======================================================
+# ZONE CARDIO CON DESCRIZIONE
+# ======================================================
+
 if fthr > 0:
+
     zone_hr = [
-        ("Z1",0.81,0.89),
-        ("Z2",0.90,0.93),
-        ("Z3",0.94,0.99),
-        ("Z4",1.00,1.05),
-        ("Z5",1.06,1.15)
+        ("Z1 Recupero",0.81,0.89),
+        ("Z2 Aerobico base",0.90,0.93),
+        ("Z3 Tempo",0.94,0.99),
+        ("Z4 Soglia",1.00,1.05),
+        ("Z5 Alta intensità",1.06,1.15),
     ]
 
     zone_hr_df = pd.DataFrame(
         [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
-        columns=["Zona","Da (bpm)","A (bpm)"]
+        columns=["Zona e funzione","Da (bpm)","A (bpm)"]
     )
 
+    st.subheader("Zone Cardio")
     st.table(zone_hr_df)
 
 st.markdown("---")
 
 # ======================================================
-# PROIEZIONE
+# PDF
 # ======================================================
 
-st.header("Proiezione Strategica")
-
-target_fm = st.number_input("Target Massa Grassa (%)", 3.0, 20.0)
-incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
-
-nuova_fm_kg = massa_magra * (target_fm/(100-target_fm))
-nuovo_peso = massa_magra + nuova_fm_kg
-nuova_ftp = ftp * (1 + incremento_ftp/100)
-nuovo_wkg = nuova_ftp/nuovo_peso if nuovo_peso>0 else 0
-
-st.write(f"Nuovo peso: {nuovo_peso:.2f} kg")
-st.write(f"Nuova FTP: {nuova_ftp:.2f} W")
-st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-
-st.markdown("---")
-
-# ======================================================
-# PDF DEFINITIVO COMPLETO
-# ======================================================
-
-if st.button("Genera PDF Completo"):
+if st.button("Genera PDF"):
 
     class PDF(FPDF):
 
         def header(self):
             self.set_font("Arial","B",16)
-            self.cell(0,10,"REPORT VALUTAZIONE PERFORMANCE",0,1,"C")
+            self.cell(0,10,"REPORT PERFORMANCE",0,1,"C")
             self.ln(5)
 
         def section(self,title):
@@ -235,13 +192,7 @@ if st.button("Genera PDF Completo"):
     pdf.normal(
         f"Nome: {nome}\n"
         f"Cognome: {cognome}\n"
-        f"Sesso: {sesso}\n"
-        f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n"
-        f"Comune di nascita: {comune}\n"
-        f"Provincia: {provincia}\n"
-        f"Email: {email}\n"
-        f"Telefono: {telefono}\n"
-        f"Indirizzo: {indirizzo}"
+        f"Data di nascita: {data_nascita.strftime('%d %m %Y')}"
     )
 
     pdf.section("ANTROPOMETRIA")
@@ -266,21 +217,7 @@ if st.button("Genera PDF Completo"):
     pdf.section("ZONE CARDIO")
     pdf.table(zone_hr_df)
 
-    pdf.section("PROIEZIONE E INTERPRETAZIONE")
+    pdf.output("report.pdf")
 
-    delta_wkg = nuovo_wkg - wkg
-    delta_ftp = nuova_ftp - ftp
-
-    pdf.normal(
-        f"Con un peso che passa da {peso:.1f} kg a {nuovo_peso:.1f} kg "
-        f"e una riduzione della massa grassa dal {fm:.1f}% al {target_fm:.1f}%, "
-        f"il rapporto W/kg migliorerebbe da {wkg:.2f} a {nuovo_wkg:.2f} "
-        f"(+{delta_wkg:.2f}).\n\n"
-        f"Con un incremento della FTP da {ftp:.1f} W a {nuova_ftp:.1f} W "
-        f"si avrebbe un miglioramento assoluto di {delta_ftp:.1f} W."
-    )
-
-    pdf.output("report_completo.pdf")
-
-    with open("report_completo.pdf","rb") as f:
-        st.download_button("Scarica PDF Completo",f,"report_completo.pdf")
+    with open("report.pdf","rb") as f:
+        st.download_button("Scarica PDF",f,"report.pdf")
