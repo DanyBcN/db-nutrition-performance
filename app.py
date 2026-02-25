@@ -306,20 +306,29 @@ if nuovo_peso > 0 and ftp > 0:
     pendenza = 0.06
     g = 9.81
 
-    def tempo_salita(potenza, peso):
-        forza = peso * g * pendenza
-        velocita = potenza / forza
-        return (lunghezza / velocita) / 60
+   def tempo_salita_realistico(potenza, peso):
+    peso_tot = peso + 8  # bici
+    g = 9.81
+    pendenza = 0.06
+    Crr = 0.004
+    rho = 1.226
+    CdA = 0.32
+    lunghezza = 5000
 
-    tempo_vecchio = tempo_salita(ftp, peso)
-    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
+    velocita = 5  # stima iniziale m/s
 
-    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-    st.write(f"Giudizio: {giudizio}")
-    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
+    for _ in range(50):
+        forza_grav = peso_tot * g * pendenza
+        forza_roll = peso_tot * g * Crr
+        forza_aero = 0.5 * rho * CdA * velocita**2
+        forza_tot = forza_grav + forza_roll + forza_aero
+        velocita = potenza / forza_tot
 
-st.markdown("---")
+    tempo = lunghezza / velocita / 60
+    return tempo
 
+tempo_vecchio = tempo_salita_realistico(ftp, peso)
+tempo_nuovo = tempo_salita_realistico(nuova_ftp, nuovo_peso)
 # ======================================================
 # PDF PROFESSIONALE DEFINITIVO
 # ======================================================
