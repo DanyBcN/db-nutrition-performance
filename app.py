@@ -370,9 +370,10 @@ if st.button("Genera PDF Professionale"):
         f"FTP calcolata: {ftp:.2f} W\n"
         f"W/kg: {wkg:.2f}"
     )
+if not zone_df.empty:
 
-    if not zone_df.empty:
 
+    
     pdf.section_title("Zone Potenza")
 
     pdf.set_font("Arial", "B", 10)
@@ -384,6 +385,10 @@ if st.button("Genera PDF Professionale"):
 
     pdf.set_font("Arial", "", 10)
 
+    for _, row in zone_df.iterrows():
+        pdf.cell(90, 8, row["Zona"], 1)
+        pdf.cell(30, 8, str(row["Da (W)"]), 1, 0, "C")
+        pdf.cell(30, 8, str(row["A (W)"]), 1, 1, "C")
     for _, row in zone_df.iterrows():
         pdf.cell(90, 8, row["Zona"], 1)
         pdf.cell(30, 8, str(row["Da (W)"]), 1, 0, "C")
