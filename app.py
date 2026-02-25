@@ -255,7 +255,163 @@ if fthr > 0:
     st.table(zone_hr_df)
 
 st.markdown("---")
+# ======================================================
+# PDF PROFESSIONALE DEFINITIVO
+# ======================================================
 
+if st.button("Genera PDF Professionale"):
+
+    def safe(text):
+        return text.encode("latin-1", "replace").decode("latin-1")
+
+    class PDF(FPDF):
+
+        def header(self):
+            try:
+                self.image("logo.png", 75, 8, 60)
+                self.ln(30)
+            except:
+                self.ln(20)
+
+            self.set_font("Arial", "B", 18)
+            self.cell(0, 10, "REPORT PERFORMANCE", 0, 1, "C")
+            self.ln(3)
+
+            self.set_draw_color(30, 90, 160)
+            self.set_line_width(1)
+            self.line(10, self.get_y(), 200, self.get_y())
+            self.ln(8)
+
+        def section_title(self, title):
+            self.set_fill_color(230, 240, 255)
+            self.set_font("Arial", "B", 12)
+            self.cell(0, 8, safe(title), 0, 1, "L", True)
+            self.ln(3)
+
+        def normal(self, text):
+            self.set_font("Arial", "", 10)
+            self.multi_cell(0, 6, safe(text))
+            self.ln(3)
+
+    pdf = PDF()
+    pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
+
+    # ================= DATI ANAGRAFICI =================
+
+    pdf.section_title("Dati Anagrafici")
+    pdf.normal(
+        f"Nome: {nome}\n"
+        f"Cognome: {cognome}\n"
+        f"Data di nascita: {data_nascita.strftime('%d/%m/%Y')}\n"
+        f"Eta: {eta} anni"
+    )
+
+    # ================= ANTROPOMETRIA =================
+
+    pdf.section_title("Antropometria")
+    pdf.normal(
+        f"Peso: {peso:.1f} kg\n"
+        f"Altezza: {altezza:.1f} cm\n"
+        f"BMI: {bmi:.2f} ({categoria_bmi})\n"
+        f"Range BMI atleta ({tipo_sport}): {bmi_min}-{bmi_max}\n"
+        f"Valutazione atleta: {giudizio_atleta}\n"
+        f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
+        f"Massa magra: {massa_magra:.2f} kg"
+    )
+
+    pdf.section_title("Grafico BMI")
+    pdf.image("bmi_chart.png", x=30, w=150)
+
+    pdf.section_title("Grafico Massa Grassa")
+    pdf.image("fm_chart.png", x=30, w=150)
+
+    # ================= PERFORMANCE =================
+
+    pdf.section_title("Performance")
+
+    pdf.normal(
+        f"Metodo FTP: {metodo}\n"
+        f"Valore test inserito: {valore_test:.2f} W\n"
+        f"FTP calcolata: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}"
+    )
+
+    # ================= ZONE POTENZA =================
+
+    if not zone_df.empty:
+
+        pdf.section_title("Zone Potenza")
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(200, 220, 255)
+
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (W)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (W)", 1, 1, "C", True)
+
+        pdf.set_font("Arial", "", 10)
+
+        for _, row in zone_df.iterrows():
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (W)"]), 1)
+            pdf.cell(30, 8, str(row["A (W)"]), 1)
+            pdf.ln()
+
+    # ================= ZONE CARDIO =================
+
+    if not zone_hr_df.empty:
+
+        pdf.section_title("Zone Cardio")
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(200, 220, 255)
+
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (bpm)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (bpm)", 1, 1, "C", True)
+
+        pdf.set_font("Arial", "", 10)
+
+        for _, row in zone_hr_df.iterrows():
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (bpm)"]), 1)
+            pdf.cell(30, 8, str(row["A (bpm)"]), 1)
+            pdf.ln()
+
+    # ================= PROIEZIONE =================
+
+    if nuovo_peso > 0 and ftp > 0:
+
+        pdf.ln(6)
+
+        delta_tempo = tempo_vecchio - tempo_nuovo
+
+        pdf.section_title("Proiezione Miglioramento")
+
+        testo_proj = (
+            f"Se il peso passasse da {peso:.1f} kg a {nuovo_peso:.1f} kg "
+            f"e se avesse un incremento della FTP del {incremento_ftp:.1f}%, "
+            f"passando quindi da {ftp:.1f} W a {nuova_ftp:.1f} W, "
+            f"si avrebbe un incremento del rapporto W/kg "
+            f"da {wkg:.2f} a {nuovo_wkg:.2f}.\n"
+            f"Su una salita di 5 chilometri con pendenza media del 6%, "
+            f"il tempo stimato passerebbe da {tempo_vecchio:.1f} minuti "
+            f"a {tempo_nuovo:.1f} minuti, "
+            f"con un miglioramento complessivo stimato di "
+            f"{delta_tempo:.1f} minuti."
+        )
+
+        pdf.normal(testo_proj)
+
+    pdf.output("report_performance_professionale.pdf")
+
+    with open("report_performance_professionale.pdf", "rb") as f:
+        st.download_button(
+            "Scarica PDF Professionale",
+            f,
+            "report_performance_professionale.pdf"
+        )
 # ======================================================
 # PROIEZIONE
 # ======================================================
@@ -284,3 +440,4 @@ if nuovo_peso > 0 and ftp > 0:
     st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
     st.write(f"Giudizio: {giudizio}")
     st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
+
