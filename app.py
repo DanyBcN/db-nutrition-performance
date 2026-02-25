@@ -325,9 +325,7 @@ def tempo_salita_realistico(potenza, peso):
         velocita = potenza / forza_tot
 
     tempo = lunghezza / velocita / 60
-    tempo_vecchio = tempo_salita_realistico(ftp, peso)
-tempo_nuovo = tempo_salita_realistico(nuova_ftp, nuovo_peso)
-return tempo
+    return tempo
 
 # ======================================================
 # PDF PROFESSIONALE DEFINITIVO
