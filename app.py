@@ -2,274 +2,133 @@ import streamlit as st
 from datetime import date
 from fpdf import FPDF
 import pandas as pd
-import math
+import io
 
-st.set_page_config(layout="wide")
+st.set_page_config(page_title="Performance Lab", layout="wide")
 
-# ======================================================
-# DATI ANAGRAFICI
-# ======================================================
+# Funzione per formattazione PDF professionale
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, 'REPORT VALUTAZIONE FUNZIONALE E NUTRIZIONALE', 0, 1, 'C')
+        self.set_draw_color(50, 50, 50)
+        self.line(10, 20, 200, 20)
+        self.ln(10)
 
-st.header("Dati Anagrafici")
+    def chapter_title(self, title):
+        self.set_font('Arial', 'B', 12)
+        self.set_fill_color(230, 230, 230)
+        self.cell(0, 8, f"  {title}", 0, 1, 'L', fill=True)
+        self.ln(4)
 
-nome = st.text_input("Nome")
-cognome = st.text_input("Cognome")
+# --- UI STREAMLIT ---
+st.title("🚴 Performance & Nutrition Analyzer")
 
-data_nascita = st.date_input(
-    "Data di nascita",
-    min_value=date(1920,1,1),
-    max_value=date.today(),
-    format="DD/MM/YYYY"
-)
+col1, col2 = st.columns(2)
 
-eta = date.today().year - data_nascita.year - (
-    (date.today().month, date.today().day) <
-    (data_nascita.month, data_nascita.day)
-)
+with col1:
+    st.subheader("Anagrafica")
+    nome = st.text_input("Nome", "Mario")
+    cognome = st.text_input("Cognome", "Rossi")
+    data_nascita = st.date_input("Data di nascita", date(1990, 1, 1), format="DD/MM/YYYY")
+    
+    eta = date.today().year - data_nascita.year - ((date.today().month, date.today().day) < (data_nascita.month, data_nascita.day))
 
-st.markdown("---")
+with col2:
+    st.subheader("Antropometria")
+    c_p1, c_p2 = st.columns(2)
+    peso = c_p1.number_input("Peso (kg)", 30.0, 150.0, 75.0)
+    altezza = c_p2.number_input("Altezza (cm)", 100.0, 220.0, 175.0)
+    fm = st.slider("Massa Grassa (%)", 3.0, 40.0, 15.0)
 
-# ======================================================
-# ANTROPOMETRIA
-# ======================================================
-
-st.header("Valutazione Antropometrica")
-
-peso = st.number_input("Peso (kg)", 30.0, 200.0)
-altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
-fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
-
+# Calcoli Bioenergetici
 altezza_m = altezza / 100
-bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
+bmi = peso / (altezza_m**2)
 fm_kg = peso * (fm/100)
 massa_magra = peso - fm_kg
 
-st.write(f"BMI: {bmi:.2f}")
-st.write(f"Massa grassa: {fm_kg:.2f} kg")
-st.write(f"Massa magra: {massa_magra:.2f} kg")
+st.divider()
 
-st.markdown("---")
+# --- CALCOLO FTP ---
+st.subheader("Parametri di Potenza (FTP)")
+c_f1, c_f2 = st.columns([1, 2])
 
-# ======================================================
-# CALCOLO FTP
-# ======================================================
+with c_f1:
+    metodo = st.selectbox("Test eseguito", ["Immissione diretta", "Test 20 min", "Ramp Test"])
+    valore_test = st.number_input("Risultato Test (W)", 0, 1000, 250)
+    
+    if "20 min" in metodo: ftp = valore_test * 0.95
+    elif "Ramp" in metodo: ftp = valore_test * 0.75
+    else: ftp = valore_test
+    
+    wkg = ftp / peso
 
-st.header("Calcolo FTP")
+with c_f2:
+    if ftp > 0:
+        zone_data = [
+            ("Z1 - Recovery", 0, 0.55), ("Z2 - Endurance", 0.56, 0.75),
+            ("Z3 - Tempo", 0.76, 0.90), ("Z4 - Threshold", 0.91, 1.05),
+            ("Z5 - VO₂max", 1.06, 1.20), ("Z6 - Anaerobic", 1.21, 1.50)
+        ]
+        zone_df = pd.DataFrame([
+            {"Zona": z, "Min (W)": int(ftp*a), "Max (W)": int(ftp*b)} for z, a, b in zone_data
+        ])
+        st.dataframe(zone_df, use_container_width=True, hide_index=True)
 
-metodo = st.selectbox(
-    "Metodo FTP",
-    ["Immissione diretta","Test 20 minuti","Test 8 minuti","Ramp test"]
-)
+st.divider()
 
-ftp = 0
-valore_test = 0
-
-if metodo == "Immissione diretta":
-    ftp = st.number_input("FTP (W)", 0.0)
-    valore_test = ftp
-
-elif metodo == "Test 20 minuti":
-    valore_test = st.number_input("Media 20 min (W)", 0.0)
-    ftp = valore_test * 0.95
-
-elif metodo == "Test 8 minuti":
-    valore_test = st.number_input("Media 8 min (W)", 0.0)
-    ftp = valore_test * 0.90
-
-elif metodo == "Ramp test":
-    valore_test = st.number_input("Ultimo step completato (W)", 0.0)
-    ftp = valore_test * 0.75
-
-wkg = ftp / peso if peso > 0 else 0
-
-st.write(f"FTP stimata: {ftp:.2f} W")
-st.write(f"W/kg: {wkg:.2f}")
-
-st.markdown("---")
-
-# ======================================================
-# ZONE POTENZA
-# ======================================================
-
-zone_df = pd.DataFrame()
-
-if ftp > 0:
-
-    zone = [
-        ("Z1 Recovery attivo",0.00,0.55),
-        ("Z2 Fondo aerobico",0.56,0.75),
-        ("Z3 Tempo",0.76,0.90),
-        ("Z4 Soglia lattato",0.91,1.05),
-        ("Z5 VO2max",1.06,1.20),
-        ("Z6 Capacita anaerobica",1.21,1.50),
-        ("Z7 Neuromuscolare",1.51,2.00),
-    ]
-
-    zone_df = pd.DataFrame(
-        [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
-        columns=["Zona","Da (W)","A (W)"]
-    )
-
-    st.table(zone_df)
-
-# ======================================================
-# ZONE CARDIO
-# ======================================================
-
-st.header("Frequenza Cardiaca")
-
-fthr = st.number_input("FTHR (bpm)", 0.0)
-
-zone_hr_df = pd.DataFrame()
-
-if fthr > 0:
-
-    zone_hr = [
-        ("Z1 Recupero",0.81,0.89),
-        ("Z2 Aerobico base",0.90,0.93),
-        ("Z3 Tempo",0.94,0.99),
-        ("Z4 Soglia",1.00,1.05),
-        ("Z5 Alta intensita",1.06,1.15),
-    ]
-
-    zone_hr_df = pd.DataFrame(
-        [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
-        columns=["Zona","Da (bpm)","A (bpm)"]
-    )
-
-    st.table(zone_hr_df)
-
-st.markdown("---")
-
-# ======================================================
-# PROIEZIONE PERFORMANCE
-# ======================================================
-
-st.header("Proiezione Performance")
-
-nuovo_peso = st.number_input("Nuovo peso target (kg)", 0.0)
-incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
-
-nuova_ftp = 0
-nuovo_wkg = 0
-tempo_vecchio = 0
-tempo_nuovo = 0
-giudizio = ""
-
-if nuovo_peso > 0 and ftp > 0:
-
-    nuova_ftp = ftp * (1 + incremento_ftp/100)
-    nuovo_wkg = nuova_ftp / nuovo_peso
-    delta_wkg = nuovo_wkg - wkg
-
-    if delta_wkg > 0.3:
-        giudizio = "Miglioramento significativo"
-    elif delta_wkg > 0.1:
-        giudizio = "Miglioramento moderato"
-    else:
-        giudizio = "Miglioramento lieve"
-
-    lunghezza = 5000
-    pendenza = 0.06
-    g = 9.81
-
-    def tempo_salita(potenza, peso):
-        forza = peso * g * pendenza
-        velocita = potenza / forza
-        return (lunghezza / velocita) / 60
-
-    tempo_vecchio = tempo_salita(ftp, peso)
-    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
-
-    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-    st.write(f"Giudizio: {giudizio}")
-    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
-
-st.markdown("---")
-
-# ======================================================
-# PDF COMPLETO DEFINITIVO
-# ======================================================
-
-if st.button("Genera PDF Completo"):
-
-    def safe(text):
-        return text.encode("latin-1","replace").decode("latin-1")
-
-    pdf = FPDF()
+# --- GENERAZIONE PDF ---
+if st.button("🚀 Genera Report PDF Professionale"):
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial","B",16)
-    pdf.cell(0,10,"REPORT PERFORMANCE COMPLETO",0,1,"C")
+    
+    # Sezione Anagrafica e Antropometria
+    pdf.chapter_title("DATI DEL SOGGETTO")
+    pdf.set_font("Arial", "", 10)
+    
+    # Tabella dati rapidi
+    data_info = [
+        ["Paziente:", f"{nome} {cognome}", "Età:", f"{eta} anni"],
+        ["Peso:", f"{peso} kg", "Altezza:", f"{altezza} cm"],
+        ["BMI:", f"{bmi:.1f}", "Massa Magra:", f"{massa_magra:.1f} kg"]
+    ]
+    
+    for row in data_info:
+        pdf.cell(35, 7, row[0], 0)
+        pdf.cell(60, 7, row[1], 0)
+        pdf.cell(35, 7, row[2], 0)
+        pdf.cell(60, 7, row[3], 0)
+        pdf.ln()
+    
     pdf.ln(5)
+    
+    # Sezione Performance
+    pdf.chapter_title("VALUTAZIONE DELLA PERFORMANCE")
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(0, 8, f"FTP Stimata: {int(ftp)} W  ({wkg:.2f} W/kg)", 0, 1)
+    pdf.ln(2)
+    
+    # Tabella Zone Potenza nel PDF
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(200, 220, 255)
+    pdf.cell(70, 8, "Zona di Allenamento", 1, 0, 'C', True)
+    pdf.cell(60, 8, "Range Watt (W)", 1, 1, 'C', True)
+    
+    pdf.set_font("Arial", "", 10)
+    for _, row in zone_df.iterrows():
+        pdf.cell(70, 7, row['Zona'], 1)
+        pdf.cell(60, 7, f"{row['Min (W)']} - {row['Max (W)']} W", 1, 1, 'C')
 
-    pdf.set_font("Arial","",11)
+    # Footer o Note
+    pdf.ln(10)
+    pdf.set_font("Arial", "I", 9)
+    pdf.multi_cell(0, 5, "Nota: I parametri riportati sono stime basate sui test sottomassimali inseriti. Consultare sempre un professionista prima di iniziare programmi di allenamento ad alta intensità.")
 
-    pdf.multi_cell(0,7,safe(
-        f"Nome: {nome}\n"
-        f"Cognome: {cognome}\n"
-        f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n"
-        f"Eta: {eta} anni\n\n"
-        f"Peso: {peso:.1f} kg\n"
-        f"Altezza: {altezza:.1f} cm\n"
-        f"BMI: {bmi:.2f}\n"
-        f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
-        f"Massa magra: {massa_magra:.2f} kg\n\n"
-        f"Metodo FTP: {metodo}\n"
-        f"Valore test inserito: {valore_test:.2f} W\n"
-        f"FTP calcolata: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}\n"
-    ))
-
-    # Tabelle FTP
-    if not zone_df.empty:
-        pdf.ln(4)
-        pdf.set_font("Arial","B",12)
-        pdf.cell(0,8,"Zone Potenza",0,1)
-        pdf.set_font("Arial","",10)
-
-        for _, row in zone_df.iterrows():
-            pdf.multi_cell(0,6,safe(
-                f"{row['Zona']}: {row['Da (W)']} - {row['A (W)']} W"
-            ))
-
-    # Tabelle Cardio
-    if not zone_hr_df.empty:
-        pdf.ln(4)
-        pdf.set_font("Arial","B",12)
-        pdf.cell(0,8,"Zone Cardio",0,1)
-        pdf.set_font("Arial","",10)
-
-        for _, row in zone_hr_df.iterrows():
-            pdf.multi_cell(0,6,safe(
-                f"{row['Zona']}: {row['Da (bpm)']} - {row['A (bpm)']} bpm"
-            ))
-
-    # Proiezione
-    if nuovo_peso > 0 and ftp > 0:
-
-        delta_ftp = nuova_ftp - ftp
-        delta_tempo = tempo_vecchio - tempo_nuovo
-
-        pdf.ln(4)
-        pdf.set_font("Arial","B",12)
-        pdf.cell(0,8,"Proiezione e Miglioramento",0,1)
-        pdf.set_font("Arial","",10)
-
-        pdf.multi_cell(0,7,safe(
-            f"Giudizio: {giudizio}\n\n"
-            f"Peso da {peso:.1f} kg a {nuovo_peso:.1f} kg\n"
-            f"FTP da {ftp:.1f} W a {nuova_ftp:.1f} W (+{delta_ftp:.1f} W)\n"
-            f"W/kg da {wkg:.2f} a {nuovo_wkg:.2f}\n\n"
-            f"Salita 5 km 6%:\n"
-            f"Tempo da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min\n"
-            f"Miglioramento stimato: {delta_tempo:.1f} min"
-        ))
-
-    pdf.output("report_performance_completo.pdf")
-
-    with open("report_performance_completo.pdf","rb") as f:
-        st.download_button(
-            "Scarica PDF Completo",
-            f,
-            "report_performance_completo.pdf"
-        )
+    # Output come buffer per il download
+    pdf_output = pdf.output(dest='S').encode('latin-1')
+    st.download_button(
+        label="📥 Scarica Report PDF",
+        data=pdf_output,
+        file_name=f"Report_{cognome}_{nome}.pdf",
+        mime="application/pdf"
+    )
