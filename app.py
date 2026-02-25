@@ -215,7 +215,7 @@ st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
 st.markdown("---")
 
 # ======================================================
-# PDF COMPLETO PROFESSIONALE
+# PDF PREMIUM REPORT
 # ======================================================
 
 if st.button("Genera PDF"):
@@ -223,41 +223,63 @@ if st.button("Genera PDF"):
     class PDF(FPDF):
 
         def header(self):
-            self.set_font("Arial","B",16)
-            self.cell(0,10,"REPORT VALUTAZIONE PERFORMANCE",0,1,"C")
-            self.ln(5)
+            self.set_font("Arial","B",18)
+            self.cell(0,12,"REPORT VALUTAZIONE PERFORMANCE",0,1,"C")
+            self.set_draw_color(0,0,0)
+            self.line(10,25,200,25)
+            self.ln(8)
 
-        def section(self,title):
-            self.set_font("Arial","B",12)
+        def footer(self):
+            self.set_y(-12)
+            self.set_font("Arial","I",8)
+            self.cell(0,5,f"Pagina {self.page_no()}",0,0,"C")
+
+        def section_title(self,title):
+            self.set_font("Arial","B",13)
             self.cell(0,8,title,0,1)
-            self.ln(2)
+            self.set_draw_color(150,150,150)
+            self.line(10,self.get_y(),200,self.get_y())
+            self.ln(4)
 
-        def normal(self,text):
+        def normal_text(self,text):
             self.set_font("Arial","",10)
             self.multi_cell(0,6,text)
+
+        def kpi_box(self,label,value):
+            self.set_font("Arial","B",11)
+            self.cell(60,8,label,1,0,"C")
+            self.set_font("Arial","",11)
+            self.cell(40,8,value,1,1,"C")
 
         def table(self,df):
             if df.empty:
                 return
             self.set_font("Arial","B",9)
-            col_width = self.w/(len(df.columns)+1)
+            col_width = 50
+
             for col in df.columns:
                 self.cell(col_width,8,col,1,0,"C")
             self.ln()
+
             self.set_font("Arial","",9)
             for row in df.values:
                 for item in row:
                     self.cell(col_width,8,str(item),1,0,"C")
                 self.ln()
 
+
     pdf = PDF()
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    pdf.section("DATI ANAGRAFICI")
-    pdf.normal(
-        f"Nome: {nome}\n"
-        f"Cognome: {cognome}\n"
+    # ======================================================
+    # ANAGRAFICA
+    # ======================================================
+
+    pdf.section_title("DATI ANAGRAFICI")
+
+    pdf.normal_text(
+        f"Nome: {nome} {cognome}\n"
         f"Sesso: {sesso}\n"
         f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n"
         f"Email: {email}\n"
@@ -265,46 +287,67 @@ if st.button("Genera PDF"):
         f"Indirizzo: {indirizzo}"
     )
 
-    pdf.ln(4)
+    pdf.ln(5)
 
-    pdf.section("ANTROPOMETRIA")
-    pdf.normal(
+    # ======================================================
+    # KPI PRINCIPALI
+    # ======================================================
+
+    pdf.section_title("INDICATORI PRINCIPALI")
+
+    pdf.kpi_box("BMI", f"{bmi:.2f} ({classificazione})")
+    pdf.kpi_box("FTP", f"{ftp:.2f} W")
+    pdf.kpi_box("W/kg", f"{wkg:.2f}")
+    pdf.kpi_box("FTHR", f"{fthr:.0f} bpm")
+
+    pdf.ln(5)
+
+    # ======================================================
+    # ANTROPOMETRIA
+    # ======================================================
+
+    pdf.section_title("VALUTAZIONE ANTROPOMETRICA")
+
+    pdf.normal_text(
         f"Peso: {peso:.1f} kg\n"
         f"Altezza: {altezza:.1f} cm\n"
-        f"BMI: {bmi:.2f} ({classificazione})\n"
         f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
         f"Massa magra: {massa_magra:.2f} kg"
     )
 
-    pdf.ln(4)
+    pdf.ln(5)
 
-    pdf.section("PERFORMANCE")
-    pdf.normal(
-        f"FTP: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}\n"
-        f"FTHR: {fthr:.0f} bpm"
-    )
+    # ======================================================
+    # ZONE FTP
+    # ======================================================
 
-    pdf.ln(4)
-
-    pdf.section("ZONE POTENZA")
+    pdf.section_title("ZONE POTENZA (FTP)")
     pdf.table(zone_df)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
-    pdf.section("ZONE CARDIO")
+    # ======================================================
+    # ZONE CARDIO
+    # ======================================================
+
+    pdf.section_title("ZONE CARDIO (FTHR)")
     pdf.table(zone_hr_df)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
-    pdf.section("PROIEZIONE")
-    pdf.normal(
+    # ======================================================
+    # PROIEZIONE
+    # ======================================================
+
+    pdf.section_title("PROIEZIONE STRATEGICA")
+
+    pdf.normal_text(
         f"Nuovo peso stimato: {nuovo_peso:.2f} kg\n"
         f"Nuova FTP stimata: {nuova_ftp:.2f} W\n"
         f"Nuovo W/kg: {nuovo_wkg:.2f}"
     )
 
-    pdf.output("report.pdf")
+    pdf.output("report_premium.pdf")
 
-    with open("report.pdf","rb") as f:
-        st.download_button("Scarica PDF",f,"report.pdf")
+    with open("report_premium.pdf","rb") as f:
+        st.download_button("Scarica PDF Premium",f,"report_premium.pdf")
