@@ -264,41 +264,30 @@ if st.button("Genera PDF Completo"):
     if not zone_hr_df.empty:
         pdf.multi_cell(0,7,"ZONE CARDIO")
         for _, row in zone_hr_df.iterrows():
-            pdf.multi_cell(
-                0,6,
-                f"{row['Zona e funzione']} → {row['Da (bpm)']} - {row['A (bpm)']} bpm"
-            )
-        pdf.ln(3)
+            # ======================================================
+# PROIEZIONE + GIUDIZIO DESCRITTIVO
+# ======================================================
 
-    # ======================================================
-    # PROIEZIONE
-    # ======================================================
+if nuovo_peso > 0:
 
-    if nuovo_peso > 0:
+    delta_wkg = nuovo_wkg - wkg
+    delta_ftp = nuova_ftp - ftp
+    delta_tempo = tempo_vecchio - tempo_nuovo
 
-        pdf.multi_cell(0,7,
-            f"PROIEZIONE PERFORMANCE\n"
-            f"Nuovo peso target: {nuovo_peso:.1f} kg\n"
-            f"Incremento FTP previsto: {incremento_ftp:.1f}%\n"
-            f"Nuova FTP stimata: {nuova_ftp:.2f} W\n"
-            f"Nuovo W/kg: {nuovo_wkg:.2f}\n"
-            f"Giudizio: {giudizio}\n"
-        )
+    testo = (
+        f"PROIEZIONE PERFORMANCE\n\n"
+        f"Giudizio: {giudizio}.\n\n"
+        f"In caso di riduzione del peso corporeo da {peso:.1f} kg "
+        f"a {nuovo_peso:.1f} kg, con una variazione della massa grassa "
+        f"dal {fm:.1f}% al valore target, e un incremento della FTP "
+        f"da {ftp:.1f} W a {nuova_ftp:.1f} W "
+        f"(+{delta_ftp:.1f} W), il rapporto W/kg passerebbe "
+        f"da {wkg:.2f} a {nuovo_wkg:.2f} "
+        f"(+{delta_wkg:.2f}).\n\n"
+        f"Su una salita di 5 km al 6%, il tempo stimato "
+        f"passerebbe da {tempo_vecchio:.1f} minuti "
+        f"a {tempo_nuovo:.1f} minuti, "
+        f"con un miglioramento complessivo di {delta_tempo:.1f} minuti."
+    )
 
-        pdf.ln(3)
-
-        pdf.multi_cell(0,7,
-            f"SIMULAZIONE SALITA 5 km al 6%\n"
-            f"Tempo attuale: {tempo_vecchio:.1f} min\n"
-            f"Tempo stimato nuovo: {tempo_nuovo:.1f} min\n"
-            f"Miglioramento stimato: {(tempo_vecchio-tempo_nuovo):.1f} min\n"
-        )
-
-    pdf.output("report_completo_finale.pdf")
-
-    with open("report_completo_finale.pdf","rb") as f:
-        st.download_button(
-            "Scarica PDF Completo",
-            f,
-            "report_completo_finale.pdf"
-        )
+    pdf.multi_cell(0,7,testo)
