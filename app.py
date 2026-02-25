@@ -157,34 +157,28 @@ st.markdown("---")
 st.header("Calcolo FTP")
 
 metodo = st.selectbox(
-    "Metodo calcolo FTP",
+    "Metodo FTP",
     ["Immissione diretta","Test 20 minuti","Test 8 minuti","Ramp test"]
 )
 
 ftp = 0
+valore_test = 0.0   # <<< IMPORTANTE: inizializzazione sicura
 
 if metodo == "Immissione diretta":
-    ftp = st.number_input("Inserisci FTP (W)", 0.0)
+    valore_test = st.number_input("FTP (W)", 0.0)
+    ftp = valore_test
 
 elif metodo == "Test 20 minuti":
-    p20 = st.number_input("Potenza media 20' (W)", 0.0)
-    ftp = p20 * 0.95
+    valore_test = st.number_input("Media 20 min (W)", 0.0)
+    ftp = valore_test * 0.95
 
 elif metodo == "Test 8 minuti":
-    p8 = st.number_input("Potenza media 8' (W)", 0.0)
-    ftp = p8 * 0.90
+    valore_test = st.number_input("Media 8 min (W)", 0.0)
+    ftp = valore_test * 0.90
 
 elif metodo == "Ramp test":
-    ultimo_step = st.number_input("Ultimo step completato (W)", 0.0)
-    ftp = ultimo_step * 0.75
-
-st.write(f"FTP calcolata: {ftp:.2f} W")
-
-wkg = ftp / peso if peso > 0 else 0
-st.write(f"W/kg: {wkg:.2f}")
-
-st.markdown("---")
-
+    valore_test = st.number_input("Ultimo step completato (W)", 0.0)
+    ftp = valore_test * 0.75
 # ======================================================
 # FTHR
 # ======================================================
