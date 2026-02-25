@@ -188,40 +188,117 @@ if nuovo_peso > 0:
     st.write(f"Guadagno: {(tempo_vecchio-tempo_nuovo):.1f} min")
 
 # ======================================================
-# PDF
+# PDF COMPLETO DEFINITIVO (TUTTI I DATI DEL FORM)
 # ======================================================
 
-if st.button("Genera PDF"):
+if st.button("Genera PDF Completo"):
 
     pdf = FPDF()
     pdf.add_page()
+
     pdf.set_font("Arial","B",16)
     pdf.cell(0,10,"REPORT PERFORMANCE COMPLETO",0,1,"C")
     pdf.ln(5)
 
     pdf.set_font("Arial","",11)
 
+    # ======================================================
+    # DATI ANAGRAFICI
+    # ======================================================
+
     pdf.multi_cell(0,7,
-        f"Nome: {nome} {cognome}\n"
-        f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n\n"
-        f"Peso: {peso:.1f} kg\n"
-        f"BMI: {bmi:.2f}\n"
-        f"Massa grassa: {fm:.1f}%\n\n"
-        f"FTP: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}\n\n"
+        f"DATI ANAGRAFICI\n"
+        f"Nome: {nome}\n"
+        f"Cognome: {cognome}\n"
+        f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n"
+        f"Età: {eta} anni\n"
     )
 
+    pdf.ln(3)
+
+    # ======================================================
+    # ANTROPOMETRIA
+    # ======================================================
+
+    pdf.multi_cell(0,7,
+        f"ANTROPOMETRIA\n"
+        f"Peso: {peso:.1f} kg\n"
+        f"Altezza: {altezza:.1f} cm\n"
+        f"BMI: {bmi:.2f}\n"
+        f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
+        f"Massa magra: {massa_magra:.2f} kg\n"
+    )
+
+    pdf.ln(3)
+
+    # ======================================================
+    # FTP
+    # ======================================================
+
+    pdf.multi_cell(0,7,
+        f"CALCOLO FTP\n"
+        f"Metodo utilizzato: {metodo}\n"
+        f"FTP risultante: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}\n"
+    )
+
+    pdf.ln(3)
+
+    # ======================================================
+    # ZONE POTENZA
+    # ======================================================
+
     if not zone_df.empty:
-        pdf.multi_cell(0,6,"\nZone Potenza:")
+        pdf.multi_cell(0,7,"ZONE POTENZA")
         for _, row in zone_df.iterrows():
-            pdf.multi_cell(0,6,f"{row[0]}: {row[1]} - {row[2]} W")
+            pdf.multi_cell(
+                0,6,
+                f"{row['Zona e funzione']} → {row['Da (W)']} - {row['A (W)']} W"
+            )
+        pdf.ln(3)
+
+    # ======================================================
+    # ZONE CARDIO
+    # ======================================================
 
     if not zone_hr_df.empty:
-        pdf.multi_cell(0,6,"\nZone Cardio:")
+        pdf.multi_cell(0,7,"ZONE CARDIO")
         for _, row in zone_hr_df.iterrows():
-            pdf.multi_cell(0,6,f"{row[0]}: {row[1]} - {row[2]} bpm")
+            pdf.multi_cell(
+                0,6,
+                f"{row['Zona e funzione']} → {row['Da (bpm)']} - {row['A (bpm)']} bpm"
+            )
+        pdf.ln(3)
 
-    pdf.output("report_finale.pdf")
+    # ======================================================
+    # PROIEZIONE
+    # ======================================================
 
-    with open("report_finale.pdf","rb") as f:
-        st.download_button("Scarica PDF",f,"report_finale.pdf")
+    if nuovo_peso > 0:
+
+        pdf.multi_cell(0,7,
+            f"PROIEZIONE PERFORMANCE\n"
+            f"Nuovo peso target: {nuovo_peso:.1f} kg\n"
+            f"Incremento FTP previsto: {incremento_ftp:.1f}%\n"
+            f"Nuova FTP stimata: {nuova_ftp:.2f} W\n"
+            f"Nuovo W/kg: {nuovo_wkg:.2f}\n"
+            f"Giudizio: {giudizio}\n"
+        )
+
+        pdf.ln(3)
+
+        pdf.multi_cell(0,7,
+            f"SIMULAZIONE SALITA 5 km al 6%\n"
+            f"Tempo attuale: {tempo_vecchio:.1f} min\n"
+            f"Tempo stimato nuovo: {tempo_nuovo:.1f} min\n"
+            f"Miglioramento stimato: {(tempo_vecchio-tempo_nuovo):.1f} min\n"
+        )
+
+    pdf.output("report_completo_finale.pdf")
+
+    with open("report_completo_finale.pdf","rb") as f:
+        st.download_button(
+            "Scarica PDF Completo",
+            f,
+            "report_completo_finale.pdf"
+        )
