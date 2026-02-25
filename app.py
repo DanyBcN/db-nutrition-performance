@@ -62,9 +62,7 @@ metodo = st.selectbox(
 )
 
 ftp = 0
-p20 = 0
-p8 = 0
-ultimo = 0
+p20 = p8 = ultimo = 0
 
 if metodo == "Immissione diretta":
     ftp = st.number_input("FTP (W)", 0.0)
@@ -89,13 +87,13 @@ st.write(f"W/kg: {wkg:.2f}")
 st.markdown("---")
 
 # ======================================================
-# ZONE POTENZA
+# ZONE
 # ======================================================
 
 zone_df = pd.DataFrame()
+zone_hr_df = pd.DataFrame()
 
 if ftp > 0:
-
     zone = [
         ("Z1 Recovery attivo",0.00,0.55),
         ("Z2 Fondo aerobico",0.56,0.75),
@@ -105,27 +103,16 @@ if ftp > 0:
         ("Z6 Capacita anaerobica",1.21,1.50),
         ("Z7 Neuromuscolare",1.51,2.00),
     ]
-
     zone_df = pd.DataFrame(
         [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
         columns=["Zona","Da W","A W"]
     )
-
-    st.subheader("Zone Potenza")
     st.table(zone_df)
 
-# ======================================================
-# ZONE CARDIO
-# ======================================================
-
 st.header("Frequenza Cardiaca")
-
 fthr = st.number_input("FTHR (bpm)", 0.0)
 
-zone_hr_df = pd.DataFrame()
-
 if fthr > 0:
-
     zone_hr = [
         ("Z1 Recupero",0.81,0.89),
         ("Z2 Aerobico base",0.90,0.93),
@@ -133,19 +120,16 @@ if fthr > 0:
         ("Z4 Soglia",1.00,1.05),
         ("Z5 Alta intensita",1.06,1.15),
     ]
-
     zone_hr_df = pd.DataFrame(
         [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
         columns=["Zona","Da bpm","A bpm"]
     )
-
-    st.subheader("Zone Cardio")
     st.table(zone_hr_df)
 
 st.markdown("---")
 
 # ======================================================
-# PROIEZIONE PERFORMANCE
+# PROIEZIONE
 # ======================================================
 
 st.header("Proiezione Performance")
@@ -153,10 +137,7 @@ st.header("Proiezione Performance")
 nuovo_peso = st.number_input("Nuovo peso target (kg)", 0.0)
 incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
 
-nuova_ftp = 0
-nuovo_wkg = 0
-tempo_vecchio = 0
-tempo_nuovo = 0
+nuova_ftp = nuovo_wkg = tempo_vecchio = tempo_nuovo = 0
 giudizio = ""
 
 if nuovo_peso > 0 and ftp > 0:
@@ -172,10 +153,6 @@ if nuovo_peso > 0 and ftp > 0:
     else:
         giudizio = "Miglioramento lieve"
 
-    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-    st.write(f"Giudizio: {giudizio}")
-
-    # Simulazione salita
     lunghezza = 5000
     pendenza = 0.06
     g = 9.81
@@ -183,92 +160,88 @@ if nuovo_peso > 0 and ftp > 0:
     def tempo_salita(potenza, peso):
         forza = peso * g * pendenza
         velocita = potenza / forza
-        tempo = lunghezza / velocita
-        return tempo / 60
+        return (lunghezza / velocita) / 60
 
     tempo_vecchio = tempo_salita(ftp, peso)
     tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
 
-    st.subheader("Simulazione salita 5 km al 6%")
-    st.write(f"Tempo attuale: {tempo_vecchio:.1f} min")
-    st.write(f"Tempo stimato: {tempo_nuovo:.1f} min")
-    st.write(f"Guadagno: {(tempo_vecchio-tempo_nuovo):.1f} min")
+    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+    st.write(f"Giudizio: {giudizio}")
+    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
 
 st.markdown("---")
 
 # ======================================================
-# PDF COMPLETO
+# PDF PROFESSIONALE
 # ======================================================
 
-if st.button("Genera PDF Completo"):
+if st.button("Genera PDF Studio Performance"):
 
     def safe_text(text):
-        return text.encode("latin-1", "replace").decode("latin-1")
+        return text.encode("latin-1","replace").decode("latin-1")
 
-    pdf = FPDF()
+    class PDF(FPDF):
+
+        def header(self):
+            self.set_font("Arial","B",18)
+            self.cell(0,10,"STUDIO PERFORMANCE REPORT",0,1,"C")
+            self.ln(3)
+            self.set_draw_color(0,0,0)
+            self.line(10,25,200,25)
+            self.ln(8)
+
+        def section(self,title):
+            self.set_font("Arial","B",12)
+            self.cell(0,8,title,0,1)
+            self.ln(2)
+
+        def normal(self,text):
+            self.set_font("Arial","",10)
+            self.multi_cell(0,6,safe_text(text))
+
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_font("Arial","B",16)
-    pdf.cell(0,10,"REPORT PERFORMANCE COMPLETO",0,1,"C")
-    pdf.ln(5)
 
-    pdf.set_font("Arial","",11)
+    pdf.section("DATI ANAGRAFICI")
+    pdf.normal(
+        f"Nome: {nome}\n"
+        f"Cognome: {cognome}\n"
+        f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n"
+        f"Eta: {eta} anni"
+    )
 
-    testo = f"""
-Nome: {nome}
-Cognome: {cognome}
-Data di nascita: {data_nascita.strftime('%d %m %Y')}
-Eta: {eta} anni
+    pdf.section("ANTROPOMETRIA")
+    pdf.normal(
+        f"Peso: {peso:.1f} kg\n"
+        f"Altezza: {altezza:.1f} cm\n"
+        f"BMI: {bmi:.2f}\n"
+        f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
+        f"Massa magra: {massa_magra:.2f} kg"
+    )
 
-Peso: {peso:.1f} kg
-Altezza: {altezza:.1f} cm
-BMI: {bmi:.2f}
-Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)
-Massa magra: {massa_magra:.2f} kg
-
-Metodo FTP: {metodo}
-FTP: {ftp:.2f} W
-W/kg: {wkg:.2f}
-"""
-
-    pdf.multi_cell(0,7,safe_text(testo))
-
-    if not zone_df.empty:
-        pdf.ln(3)
-        pdf.multi_cell(0,7,"ZONE POTENZA")
-        for _, row in zone_df.iterrows():
-            pdf.multi_cell(0,6,safe_text(f"{row[0]}: {row[1]} - {row[2]} W"))
-
-    if not zone_hr_df.empty:
-        pdf.ln(3)
-        pdf.multi_cell(0,7,"ZONE CARDIO")
-        for _, row in zone_hr_df.iterrows():
-            pdf.multi_cell(0,6,safe_text(f"{row[0]}: {row[1]} - {row[2]} bpm"))
+    pdf.section("PERFORMANCE")
+    pdf.normal(
+        f"Metodo FTP: {metodo}\n"
+        f"FTP: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}"
+    )
 
     if nuovo_peso > 0 and ftp > 0:
         delta_ftp = nuova_ftp - ftp
         delta_tempo = tempo_vecchio - tempo_nuovo
 
-        testo_proiezione = f"""
-PROIEZIONE
-
-Giudizio: {giudizio}
-
-Peso da {peso:.1f} kg a {nuovo_peso:.1f} kg
-FTP da {ftp:.1f} W a {nuova_ftp:.1f} W
-W/kg da {wkg:.2f} a {nuovo_wkg:.2f}
-
-Salita 5 km 6%:
-Tempo da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min
-Miglioramento: {delta_tempo:.1f} min
-"""
-
-        pdf.multi_cell(0,7,safe_text(testo_proiezione))
-
-    pdf.output("report_performance_completo.pdf")
-
-    with open("report_performance_completo.pdf","rb") as f:
-        st.download_button(
-            "Scarica PDF Completo",
-            f,
-            "report_performance_completo.pdf"
+        pdf.section("PROIEZIONE STRATEGICA")
+        pdf.normal(
+            f"Giudizio: {giudizio}\n\n"
+            f"Peso da {peso:.1f} kg a {nuovo_peso:.1f} kg\n"
+            f"FTP da {ftp:.1f} W a {nuova_ftp:.1f} W\n"
+            f"W/kg da {wkg:.2f} a {nuovo_wkg:.2f}\n\n"
+            f"Salita 5 km 6%:\n"
+            f"Tempo da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min\n"
+            f"Miglioramento: {delta_tempo:.1f} min"
         )
+
+    pdf.output("studio_performance_report.pdf")
+
+    with open("studio_performance_report.pdf","rb") as f:
+        st.download_button("Scarica PDF Studio",f,"studio_performance_report.pdf")
