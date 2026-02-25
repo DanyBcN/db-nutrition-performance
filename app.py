@@ -304,22 +304,109 @@ if st.button("Genera PDF Premium Elegante"):
     pdf.multi_cell(0,6,f"Massa magra: {massa_magra:.2f} kg")
     pdf.ln(4)
 
-    # ==================================================
-    # PERFORMANCE
-    # ==================================================
-    pdf.section_title("PERFORMANCE")
+    # ======================================================
+# PDF PERFORMANCE ÉLITE
+# ======================================================
 
-    pdf.multi_cell(0,6,f"Metodo FTP: {metodo}")
-    pdf.multi_cell(0,6,f"FTP: {ftp:.2f} W")
-    pdf.multi_cell(0,6,f"W/kg: {wkg:.2f}")
-    pdf.multi_cell(0,6,f"FTHR: {fthr:.0f} bpm")
-    pdf.ln(4)
+if st.button("Genera PDF Élite"):
+
+    import matplotlib.pyplot as plt
+    import os
+
+    class PDF(FPDF):
+
+        def header(self):
+            try:
+                self.image("logo.png", 80, 8, 50)
+                self.ln(28)
+            except:
+                self.ln(18)
+
+            self.set_font("Arial","B",16)
+            self.cell(0,10,"PERFORMANCE REPORT",0,1,"C")
+
+            self.set_font("Arial","",11)
+            self.cell(0,6,f"{nome} {cognome}",0,1,"C")
+            self.ln(6)
+
+        def footer(self):
+            self.set_y(-12)
+            self.set_font("Arial","I",8)
+            self.cell(0,5,f"Pagina {self.page_no()}",0,0,"C")
+
+        def section_title(self, title):
+            self.set_font("Arial","B",12)
+            self.set_fill_color(240,240,240)
+            self.cell(0,8,title,0,1,"L",True)
+            self.ln(3)
+
+        def kpi_box(self, label, value, x, y):
+            w = 40
+            h = 22
+            self.set_xy(x,y)
+            self.set_fill_color(245,245,245)
+            self.rect(x,y,w,h,"DF")
+
+            self.set_font("Arial","B",9)
+            self.cell(w,h/2,label,0,2,"C")
+
+            self.set_font("Arial","B",14)
+            self.cell(w,h/2,value,0,2,"C")
+
+    pdf = PDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
 
     # ==================================================
-    # ZONE POTENZA
+    # KPI CENTRATI
+    # ==================================================
+    pdf.section_title("KEY PERFORMANCE INDICATORS")
+
+    y = pdf.get_y()
+    page_width = pdf.w - 2 * pdf.l_margin
+    total_width = 4*40 + 3*10
+    start_x = (page_width - total_width)/2 + pdf.l_margin
+
+    pdf.kpi_box("BMI", f"{bmi:.2f}", start_x, y)
+    pdf.kpi_box("FTP", f"{ftp:.0f} W", start_x+50, y)
+    pdf.kpi_box("W/kg", f"{wkg:.2f}", start_x+100, y)
+    pdf.kpi_box("FM%", f"{fm:.1f}", start_x+150, y)
+
+    pdf.ln(30)
+
+    # ==================================================
+    # ZONE COLOR BAR
     # ==================================================
     pdf.section_title("ZONE DI POTENZA")
 
+    zone_colors = [
+        (0,180,0),     # verde
+        (120,200,0),
+        (200,200,0),
+        (255,165,0),
+        (255,120,0),
+        (255,60,0),
+        (220,0,0)      # rosso
+    ]
+
+    zone = [
+        ("Z1",0.00,0.55),("Z2",0.56,0.75),("Z3",0.76,0.90),
+        ("Z4",0.91,1.05),("Z5",1.06,1.20),
+        ("Z6",1.21,1.50),("Z7",1.51,2.00)
+    ]
+
+    bar_width = (pdf.w - 2*pdf.l_margin) / len(zone)
+    y_bar = pdf.get_y()
+
+    for i,(z,a,b) in enumerate(zone):
+        pdf.set_fill_color(*zone_colors[i])
+        pdf.rect(pdf.l_margin + i*bar_width, y_bar, bar_width, 10, "F")
+
+    pdf.ln(15)
+
+    # ==================================================
+    # TABELLA ZONE POTENZA
+    # ==================================================
     pdf.set_font("Arial","B",10)
     pdf.cell(40,8,"Zona",1)
     pdf.cell(60,8,"Da (W)",1)
@@ -327,49 +414,37 @@ if st.button("Genera PDF Premium Elegante"):
 
     pdf.set_font("Arial","",10)
 
-    zone = [
-        ("Z1",0.00,0.55),("Z2",0.56,0.75),("Z3",0.76,0.90),
-        ("Z4",0.91,1.05),("Z5",1.06,1.20),
-        ("Z6",1.21,1.50),("Z7",1.51,2.00),
-    ]
-
     for z,a,b in zone:
         pdf.cell(40,8,z,1)
         pdf.cell(60,8,str(round(a*ftp)),1)
         pdf.cell(60,8,str(round(b*ftp)),1,1)
 
-    pdf.ln(5)
+    pdf.ln(6)
 
     # ==================================================
-    # ZONE CARDIO
+    # GRAFICO AUTOMATICO
     # ==================================================
-    pdf.section_title("ZONE CARDIO")
+    zone_labels = [z for z,_,_ in zone]
+    zone_values = [round(b*ftp) for _,_,b in zone]
 
-    pdf.set_font("Arial","B",10)
-    pdf.cell(40,8,"Zona",1)
-    pdf.cell(60,8,"Da (bpm)",1)
-    pdf.cell(60,8,"A (bpm)",1,1)
+    plt.figure(figsize=(6,3))
+    plt.bar(zone_labels, zone_values)
+    plt.title("Distribuzione Zone FTP")
+    plt.tight_layout()
+    plt.savefig("zones_chart.png")
+    plt.close()
 
-    pdf.set_font("Arial","",10)
+    pdf.image("zones_chart.png", x=pdf.l_margin, w=170)
+    os.remove("zones_chart.png")
 
-    zone_hr = [
-        ("Z1",0.81,0.89),("Z2",0.90,0.93),
-        ("Z3",0.94,0.99),("Z4",1.00,1.05),
-        ("Z5",1.06,1.15)
-    ]
-
-    for z,a,b in zone_hr:
-        pdf.cell(40,8,z,1)
-        pdf.cell(60,8,str(round(a*fthr)),1)
-        pdf.cell(60,8,str(round(b*fthr)),1,1)
-
-    pdf.ln(5)
+    pdf.ln(10)
 
     # ==================================================
     # PROIEZIONE
     # ==================================================
     pdf.section_title("PROIEZIONE STRATEGICA")
 
+    pdf.set_font("Arial","",10)
     pdf.multi_cell(0,6,f"Target FM: {target_fm:.2f}%")
     pdf.multi_cell(0,6,f"Incremento FTP: {incremento_ftp:.2f}%")
     pdf.multi_cell(0,6,f"Nuovo peso: {nuovo_peso:.2f} kg")
@@ -379,8 +454,8 @@ if st.button("Genera PDF Premium Elegante"):
     pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
     st.download_button(
-        "Scarica PDF Premium Elegante",
+        "Scarica PDF Performance Élite",
         data=pdf_bytes,
-        file_name="report_premium_elegante.pdf",
+        file_name="report_performance_elite.pdf",
         mime="application/pdf"
     )
