@@ -5,6 +5,31 @@ import pandas as pd
 import math
 import matplotlib.pyplot as plt
 
+# ======================================================
+# FUNZIONE MODELLO SALITA REALISTICO
+# ======================================================
+
+def tempo_salita_realistico(potenza, peso):
+    peso_tot = peso + 8
+    g = 9.81
+    pendenza = 0.06
+    Crr = 0.004
+    rho = 1.226
+    CdA = 0.32
+    lunghezza = 5000
+
+    velocita = 5
+
+    for _ in range(50):
+        forza_grav = peso_tot * g * pendenza
+        forza_roll = peso_tot * g * Crr
+        forza_aero = 0.5 * rho * CdA * velocita**2
+        forza_tot = forza_grav + forza_roll + forza_aero
+        velocita = potenza / forza_tot
+
+    tempo = lunghezza / velocita / 60
+    return tempo
+
 st.set_page_config(layout="wide")
 
 # ======================================================
