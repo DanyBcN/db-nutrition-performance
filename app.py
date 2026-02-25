@@ -1,134 +1,297 @@
 import streamlit as st
 from datetime import date
+from PIL import Image
 from fpdf import FPDF
 import pandas as pd
-import io
+import numpy as np
 
-st.set_page_config(page_title="Performance Lab", layout="wide")
+st.set_page_config(layout="wide")
 
-# Funzione per formattazione PDF professionale
-class PDF(FPDF):
-    def header(self):
-        self.set_font('Arial', 'B', 12)
-        self.cell(0, 10, 'REPORT VALUTAZIONE FUNZIONALE E NUTRIZIONALE', 0, 1, 'C')
-        self.set_draw_color(50, 50, 50)
-        self.line(10, 20, 200, 20)
-        self.ln(10)
+# ======================================================
+# LOGO CENTRATO
+# ======================================================
 
-    def chapter_title(self, title):
-        self.set_font('Arial', 'B', 12)
-        self.set_fill_color(230, 230, 230)
-        self.cell(0, 8, f"  {title}", 0, 1, 'L', fill=True)
-        self.ln(4)
+try:
+    logo = Image.open("logo.png")
+    c1, c2, c3 = st.columns([1,2,1])
+    with c2:
+        st.image(logo, width=250)
+except:
+    pass
 
-# --- UI STREAMLIT ---
-st.title("🚴 Performance & Nutrition Analyzer")
+st.markdown("---")
 
-col1, col2 = st.columns(2)
+# ======================================================
+# FUNZIONI CODICE FISCALE (STRUTTURALE CORRETTO)
+# ======================================================
 
-with col1:
-    st.subheader("Anagrafica")
-    nome = st.text_input("Nome", "Mario")
-    cognome = st.text_input("Cognome", "Rossi")
-    data_nascita = st.date_input("Data di nascita", date(1990, 1, 1), format="DD/MM/YYYY")
-    
-    eta = date.today().year - data_nascita.year - ((date.today().month, date.today().day) < (data_nascita.month, data_nascita.day))
+mesi_cf = "ABCDEHLMPRST"
 
-with col2:
-    st.subheader("Antropometria")
-    c_p1, c_p2 = st.columns(2)
-    peso = c_p1.number_input("Peso (kg)", 30.0, 150.0, 75.0)
-    altezza = c_p2.number_input("Altezza (cm)", 100.0, 220.0, 175.0)
-    fm = st.slider("Massa Grassa (%)", 3.0, 40.0, 15.0)
+def consonanti(s):
+    return "".join([c for c in s.upper() if c in "BCDFGHJKLMNPQRSTVWXYZ"])
 
-# Calcoli Bioenergetici
-altezza_m = altezza / 100
-bmi = peso / (altezza_m**2)
+def vocali(s):
+    return "".join([c for c in s.upper() if c in "AEIOU"])
+
+def carattere_controllo(cf15):
+    dispari = {
+        **dict(zip("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+        [1,0,5,7,9,13,15,17,19,21,
+         1,0,5,7,9,13,15,17,19,21,
+         2,4,18,20,11,3,6,8,12,14,
+         16,10,22,25,24,23]))
+    }
+
+    pari = {c:i for i,c in enumerate("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")}
+
+    s = 0
+    for i, c in enumerate(cf15):
+        if (i+1) % 2 == 0:
+            s += pari[c]
+        else:
+            s += dispari[c]
+
+    return chr((s % 26) + ord('A'))
+
+def genera_cf(nome, cognome, data, sesso, provincia):
+    cons_cogn = consonanti(cognome)
+    voc_cogn = vocali(cognome)
+    cod_cogn = (cons_cogn + voc_cogn + "XXX")[:3]
+
+    cons_nome = consonanti(nome)
+    if len(cons_nome) >= 4:
+        cod_nome = cons_nome[0] + cons_nome[2] + cons_nome[3]
+    else:
+        cod_nome = (cons_nome + vocali(nome) + "XXX")[:3]
+
+    anno = str(data.year)[2:]
+    mese = mesi_cf[data.month - 1]
+    giorno = data.day + (40 if sesso == "F" else 0)
+    giorno = f"{giorno:02d}"
+
+    codice_prov = provincia.upper().ljust(4,"X")[:4]
+
+    cf15 = cod_cogn + cod_nome + anno + mese + giorno + codice_prov
+    controllo = carattere_controllo(cf15)
+
+    return cf15 + controllo
+
+# ======================================================
+# ANAGRAFICA
+# ======================================================
+
+st.header("Dati Anagrafici")
+
+nome = st.text_input("Nome")
+cognome = st.text_input("Cognome")
+sesso = st.selectbox("Sesso", ["M","F"])
+comune = st.text_input("Comune di nascita")
+provincia = st.text_input("Provincia di nascita (sigla)")
+
+data_nascita = st.date_input(
+    "Data di nascita",
+    min_value=date(1920,1,1),
+    max_value=date.today(),
+    format="DD/MM/YYYY"
+)
+
+email = st.text_input("Email")
+telefono = st.text_input("Telefono")
+indirizzo = st.text_input("Indirizzo")
+
+eta = date.today().year - data_nascita.year - (
+    (date.today().month, date.today().day) <
+    (data_nascita.month, data_nascita.day)
+)
+
+st.write(f"Età: {eta} anni")
+
+cf = ""
+if nome and cognome and provincia:
+    cf = genera_cf(nome, cognome, data_nascita, sesso, provincia)
+
+st.write(f"Codice Fiscale: {cf}")
+
+st.markdown("---")
+
+# ======================================================
+# ANTROPOMETRIA
+# ======================================================
+
+st.header("Valutazione Antropometrica")
+
+peso = st.number_input("Peso (kg)", 30.0, 200.0)
+altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
+fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
+
+bmi = 0
+classificazione = ""
+
+if peso and altezza:
+    altezza_m = altezza / 100
+    bmi = peso / (altezza_m ** 2)
+
+    if bmi < 18.5:
+        classificazione = "Sottopeso"
+    elif bmi < 25:
+        classificazione = "Normopeso"
+    elif bmi < 30:
+        classificazione = "Sovrappeso"
+    else:
+        classificazione = "Obesità"
+
+    st.write(f"BMI: {bmi:.2f} ({classificazione})")
+
 fm_kg = peso * (fm/100)
 massa_magra = peso - fm_kg
 
-st.divider()
+st.write(f"Massa grassa: {fm_kg:.2f} kg")
+st.write(f"Massa magra: {massa_magra:.2f} kg")
 
-# --- CALCOLO FTP ---
-st.subheader("Parametri di Potenza (FTP)")
-c_f1, c_f2 = st.columns([1, 2])
+st.markdown("---")
 
-with c_f1:
-    metodo = st.selectbox("Test eseguito", ["Immissione diretta", "Test 20 min", "Ramp Test"])
-    valore_test = st.number_input("Risultato Test (W)", 0, 1000, 250)
-    
-    if "20 min" in metodo: ftp = valore_test * 0.95
-    elif "Ramp" in metodo: ftp = valore_test * 0.75
-    else: ftp = valore_test
-    
-    wkg = ftp / peso
+# ======================================================
+# CALCOLO FTP
+# ======================================================
 
-with c_f2:
-    if ftp > 0:
-        zone_data = [
-            ("Z1 - Recovery", 0, 0.55), ("Z2 - Endurance", 0.56, 0.75),
-            ("Z3 - Tempo", 0.76, 0.90), ("Z4 - Threshold", 0.91, 1.05),
-            ("Z5 - VO₂max", 1.06, 1.20), ("Z6 - Anaerobic", 1.21, 1.50)
-        ]
-        zone_df = pd.DataFrame([
-            {"Zona": z, "Min (W)": int(ftp*a), "Max (W)": int(ftp*b)} for z, a, b in zone_data
-        ])
-        st.dataframe(zone_df, use_container_width=True, hide_index=True)
+st.header("Calcolo FTP")
 
-st.divider()
+metodo = st.selectbox(
+    "Metodo calcolo FTP",
+    ["Immissione diretta","Test 20 minuti","Test 8 minuti","Ramp test"]
+)
 
-# --- GENERAZIONE PDF ---
-if st.button("🚀 Genera Report PDF Professionale"):
-    pdf = PDF()
-    pdf.add_page()
-    
-    # Sezione Anagrafica e Antropometria
-    pdf.chapter_title("DATI DEL SOGGETTO")
-    pdf.set_font("Arial", "", 10)
-    
-    # Tabella dati rapidi
-    data_info = [
-        ["Paziente:", f"{nome} {cognome}", "Età:", f"{eta} anni"],
-        ["Peso:", f"{peso} kg", "Altezza:", f"{altezza} cm"],
-        ["BMI:", f"{bmi:.1f}", "Massa Magra:", f"{massa_magra:.1f} kg"]
+ftp = 0
+
+if metodo == "Immissione diretta":
+    ftp = st.number_input("Inserisci FTP (W)", 0.0)
+
+elif metodo == "Test 20 minuti":
+    p20 = st.number_input("Potenza media 20' (W)", 0.0)
+    ftp = p20 * 0.95
+
+elif metodo == "Test 8 minuti":
+    p8 = st.number_input("Potenza media 8' (W)", 0.0)
+    ftp = p8 * 0.90
+
+elif metodo == "Ramp test":
+    ultimo_step = st.number_input("Ultimo step completato (W)", 0.0)
+    ftp = ultimo_step * 0.75
+
+st.write(f"FTP calcolata: {ftp:.2f} W")
+
+wkg = ftp / peso if peso > 0 else 0
+st.write(f"W/kg: {wkg:.2f}")
+
+st.markdown("---")
+
+# ======================================================
+# FTHR
+# ======================================================
+
+st.header("Frequenza Cardiaca")
+
+fthr_input = st.number_input("FTHR (bpm) - opzionale", 0.0)
+
+if fthr_input > 0:
+    fthr = fthr_input
+else:
+    fc_max = 220 - eta
+    fthr = 0.95 * fc_max
+    st.write(f"FTHR stimata: {fthr:.0f} bpm")
+
+# ======================================================
+# ZONE POTENZA
+# ======================================================
+
+if ftp > 0:
+    st.subheader("Zone Potenza")
+
+    zone = [
+        ("Z1",0.00,0.55),
+        ("Z2",0.56,0.75),
+        ("Z3",0.76,0.90),
+        ("Z4",0.91,1.05),
+        ("Z5",1.06,1.20),
+        ("Z6",1.21,1.50),
+        ("Z7",1.51,2.00),
     ]
-    
-    for row in data_info:
-        pdf.cell(35, 7, row[0], 0)
-        pdf.cell(60, 7, row[1], 0)
-        pdf.cell(35, 7, row[2], 0)
-        pdf.cell(60, 7, row[3], 0)
-        pdf.ln()
-    
+
+    dati=[]
+    for z,min_p,max_p in zone:
+        dati.append([z,
+                     round(min_p*ftp),
+                     round(max_p*ftp)])
+
+    st.table(pd.DataFrame(dati,columns=["Zona","Da (W)","A (W)"]))
+
+# ======================================================
+# ZONE CARDIO
+# ======================================================
+
+if fthr > 0:
+    st.subheader("Zone Cardio")
+
+    zone_hr=[
+        ("Z1",0.81,0.89),
+        ("Z2",0.90,0.93),
+        ("Z3",0.94,0.99),
+        ("Z4",1.00,1.05),
+        ("Z5",1.06,1.15)
+    ]
+
+    dati_hr=[]
+    for z,min_p,max_p in zone_hr:
+        dati_hr.append([z,
+                        round(min_p*fthr),
+                        round(max_p*fthr)])
+
+    st.table(pd.DataFrame(dati_hr,columns=["Zona","Da (bpm)","A (bpm)"]))
+
+st.markdown("---")
+
+# ======================================================
+# PROIEZIONE
+# ======================================================
+
+st.header("Proiezione Strategica")
+
+target_fm = st.number_input("Target Massa Grassa (%)", 3.0, 20.0)
+incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
+
+nuova_fm_kg = massa_magra * (target_fm/(100-target_fm))
+nuovo_peso = massa_magra + nuova_fm_kg
+nuova_ftp = ftp * (1 + incremento_ftp/100)
+nuovo_wkg = nuova_ftp/nuovo_peso if nuovo_peso>0 else 0
+
+st.write(f"Nuovo peso: {nuovo_peso:.2f} kg")
+st.write(f"Nuova FTP: {nuova_ftp:.2f} W")
+st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+
+st.markdown("---")
+
+# ======================================================
+# PDF COMPLETO
+# ======================================================
+
+if st.button("Genera PDF"):
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Arial", size=11)
+
+    pdf.cell(0,8,"REPORT VALUTAZIONE", ln=True)
     pdf.ln(5)
-    
-    # Sezione Performance
-    pdf.chapter_title("VALUTAZIONE DELLA PERFORMANCE")
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(0, 8, f"FTP Stimata: {int(ftp)} W  ({wkg:.2f} W/kg)", 0, 1)
-    pdf.ln(2)
-    
-    # Tabella Zone Potenza nel PDF
-    pdf.set_font("Arial", "B", 10)
-    pdf.set_fill_color(200, 220, 255)
-    pdf.cell(70, 8, "Zona di Allenamento", 1, 0, 'C', True)
-    pdf.cell(60, 8, "Range Watt (W)", 1, 1, 'C', True)
-    
-    pdf.set_font("Arial", "", 10)
-    for _, row in zone_df.iterrows():
-        pdf.cell(70, 7, row['Zona'], 1)
-        pdf.cell(60, 7, f"{row['Min (W)']} - {row['Max (W)']} W", 1, 1, 'C')
 
-    # Footer o Note
-    pdf.ln(10)
-    pdf.set_font("Arial", "I", 9)
-    pdf.multi_cell(0, 5, "Nota: I parametri riportati sono stime basate sui test sottomassimali inseriti. Consultare sempre un professionista prima di iniziare programmi di allenamento ad alta intensità.")
+    pdf.cell(0,8,f"Nome: {nome} {cognome}", ln=True)
+    pdf.cell(0,8,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')}", ln=True)
+    pdf.cell(0,8,f"Codice Fiscale: {cf}", ln=True)
+    pdf.cell(0,8,f"BMI: {bmi:.2f} ({classificazione})", ln=True)
+    pdf.cell(0,8,f"FTP: {ftp:.2f} W", ln=True)
+    pdf.cell(0,8,f"W/kg: {wkg:.2f}", ln=True)
+    pdf.cell(0,8,f"Nuovo W/kg: {nuovo_wkg:.2f}", ln=True)
 
-    # Output come buffer per il download
-    pdf_output = pdf.output(dest='S').encode('latin-1')
-    st.download_button(
-        label="📥 Scarica Report PDF",
-        data=pdf_output,
-        file_name=f"Report_{cognome}_{nome}.pdf",
-        mime="application/pdf"
-    )
+    pdf.output("report.pdf")
+
+    with open("report.pdf","rb") as f:
+        st.download_button("Scarica PDF",f,"report.pdf")
