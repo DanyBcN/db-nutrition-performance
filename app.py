@@ -193,10 +193,10 @@ if nuovo_peso > 0 and ftp > 0:
 st.markdown("---")
 
 # ======================================================
-# PDF PROFESSIONALE CON LOGO E COLORE
+# PDF PROFESSIONALE DEFINITIVO
 # ======================================================
 
-if st.button("Genera PDF Completo"):
+if st.button("Genera PDF Professionale"):
 
     def safe(text):
         return text.encode("latin-1","replace").decode("latin-1")
@@ -204,19 +204,16 @@ if st.button("Genera PDF Completo"):
     class PDF(FPDF):
 
         def header(self):
-            # LOGO (se presente)
             try:
-                self.image("logo.png", 80, 8, 50)
-                self.ln(25)
+                self.image("logo.png", 75, 8, 60)
+                self.ln(30)
             except:
-                self.ln(15)
+                self.ln(20)
 
-            # Titolo
             self.set_font("Arial","B",18)
             self.cell(0,10,"REPORT PERFORMANCE",0,1,"C")
             self.ln(3)
 
-            # Linea colorata
             self.set_draw_color(30,90,160)
             self.set_line_width(1)
             self.line(10, self.get_y(), 200, self.get_y())
@@ -226,22 +223,23 @@ if st.button("Genera PDF Completo"):
             self.set_fill_color(230,240,255)
             self.set_font("Arial","B",12)
             self.cell(0,8,title,0,1,"L",True)
-            self.ln(2)
+            self.ln(3)
 
         def normal(self, text):
             self.set_font("Arial","",10)
             self.multi_cell(0,6,safe(text))
-            self.ln(2)
+            self.ln(3)
 
     pdf = PDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
     # ======================================================
-    # DATI PRINCIPALI
+    # DATI ANAGRAFICI (COGNOME INCLUSO)
     # ======================================================
 
     pdf.section_title("Dati Anagrafici")
+
     pdf.normal(
         f"Nome: {nome}\n"
         f"Cognome: {cognome}\n"
@@ -249,7 +247,12 @@ if st.button("Genera PDF Completo"):
         f"Eta: {eta} anni"
     )
 
+    # ======================================================
+    # ANTROPOMETRIA
+    # ======================================================
+
     pdf.section_title("Antropometria")
+
     pdf.normal(
         f"Peso: {peso:.1f} kg\n"
         f"Altezza: {altezza:.1f} cm\n"
@@ -258,7 +261,12 @@ if st.button("Genera PDF Completo"):
         f"Massa magra: {massa_magra:.2f} kg"
     )
 
+    # ======================================================
+    # PERFORMANCE
+    # ======================================================
+
     pdf.section_title("Performance")
+
     pdf.normal(
         f"Metodo FTP: {metodo}\n"
         f"Valore test inserito: {valore_test:.2f} W\n"
@@ -267,53 +275,63 @@ if st.button("Genera PDF Completo"):
     )
 
     # ======================================================
-    # TABELLA ZONE POTENZA
+    # TABELLA ZONE POTENZA (NO SPEZZATURA)
     # ======================================================
 
     if not zone_df.empty:
+
+        if pdf.get_y() > 220:
+            pdf.add_page()
 
         pdf.section_title("Zone Potenza")
 
         pdf.set_font("Arial","B",10)
         pdf.set_fill_color(200,220,255)
 
-        pdf.cell(80,8,"Zona",1,0,"C",True)
-        pdf.cell(40,8,"Da (W)",1,0,"C",True)
-        pdf.cell(40,8,"A (W)",1,1,"C",True)
+        pdf.cell(90,8,"Zona",1,0,"C",True)
+        pdf.cell(30,8,"Da (W)",1,0,"C",True)
+        pdf.cell(30,8,"A (W)",1,1,"C",True)
 
         pdf.set_font("Arial","",10)
 
         for _, row in zone_df.iterrows():
-            pdf.cell(80,8,safe(str(row["Zona"])),1)
-            pdf.cell(40,8,str(row["Da (W)"]),1)
-            pdf.cell(40,8,str(row["A (W)"]),1)
+            if pdf.get_y() > 270:
+                pdf.add_page()
+            pdf.cell(90,8,safe(str(row["Zona"])),1)
+            pdf.cell(30,8,str(row["Da (W)"]),1)
+            pdf.cell(30,8,str(row["A (W)"]),1)
             pdf.ln()
 
     # ======================================================
-    # TABELLA ZONE CARDIO
+    # TABELLA ZONE CARDIO (NO SPEZZATURA)
     # ======================================================
 
     if not zone_hr_df.empty:
+
+        if pdf.get_y() > 220:
+            pdf.add_page()
 
         pdf.section_title("Zone Cardio")
 
         pdf.set_font("Arial","B",10)
         pdf.set_fill_color(200,220,255)
 
-        pdf.cell(80,8,"Zona",1,0,"C",True)
-        pdf.cell(40,8,"Da (bpm)",1,0,"C",True)
-        pdf.cell(40,8,"A (bpm)",1,1,"C",True)
+        pdf.cell(90,8,"Zona",1,0,"C",True)
+        pdf.cell(30,8,"Da (bpm)",1,0,"C",True)
+        pdf.cell(30,8,"A (bpm)",1,1,"C",True)
 
         pdf.set_font("Arial","",10)
 
         for _, row in zone_hr_df.iterrows():
-            pdf.cell(80,8,safe(str(row["Zona"])),1)
-            pdf.cell(40,8,str(row["Da (bpm)"]),1)
-            pdf.cell(40,8,str(row["A (bpm)"]),1)
+            if pdf.get_y() > 270:
+                pdf.add_page()
+            pdf.cell(90,8,safe(str(row["Zona"])),1)
+            pdf.cell(30,8,str(row["Da (bpm)"]),1)
+            pdf.cell(30,8,str(row["A (bpm)"]),1)
             pdf.ln()
 
     # ======================================================
-    # PROIEZIONE RISCRITTA COME VUOI TU
+    # PROIEZIONE RISCRITTA COME RICHIESTO
     # ======================================================
 
     if nuovo_peso > 0 and ftp > 0:
@@ -325,7 +343,8 @@ if st.button("Genera PDF Completo"):
 
         testo_proj = (
             f"Se il peso passasse da {peso:.1f} kg a {nuovo_peso:.1f} kg "
-            f"e la FTP da {ftp:.1f} W a {nuova_ftp:.1f} W, "
+            f"e se avesse un incremento della FTP del {incremento_ftp:.1f}%, "
+            f"passando quindi da {ftp:.1f} W a {nuova_ftp:.1f} W, "
             f"si avrebbe un incremento del rapporto W/kg "
             f"da {wkg:.2f} a {nuovo_wkg:.2f}.\n\n"
             f"Su una salita di 5 chilometri con pendenza media del 6%, "
