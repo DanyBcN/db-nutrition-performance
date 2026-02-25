@@ -22,61 +22,6 @@ except:
 st.markdown("---")
 
 # ======================================================
-# FUNZIONI CODICE FISCALE (STRUTTURALE CORRETTO)
-# ======================================================
-
-mesi_cf = "ABCDEHLMPRST"
-
-def consonanti(s):
-    return "".join([c for c in s.upper() if c in "BCDFGHJKLMNPQRSTVWXYZ"])
-
-def vocali(s):
-    return "".join([c for c in s.upper() if c in "AEIOU"])
-
-def carattere_controllo(cf15):
-    dispari = {
-        **dict(zip("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-        [1,0,5,7,9,13,15,17,19,21,
-         1,0,5,7,9,13,15,17,19,21,
-         2,4,18,20,11,3,6,8,12,14,
-         16,10,22,25,24,23]))
-    }
-
-    pari = {c:i for i,c in enumerate("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")}
-
-    s = 0
-    for i, c in enumerate(cf15):
-        if (i+1) % 2 == 0:
-            s += pari[c]
-        else:
-            s += dispari[c]
-
-    return chr((s % 26) + ord('A'))
-
-def genera_cf(nome, cognome, data, sesso, provincia):
-    cons_cogn = consonanti(cognome)
-    voc_cogn = vocali(cognome)
-    cod_cogn = (cons_cogn + voc_cogn + "XXX")[:3]
-
-    cons_nome = consonanti(nome)
-    if len(cons_nome) >= 4:
-        cod_nome = cons_nome[0] + cons_nome[2] + cons_nome[3]
-    else:
-        cod_nome = (cons_nome + vocali(nome) + "XXX")[:3]
-
-    anno = str(data.year)[2:]
-    mese = mesi_cf[data.month - 1]
-    giorno = data.day + (40 if sesso == "F" else 0)
-    giorno = f"{giorno:02d}"
-
-    codice_prov = provincia.upper().ljust(4,"X")[:4]
-
-    cf15 = cod_cogn + cod_nome + anno + mese + giorno + codice_prov
-    controllo = carattere_controllo(cf15)
-
-    return cf15 + controllo
-
-# ======================================================
 # ANAGRAFICA
 # ======================================================
 
@@ -105,12 +50,6 @@ eta = date.today().year - data_nascita.year - (
 )
 
 st.write(f"Età: {eta} anni")
-
-cf = ""
-if nome and cognome and provincia:
-    cf = genera_cf(nome, cognome, data_nascita, sesso, provincia)
-
-st.write(f"Codice Fiscale: {cf}")
 
 st.markdown("---")
 
@@ -204,6 +143,8 @@ else:
 # ZONE POTENZA
 # ======================================================
 
+zone_potenza_df = None
+
 if ftp > 0:
     st.subheader("Zone Potenza")
 
@@ -223,11 +164,14 @@ if ftp > 0:
                      round(min_p*ftp),
                      round(max_p*ftp)])
 
-    st.table(pd.DataFrame(dati,columns=["Zona","Da (W)","A (W)"]))
+    zone_potenza_df = pd.DataFrame(dati,columns=["Zona","Da (W)","A (W)"])
+    st.table(zone_potenza_df)
 
 # ======================================================
 # ZONE CARDIO
 # ======================================================
+
+zone_cardio_df = None
 
 if fthr > 0:
     st.subheader("Zone Cardio")
@@ -246,7 +190,8 @@ if fthr > 0:
                         round(min_p*fthr),
                         round(max_p*fthr)])
 
-    st.table(pd.DataFrame(dati_hr,columns=["Zona","Da (bpm)","A (bpm)"]))
+    zone_cardio_df = pd.DataFrame(dati_hr,columns=["Zona","Da (bpm)","A (bpm)"])
+    st.table(zone_cardio_df)
 
 st.markdown("---")
 
@@ -271,25 +216,62 @@ st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
 st.markdown("---")
 
 # ======================================================
-# PDF COMPLETO
+# PDF PROFESSIONALE COMPLETO
 # ======================================================
 
 if st.button("Genera PDF"):
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=11)
+    pdf.set_font("Arial", size=10)
 
-    pdf.cell(0,8,"REPORT VALUTAZIONE", ln=True)
+    pdf.set_font("Arial", "B", 14)
+    pdf.cell(0,10,"REPORT VALUTAZIONE METABOLICO-FUNZIONALE", ln=True)
     pdf.ln(5)
 
-    pdf.cell(0,8,f"Nome: {nome} {cognome}", ln=True)
-    pdf.cell(0,8,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')}", ln=True)
-    pdf.cell(0,8,f"Codice Fiscale: {cf}", ln=True)
-    pdf.cell(0,8,f"BMI: {bmi:.2f} ({classificazione})", ln=True)
-    pdf.cell(0,8,f"FTP: {ftp:.2f} W", ln=True)
-    pdf.cell(0,8,f"W/kg: {wkg:.2f}", ln=True)
-    pdf.cell(0,8,f"Nuovo W/kg: {nuovo_wkg:.2f}", ln=True)
+    pdf.set_font("Arial", size=10)
+
+    pdf.cell(0,6,f"Nome: {nome} {cognome}", ln=True)
+    pdf.cell(0,6,f"Nato a: {comune} ({provincia})", ln=True)
+    pdf.cell(0,6,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')} - Eta: {eta} anni", ln=True)
+    pdf.cell(0,6,f"Email: {email}", ln=True)
+    pdf.cell(0,6,f"Telefono: {telefono}", ln=True)
+    pdf.cell(0,6,f"Indirizzo: {indirizzo}", ln=True)
+
+    pdf.ln(5)
+    pdf.cell(0,6,"--- ANTROPOMETRIA ---", ln=True)
+    pdf.cell(0,6,f"Peso: {peso} kg", ln=True)
+    pdf.cell(0,6,f"Altezza: {altezza} cm", ln=True)
+    pdf.cell(0,6,f"BMI: {bmi:.2f} ({classificazione})", ln=True)
+    pdf.cell(0,6,f"Massa grassa: {fm_kg:.2f} kg", ln=True)
+    pdf.cell(0,6,f"Massa magra: {massa_magra:.2f} kg", ln=True)
+
+    pdf.ln(5)
+    pdf.cell(0,6,"--- PERFORMANCE ---", ln=True)
+    pdf.cell(0,6,f"Metodo FTP: {metodo}", ln=True)
+    pdf.cell(0,6,f"FTP: {ftp:.2f} W", ln=True)
+    pdf.cell(0,6,f"W/kg: {wkg:.2f}", ln=True)
+    pdf.cell(0,6,f"FTHR: {fthr:.0f} bpm", ln=True)
+
+    pdf.ln(5)
+
+    if zone_potenza_df is not None:
+        pdf.cell(0,6,"Zone Potenza:", ln=True)
+        for _, row in zone_potenza_df.iterrows():
+            pdf.cell(0,6,f"{row['Zona']}: {row['Da (W)']} - {row['A (W)']} W", ln=True)
+
+    pdf.ln(3)
+
+    if zone_cardio_df is not None:
+        pdf.cell(0,6,"Zone Cardio:", ln=True)
+        for _, row in zone_cardio_df.iterrows():
+            pdf.cell(0,6,f"{row['Zona']}: {row['Da (bpm)']} - {row['A (bpm)']} bpm", ln=True)
+
+    pdf.ln(5)
+    pdf.cell(0,6,"--- PROIEZIONE ---", ln=True)
+    pdf.cell(0,6,f"Nuovo peso: {nuovo_peso:.2f} kg", ln=True)
+    pdf.cell(0,6,f"Nuova FTP: {nuova_ftp:.2f} W", ln=True)
+    pdf.cell(0,6,f"Nuovo W/kg: {nuovo_wkg:.2f}", ln=True)
 
     pdf.output("report.pdf")
 
