@@ -295,6 +295,9 @@ if nuovo_peso > 0 and ftp > 0:
     nuovo_wkg = nuova_ftp / nuovo_peso
     delta_wkg = nuovo_wkg - wkg
 
+    tempo_vecchio = tempo_salita_realistico(ftp, peso)
+    tempo_nuovo = tempo_salita_realistico(nuova_ftp, nuovo_peso)
+
     if delta_wkg > 0.3:
         giudizio = "Miglioramento significativo"
     elif delta_wkg > 0.1:
