@@ -3,4 +3,4 @@ pillow
 fpdf
 pandas
 numpy
-codicefiscale
+reportlab
