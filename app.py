@@ -226,46 +226,162 @@ st.markdown("---")
 # PDF PROFESSIONALE
 # ======================================================
 
-if st.button("Genera PDF"):
+# ======================================================
+# PDF CLINICO PREMIUM
+# ======================================================
+
+if st.button("Genera PDF Clinico Premium"):
 
     pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=10)
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
+
+    # -----------------------------
+    # LOGO
+    # -----------------------------
+    try:
+        pdf.image("logo.png", x=80, w=50)
+        pdf.ln(25)
+    except:
+        pdf.ln(10)
+
+    # -----------------------------
+    # TITOLO
+    # -----------------------------
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "REPORT VALUTAZIONE METABOLICO-FUNZIONALE", ln=True, align="C")
+    pdf.ln(8)
+
+    # =====================================================
+    # BLOCCO 1 - DATI ANAGRAFICI
+    # =====================================================
+    pdf.set_font("Arial", "B", 12)
+    pdf.set_fill_color(230, 230, 230)
+    pdf.cell(0, 8, "DATI ANAGRAFICI", ln=True, fill=True)
+
     pdf.set_font("Arial", size=10)
 
-    pdf.set_font("Arial", "B", 14)
-    pdf.cell(0,10,"REPORT VALUTAZIONE METABOLICO-FUNZIONALE", ln=True)
-    pdf.ln(5)
+    pdf.cell(95, 8, f"Nome: {nome} {cognome}", border=1)
+    pdf.cell(95, 8, f"Sesso: {sesso}", border=1, ln=True)
+
+    pdf.cell(95, 8, f"Nato a: {comune} ({provincia})", border=1)
+    pdf.cell(95, 8, f"Data nascita: {data_nascita.strftime('%d/%m/%Y')}", border=1, ln=True)
+
+    pdf.cell(95, 8, f"Email: {email}", border=1)
+    pdf.cell(95, 8, f"Telefono: {telefono}", border=1, ln=True)
+
+    pdf.cell(190, 8, f"Indirizzo: {indirizzo}", border=1, ln=True)
+
+    pdf.ln(6)
+
+    # =====================================================
+    # BLOCCO 2 - ANTROPOMETRIA
+    # =====================================================
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 8, "VALUTAZIONE ANTROPOMETRICA", ln=True, fill=True)
 
     pdf.set_font("Arial", size=10)
 
-    pdf.multi_cell(0,6,f"Nome: {nome} {cognome}")
-    pdf.multi_cell(0,6,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')} - Eta: {eta} anni")
-    pdf.multi_cell(0,6,f"Email: {email} - Tel: {telefono}")
-    pdf.multi_cell(0,6,f"Indirizzo: {indirizzo}")
+    pdf.cell(63, 8, f"Peso: {peso:.2f} kg", border=1)
+    pdf.cell(63, 8, f"Altezza: {altezza:.0f} cm", border=1)
+    pdf.cell(64, 8, f"BMI: {bmi:.2f}", border=1, ln=True)
 
-    pdf.ln(5)
-    pdf.multi_cell(0,6,f"Peso: {peso:.2f} kg")
-    pdf.multi_cell(0,6,f"BMI: {bmi:.2f} ({classificazione})")
-    pdf.multi_cell(0,6,f"Massa grassa: {fm_kg:.2f} kg")
-    pdf.multi_cell(0,6,f"Massa magra: {massa_magra:.2f} kg")
+    pdf.cell(95, 8, f"Classificazione: {classificazione}", border=1)
+    pdf.cell(95, 8, f"Massa grassa: {fm_kg:.2f} kg", border=1, ln=True)
 
-    pdf.ln(5)
-    pdf.multi_cell(0,6,f"FTP: {ftp:.2f} W")
-    pdf.multi_cell(0,6,f"W/kg: {wkg:.2f}")
-    pdf.multi_cell(0,6,f"FTHR: {fthr:.0f} bpm")
+    pdf.cell(190, 8, f"Massa magra: {massa_magra:.2f} kg", border=1, ln=True)
 
-    pdf.ln(5)
-    pdf.multi_cell(0,6,f"Nuovo peso target: {nuovo_peso:.2f} kg")
-    pdf.multi_cell(0,6,f"Nuova FTP target: {nuova_ftp:.2f} W")
-    pdf.multi_cell(0,6,f"Nuovo W/kg: {nuovo_wkg:.2f}")
+    pdf.ln(6)
 
-    # 👇 PARTE CORRETTA
+    # =====================================================
+    # BLOCCO 3 - PERFORMANCE
+    # =====================================================
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 8, "PERFORMANCE", ln=True, fill=True)
+
+    pdf.set_font("Arial", size=10)
+
+    pdf.cell(95, 8, f"Metodo FTP: {metodo}", border=1)
+    pdf.cell(95, 8, f"FTP: {ftp:.2f} W", border=1, ln=True)
+
+    pdf.cell(95, 8, f"W/kg: {wkg:.2f}", border=1)
+    pdf.cell(95, 8, f"FTHR: {fthr:.0f} bpm", border=1, ln=True)
+
+    pdf.ln(6)
+
+    # =====================================================
+    # BLOCCO 4 - ZONE POTENZA
+    # =====================================================
+    if zone_potenza_df is not None:
+
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 8, "ZONE DI POTENZA", ln=True, fill=True)
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(40, 8, "Zona", border=1)
+        pdf.cell(75, 8, "Da (W)", border=1)
+        pdf.cell(75, 8, "A (W)", border=1, ln=True)
+
+        pdf.set_font("Arial", size=10)
+
+        for _, row in zone_potenza_df.iterrows():
+            pdf.cell(40, 8, str(row["Zona"]), border=1)
+            pdf.cell(75, 8, str(row["Da (W)"]), border=1)
+            pdf.cell(75, 8, str(row["A (W)"]), border=1, ln=True)
+
+        pdf.ln(6)
+
+    # =====================================================
+    # BLOCCO 5 - ZONE CARDIO
+    # =====================================================
+    if zone_cardio_df is not None:
+
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 8, "ZONE CARDIO", ln=True, fill=True)
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(40, 8, "Zona", border=1)
+        pdf.cell(75, 8, "Da (bpm)", border=1)
+        pdf.cell(75, 8, "A (bpm)", border=1, ln=True)
+
+        pdf.set_font("Arial", size=10)
+
+        for _, row in zone_cardio_df.iterrows():
+            pdf.cell(40, 8, str(row["Zona"]), border=1)
+            pdf.cell(75, 8, str(row["Da (bpm)"]), border=1)
+            pdf.cell(75, 8, str(row["A (bpm)"]), border=1, ln=True)
+
+        pdf.ln(6)
+
+    # =====================================================
+    # BLOCCO 6 - PROIEZIONE STRATEGICA
+    # =====================================================
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 8, "PROIEZIONE STRATEGICA", ln=True, fill=True)
+
+    pdf.set_font("Arial", size=10)
+
+    pdf.cell(95, 8, f"Nuovo peso: {nuovo_peso:.2f} kg", border=1)
+    pdf.cell(95, 8, f"Nuova FTP: {nuova_ftp:.2f} W", border=1, ln=True)
+
+    pdf.cell(190, 8, f"Nuovo W/kg: {nuovo_wkg:.2f}", border=1, ln=True)
+
+    pdf.ln(10)
+
+    # =====================================================
+    # FOOTER PROFESSIONALE
+    # =====================================================
+    pdf.set_font("Arial", "I", 8)
+    pdf.cell(0, 6, "Report generato tramite sistema DB-Nutrition Performance", align="C")
+
+    # =====================================================
+    # OUTPUT CLOUD SAFE
+    # =====================================================
     pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
     st.download_button(
-        "Scarica PDF Professionale",
+        "Scarica PDF Clinico Premium",
         data=pdf_bytes,
-        file_name="report_professionale.pdf",
+        file_name="report_clinico_premium.pdf",
         mime="application/pdf"
     )
