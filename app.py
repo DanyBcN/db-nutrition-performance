@@ -357,7 +357,34 @@ if st.button("Genera PDF Professionale"):
             pdf.cell(30, 8, str(row["Da (W)"]), 1)
             pdf.cell(30, 8, str(row["A (W)"]), 1)
             pdf.ln()
+# ======================================================
+# PROIEZIONE
+# ======================================================
 
+st.header("Proiezione Performance")
+
+nuovo_peso = st.number_input("Nuovo peso target (kg)", 0.0)
+incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
+
+if nuovo_peso > 0 and ftp > 0:
+
+    nuova_ftp = ftp * (1 + incremento_ftp/100)
+    nuovo_wkg = nuova_ftp / nuovo_peso
+    delta_wkg = nuovo_wkg - wkg
+
+    tempo_vecchio = tempo_salita(ftp, peso)
+    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
+
+    if delta_wkg > 0.3:
+        giudizio = "Miglioramento significativo"
+    elif delta_wkg > 0.1:
+        giudizio = "Miglioramento moderato"
+    else:
+        giudizio = "Miglioramento lieve"
+
+    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+    st.write(f"Giudizio: {giudizio}")
+    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:
     # ================= ZONE CARDIO =================
 
     if not zone_hr_df.empty:
@@ -412,32 +439,5 @@ if st.button("Genera PDF Professionale"):
             f,
             "report_performance_professionale.pdf"
         )
-# ======================================================
-# PROIEZIONE
-# ======================================================
-
-st.header("Proiezione Performance")
-
-nuovo_peso = st.number_input("Nuovo peso target (kg)", 0.0)
-incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
-
-if nuovo_peso > 0 and ftp > 0:
-
-    nuova_ftp = ftp * (1 + incremento_ftp/100)
-    nuovo_wkg = nuova_ftp / nuovo_peso
-    delta_wkg = nuovo_wkg - wkg
-
-    tempo_vecchio = tempo_salita(ftp, peso)
-    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
-
-    if delta_wkg > 0.3:
-        giudizio = "Miglioramento significativo"
-    elif delta_wkg > 0.1:
-        giudizio = "Miglioramento moderato"
-    else:
-        giudizio = "Miglioramento lieve"
-
-    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-    st.write(f"Giudizio: {giudizio}")
-    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
+.1f} min")
 
