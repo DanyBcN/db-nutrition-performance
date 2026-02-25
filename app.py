@@ -7,7 +7,7 @@ import pandas as pd
 st.set_page_config(layout="wide")
 
 # ======================================================
-# LOGO
+# LOGO CENTRATO
 # ======================================================
 
 try:
@@ -21,7 +21,7 @@ except:
 st.markdown("---")
 
 # ======================================================
-# FUNZIONI CODICE FISCALE CORRETTO (STRUTTURA UFFICIALE)
+# CODICE FISCALE CORRETTO (STRUTTURA + CONTROLLO)
 # ======================================================
 
 mesi_cf = "ABCDEHLMPRST"
@@ -39,16 +39,13 @@ def carattere_controllo(cf15):
         'K':2,'L':4,'M':18,'N':20,'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,
         'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23
     }
-
     valori_pari = {c:i for i,c in enumerate("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")}
-
     s = 0
     for i,c in enumerate(cf15):
         if (i+1) % 2 == 0:
             s += valori_pari[c]
         else:
             s += valori_dispari[c]
-
     return chr((s % 26) + ord('A'))
 
 def genera_cf(nome, cognome, data, sesso):
@@ -67,8 +64,7 @@ def genera_cf(nome, cognome, data, sesso):
     giorno = data.day + (40 if sesso == "F" else 0)
     giorno = f"{giorno:02d}"
 
-    # Codice comune simulato coerente a 4 caratteri (non provincia!)
-    codice_comune = "Z404"
+    codice_comune = "Z404"  # placeholder coerente 4 caratteri
 
     cf15 = cod_cogn + cod_nome + anno + mese + giorno + codice_comune
     controllo = carattere_controllo(cf15)
@@ -160,15 +156,12 @@ ftp = 0
 
 if metodo == "Immissione diretta":
     ftp = st.number_input("Inserisci FTP (W)", 0.0)
-
 elif metodo == "Test 20 minuti":
     p20 = st.number_input("Potenza media 20' (W)", 0.0)
     ftp = p20 * 0.95
-
 elif metodo == "Test 8 minuti":
     p8 = st.number_input("Potenza media 8' (W)", 0.0)
     ftp = p8 * 0.90
-
 elif metodo == "Ramp test":
     ultimo_step = st.number_input("Ultimo step completato (W)", 0.0)
     ftp = ultimo_step * 0.75
@@ -199,9 +192,9 @@ else:
 # ZONE POTENZA
 # ======================================================
 
+zone_potenza = []
 if ftp > 0:
     st.subheader("Zone Potenza")
-
     zone = [
         ("Z1",0.00,0.55),
         ("Z2",0.56,0.75),
@@ -211,23 +204,18 @@ if ftp > 0:
         ("Z6",1.21,1.50),
         ("Z7",1.51,2.00),
     ]
-
-    dati=[]
     for z,min_p,max_p in zone:
-        dati.append([z,
-                     round(min_p*ftp),
-                     round(max_p*ftp)])
+        zone_potenza.append([z, round(min_p*ftp), round(max_p*ftp)])
 
-    df_zone = pd.DataFrame(dati,columns=["Zona","Da (W)","A (W)"])
-    st.table(df_zone)
+    st.table(pd.DataFrame(zone_potenza,columns=["Zona","Da (W)","A (W)"]))
 
 # ======================================================
 # ZONE CARDIO
 # ======================================================
 
+zone_cardio = []
 if fthr > 0:
     st.subheader("Zone Cardio")
-
     zone_hr=[
         ("Z1",0.81,0.89),
         ("Z2",0.90,0.93),
@@ -235,15 +223,10 @@ if fthr > 0:
         ("Z4",1.00,1.05),
         ("Z5",1.06,1.15)
     ]
-
-    dati_hr=[]
     for z,min_p,max_p in zone_hr:
-        dati_hr.append([z,
-                        round(min_p*fthr),
-                        round(max_p*fthr)])
+        zone_cardio.append([z, round(min_p*fthr), round(max_p*fthr)])
 
-    df_hr = pd.DataFrame(dati_hr,columns=["Zona","Da (bpm)","A (bpm)"])
-    st.table(df_hr)
+    st.table(pd.DataFrame(zone_cardio,columns=["Zona","Da (bpm)","A (bpm)"]))
 
 st.markdown("---")
 
@@ -268,7 +251,7 @@ st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
 st.markdown("---")
 
 # ======================================================
-# PDF COMPLETO STRUTTURATO
+# PDF COMPLETO CON TUTTO
 # ======================================================
 
 if st.button("Genera PDF Completo"):
@@ -278,6 +261,8 @@ if st.button("Genera PDF Completo"):
     pdf.set_font("Arial", size=11)
 
     pdf.cell(0,8,"REPORT VALUTAZIONE COMPLETA", ln=True, align="C")
+    pdf.ln(5)
+    pdf.cell(0,8,f"Data report: {date.today().strftime('%d/%m/%Y')}", ln=True)
     pdf.ln(5)
 
     pdf.cell(0,8,f"Nome: {nome} {cognome}", ln=True)
@@ -291,6 +276,24 @@ if st.button("Genera PDF Completo"):
     pdf.cell(0,8,f"Metodo FTP: {metodo}", ln=True)
     pdf.cell(0,8,f"FTP: {ftp:.2f} W", ln=True)
     pdf.cell(0,8,f"W/kg: {wkg:.2f}", ln=True)
+    pdf.cell(0,8,f"FTHR: {fthr:.0f} bpm", ln=True)
+    pdf.ln(5)
+
+    pdf.cell(0,8,"ZONE POTENZA", ln=True)
+    for row in zone_potenza:
+        pdf.cell(0,8,f"{row[0]}: {row[1]} - {row[2]} W", ln=True)
+
+    pdf.ln(5)
+    pdf.cell(0,8,"ZONE CARDIO", ln=True)
+    for row in zone_cardio:
+        pdf.cell(0,8,f"{row[0]}: {row[1]} - {row[2]} bpm", ln=True)
+
+    pdf.ln(5)
+    pdf.cell(0,8,"PROIEZIONE STRATEGICA", ln=True)
+    pdf.cell(0,8,f"Target FM: {target_fm:.2f}%", ln=True)
+    pdf.cell(0,8,f"Incremento FTP: {incremento_ftp:.2f}%", ln=True)
+    pdf.cell(0,8,f"Nuovo peso: {nuovo_peso:.2f} kg", ln=True)
+    pdf.cell(0,8,f"Nuova FTP: {nuova_ftp:.2f} W", ln=True)
     pdf.cell(0,8,f"Nuovo W/kg: {nuovo_wkg:.2f}", ln=True)
 
     pdf.output("report_completo.pdf")
