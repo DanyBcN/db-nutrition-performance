@@ -177,6 +177,6 @@ fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
 st.markdown("---")
 
 # ======================================================
-# DA QUI IN POI IL TUO CODICE FTP, ZONE, PROIEZIONE E PDF
-# IDENTICO AL TUO ORIGINALE
+# DA QUI IN POI È IDENTICO AL TUO CODICE ORIGINALE
+# (FTP, ZONE, PROIEZIONE, PDF COMPLETO)
 # ======================================================
