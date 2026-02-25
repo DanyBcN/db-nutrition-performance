@@ -313,7 +313,7 @@ st.markdown("---")
 if st.button("Genera PDF Professionale"):
 
     def safe(text):
-        return text.encode("latin-1","replace").decode("latin-1")
+        return text.encode("latin-1", "replace").decode("latin-1")
 
     class PDF(FPDF):
 
@@ -324,24 +324,24 @@ if st.button("Genera PDF Professionale"):
             except:
                 self.ln(20)
 
-            self.set_font("Arial","B",18)
-            self.cell(0,10,"REPORT PERFORMANCE",0,1,"C")
+            self.set_font("Arial", "B", 18)
+            self.cell(0, 10, "REPORT PERFORMANCE", 0, 1, "C")
             self.ln(3)
 
-            self.set_draw_color(30,90,160)
+            self.set_draw_color(30, 90, 160)
             self.set_line_width(1)
             self.line(10, self.get_y(), 200, self.get_y())
             self.ln(8)
 
         def section_title(self, title):
-            self.set_fill_color(230,240,255)
-            self.set_font("Arial","B",12)
-            self.cell(0,8,title,0,1,"L",True)
+            self.set_fill_color(230, 240, 255)
+            self.set_font("Arial", "B", 12)
+            self.cell(0, 8, title, 0, 1, "L", True)
             self.ln(3)
 
         def normal(self, text):
-            self.set_font("Arial","",10)
-            self.multi_cell(0,6,safe(text))
+            self.set_font("Arial", "", 10)
+            self.multi_cell(0, 6, safe(text))
             self.ln(3)
 
     pdf = PDF()
@@ -389,19 +389,19 @@ if st.button("Genera PDF Professionale"):
 
         pdf.section_title("Zone Potenza")
 
-        pdf.set_font("Arial","B",10)
-        pdf.set_fill_color(200,220,255)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(200, 220, 255)
 
-        pdf.cell(90,8,"Zona",1,0,"C",True)
-        pdf.cell(30,8,"Da (W)",1,0,"C",True)
-        pdf.cell(30,8,"A (W)",1,1,"C",True)
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (W)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (W)", 1, 1, "C", True)
 
-        pdf.set_font("Arial","",10)
+        pdf.set_font("Arial", "", 10)
 
         for _, row in zone_df.iterrows():
-            pdf.cell(90,8,safe(str(row["Zona"])),1)
-            pdf.cell(30,8,str(row["Da (W)"]),1)
-            pdf.cell(30,8,str(row["A (W)"]),1)
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (W)"]), 1)
+            pdf.cell(30, 8, str(row["A (W)"]), 1)
             pdf.ln()
 
     # ZONE CARDIO
@@ -409,25 +409,25 @@ if st.button("Genera PDF Professionale"):
 
         pdf.section_title("Zone Cardio")
 
-        pdf.set_font("Arial","B",10)
-        pdf.set_fill_color(200,220,255)
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(200, 220, 255)
 
-        pdf.cell(90,8,"Zona",1,0,"C",True)
-        pdf.cell(30,8,"Da (bpm)",1,0,"C",True)
-        pdf.cell(30,8,"A (bpm)",1,1,"C",True)
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (bpm)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (bpm)", 1, 1, "C", True)
 
-        pdf.set_font("Arial","",10)
+        pdf.set_font("Arial", "", 10)
 
-                for _, row in zone_hr_df.iterrows():
-            pdf.cell(90,8,safe(str(row["Zona"])),1)
-            pdf.cell(30,8,str(row["Da (bpm)"]),1)
-            pdf.cell(30,8,str(row["A (bpm)"]),1)
+        for _, row in zone_hr_df.iterrows():
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (bpm)"]), 1)
+            pdf.cell(30, 8, str(row["A (bpm)"]), 1)
             pdf.ln()
 
     # PROIEZIONE
     if nuovo_peso > 0 and ftp > 0:
 
-        pdf.ln(6)  # spazio verticale elegante tra tabella e sezione
+        pdf.ln(6)
 
         delta_tempo = tempo_vecchio - tempo_nuovo
 
@@ -447,11 +447,10 @@ if st.button("Genera PDF Professionale"):
         )
 
         pdf.normal(testo_proj)
-        pdf.normal(testo_proj)
 
     pdf.output("report_performance_professionale.pdf")
 
-    with open("report_performance_professionale.pdf","rb") as f:
+    with open("report_performance_professionale.pdf", "rb") as f:
         st.download_button(
             "Scarica PDF Professionale",
             f,
