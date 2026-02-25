@@ -418,19 +418,21 @@ if st.button("Genera PDF Professionale"):
 
         pdf.set_font("Arial","",10)
 
-        for _, row in zone_hr_df.iterrows():
+                for _, row in zone_hr_df.iterrows():
             pdf.cell(90,8,safe(str(row["Zona"])),1)
             pdf.cell(30,8,str(row["Da (bpm)"]),1)
             pdf.cell(30,8,str(row["A (bpm)"]),1)
             pdf.ln()
-\n
+
     # PROIEZIONE
     if nuovo_peso > 0 and ftp > 0:
+
+        pdf.ln(6)  # spazio verticale elegante tra tabella e sezione
 
         delta_tempo = tempo_vecchio - tempo_nuovo
 
         pdf.section_title("Proiezione Miglioramento")
-pdf.ln(6)   # spazio verticale di 6 mm
+
         testo_proj = (
             f"Se il peso passasse da {peso:.1f} kg a {nuovo_peso:.1f} kg "
             f"e se avesse un incremento della FTP del {incremento_ftp:.1f}%, "
@@ -444,6 +446,7 @@ pdf.ln(6)   # spazio verticale di 6 mm
             f"{delta_tempo:.1f} minuti."
         )
 
+        pdf.normal(testo_proj)
         pdf.normal(testo_proj)
 
     pdf.output("report_performance_professionale.pdf")
