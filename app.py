@@ -306,7 +306,7 @@ if nuovo_peso > 0 and ftp > 0:
     pendenza = 0.06
     g = 9.81
 
-   def tempo_salita_realistico(potenza, peso):
+def tempo_salita_realistico(potenza, peso):
     peso_tot = peso + 8  # bici
     g = 9.81
     pendenza = 0.06
