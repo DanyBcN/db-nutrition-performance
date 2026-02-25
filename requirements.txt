@@ -1,6 +1,5 @@
 streamlit
-pillow
-fpdf
 pandas
 numpy
 reportlab
+Pillow
