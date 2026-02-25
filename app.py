@@ -3,19 +3,29 @@ from datetime import date
 from fpdf import FPDF
 import pandas as pd
 import matplotlib.pyplot as plt
-
-# ======================================================
-# CONFIGURAZIONE PAGINA
-# ======================================================
+import os
 
 st.set_page_config(layout="wide")
+
+# ======================================================
+# CONFIGURAZIONE DATABASE
+# ======================================================
+
+DB_FILE = "database_pazienti.csv"
+
+if not os.path.exists(DB_FILE):
+    df_init = pd.DataFrame(columns=[
+        "Nome","Cognome","Data","Peso","Altezza",
+        "FM%","BMI","FFMI","FTP","Wkg"
+    ])
+    df_init.to_csv(DB_FILE, index=False)
 
 # ======================================================
 # FUNZIONE MODELLO SALITA REALISTICO
 # ======================================================
 
 def tempo_salita_realistico(potenza, peso):
-    peso_tot = peso + 8  # bici
+    peso_tot = peso + 8
     g = 9.81
     pendenza = 0.06
     Crr = 0.004
@@ -32,50 +42,17 @@ def tempo_salita_realistico(potenza, peso):
         forza_tot = forza_grav + forza_roll + forza_aero
         velocita = potenza / forza_tot
 
-    tempo = lunghezza / velocita / 60
-    return tempo
-
-# ======================================================
-# LOGO
-# ======================================================
-
-col1, col2, col3 = st.columns([1,2,1])
-with col2:
-    try:
-        st.image("logo.png", width=300)
-    except:
-        pass
-
-# ======================================================
-# INIZIALIZZAZIONE VARIABILI
-# ======================================================
-
-ftp = 0.0
-valore_test = 0.0
-wkg = 0.0
-nuova_ftp = 0.0
-nuovo_wkg = 0.0
-tempo_vecchio = 0.0
-tempo_nuovo = 0.0
-giudizio = ""
-
-zone_df = pd.DataFrame()
-zone_hr_df = pd.DataFrame()
+    return lunghezza / velocita / 60
 
 # ======================================================
 # DATI ANAGRAFICI
 # ======================================================
 
-st.header("Dati Anagrafici")
+st.title("Performance & Nutrition Pro 3.0")
 
 nome = st.text_input("Nome")
 cognome = st.text_input("Cognome")
-
-data_nascita = st.date_input(
-    "Data di nascita",
-    min_value=date(1920,1,1),
-    max_value=date.today()
-)
+data_nascita = st.date_input("Data di nascita")
 
 eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
@@ -87,8 +64,6 @@ st.markdown("---")
 # ======================================================
 # ANTROPOMETRIA
 # ======================================================
-
-st.header("Valutazione Antropometrica")
 
 col1, col2 = st.columns(2)
 
@@ -109,13 +84,22 @@ with col2:
     st.metric("Massa Magra", f"{massa_magra:.1f} kg")
     st.metric("Massa Grassa", f"{fm_kg:.1f} kg")
 
-st.markdown("---")
+# ======================================================
+# GRAFICO BMI
+# ======================================================
+
+fig_bmi, ax = plt.subplots(figsize=(8,2))
+ax.set_xlim(15, 40)
+ax.axvline(bmi, linewidth=3)
+ax.set_yticks([])
+st.pyplot(fig_bmi)
+fig_bmi.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
 
 # ======================================================
 # CALCOLO FTP
 # ======================================================
 
-st.header("Calcolo FTP")
+st.header("FTP & Zone")
 
 metodo = st.selectbox(
     "Metodo FTP",
@@ -131,71 +115,109 @@ elif metodo == "Test 20 minuti":
 elif metodo == "Test 8 minuti":
     valore_test = st.number_input("Media 8 min (W)", 0.0)
     ftp = valore_test * 0.90
-elif metodo == "Ramp test":
+else:
     valore_test = st.number_input("Ultimo step completato (W)", 0.0)
     ftp = valore_test * 0.75
 
 wkg = ftp / peso if peso > 0 else 0
 
-st.write(f"FTP stimata: {ftp:.2f} W")
+st.write(f"FTP: {ftp:.2f} W")
 st.write(f"W/kg: {wkg:.2f}")
 
-if wkg < 2.5:
-    livello = "Principiante"
-elif wkg < 3.2:
-    livello = "Amatore"
-elif wkg < 4.0:
-    livello = "Buono"
-elif wkg < 5.0:
-    livello = "Avanzato"
-else:
-    livello = "Elite"
+# ======================================================
+# ZONE POTENZA
+# ======================================================
 
-st.write(f"Livello prestativo stimato: {livello}")
+if ftp > 0:
+    zone = [
+        ("Z1",0.00,0.55),
+        ("Z2",0.56,0.75),
+        ("Z3",0.76,0.90),
+        ("Z4",0.91,1.05),
+        ("Z5",1.06,1.20),
+    ]
+    zone_df = pd.DataFrame(
+        [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
+        columns=["Zona","Da (W)","A (W)"]
+    )
+    st.table(zone_df)
 
-st.markdown("---")
+# ======================================================
+# ZONE CARDIO
+# ======================================================
+
+fthr = st.number_input("FTHR (bpm)", 0.0)
+
+if fthr > 0:
+    zone_hr = [
+        ("Z1",0.81,0.89),
+        ("Z2",0.90,0.93),
+        ("Z3",0.94,0.99),
+        ("Z4",1.00,1.05),
+        ("Z5",1.06,1.15),
+    ]
+    zone_hr_df = pd.DataFrame(
+        [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
+        columns=["Zona","Da (bpm)","A (bpm)"]
+    )
+    st.table(zone_hr_df)
 
 # ======================================================
 # PROIEZIONE PERFORMANCE
 # ======================================================
 
-st.header("Proiezione Performance")
+st.header("Proiezione")
 
 nuovo_peso = st.number_input("Nuovo peso target (kg)", 0.0)
 incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
 
 if nuovo_peso > 0 and ftp > 0:
-
     nuova_ftp = ftp * (1 + incremento_ftp/100)
-    nuovo_wkg = nuova_ftp / nuovo_peso
-    delta_wkg = nuovo_wkg - wkg
-
     tempo_vecchio = tempo_salita_realistico(ftp, peso)
     tempo_nuovo = tempo_salita_realistico(nuova_ftp, nuovo_peso)
 
-    if delta_wkg > 0.3:
-        giudizio = "Miglioramento significativo"
-    elif delta_wkg > 0.1:
-        giudizio = "Miglioramento moderato"
-    else:
-        giudizio = "Miglioramento lieve"
-
-    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-    st.write(f"Giudizio: {giudizio}")
-    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
-
-st.markdown("---")
+    st.write(f"Tempo salita: {tempo_vecchio:.1f} → {tempo_nuovo:.1f} min")
 
 # ======================================================
-# PDF
+# SALVATAGGIO PAZIENTE
+# ======================================================
+
+if st.button("Salva Paziente nel Database"):
+    df = pd.read_csv(DB_FILE)
+    new_row = {
+        "Nome": nome,
+        "Cognome": cognome,
+        "Data": date.today(),
+        "Peso": peso,
+        "Altezza": altezza,
+        "FM%": fm,
+        "BMI": bmi,
+        "FFMI": ffmi,
+        "FTP": ftp,
+        "Wkg": wkg
+    }
+    df = pd.concat([df, pd.DataFrame([new_row])])
+    df.to_csv(DB_FILE, index=False)
+    st.success("Paziente salvato correttamente")
+
+# ======================================================
+# VISUALIZZAZIONE DATABASE
+# ======================================================
+
+if st.checkbox("Visualizza Database Pazienti"):
+    df = pd.read_csv(DB_FILE)
+    st.dataframe(df)
+
+# ======================================================
+# PDF PROFESSIONALE
 # ======================================================
 
 if st.button("Genera PDF Professionale"):
 
     class PDF(FPDF):
         def header(self):
-            self.set_font("Arial", "B", 18)
-            self.cell(0, 10, "REPORT PERFORMANCE", 0, 1, "C")
+            self.set_font("Arial", "B", 16)
+            self.cell(0, 10, "REPORT PERFORMANCE PRO 3.0", 0, 1, "C")
             self.ln(5)
 
     pdf = PDF()
@@ -203,21 +225,23 @@ if st.button("Genera PDF Professionale"):
     pdf.set_font("Arial", "", 11)
 
     pdf.multi_cell(0, 8,
-        f"Nome: {nome}\n"
-        f"Cognome: {cognome}\n"
-        f"Eta: {eta}\n\n"
-        f"Peso: {peso:.1f} kg\n"
-        f"Altezza: {altezza:.1f} cm\n"
+        f"{nome} {cognome}\n"
+        f"Eta: {eta}\n"
+        f"Peso: {peso} kg\n"
         f"BMI: {bmi:.2f}\n"
         f"FTP: {ftp:.2f} W\n"
         f"W/kg: {wkg:.2f}"
     )
 
-    pdf.output("report_performance.pdf")
+    pdf.image("bmi_chart.png", x=30, w=150)
 
-    with open("report_performance.pdf", "rb") as f:
-        st.download_button(
-            "Scarica PDF",
-            f,
-            "report_performance.pdf"
-        )
+    if ftp > 0:
+        pdf.ln(5)
+        pdf.multi_cell(0,8,"Zone Potenza")
+        for _, row in zone_df.iterrows():
+            pdf.cell(0,6,f"{row['Zona']} {row['Da (W)']} - {row['A (W)']} W",0,1)
+
+    pdf.output("report_performance_pro3.pdf")
+
+    with open("report_performance_pro3.pdf","rb") as f:
+        st.download_button("Scarica PDF", f, "report_performance_pro3.pdf")
