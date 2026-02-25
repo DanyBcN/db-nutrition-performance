@@ -218,30 +218,85 @@ st.write(f"Nuova FTP: {nuova_ftp:.2f} W")
 st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
 
 # ======================================================
-# PDF COMPLETO (SENZA EMAIL / TELEFONO / INDIRIZZO)
+# PDF PREMIUM ELEGANTE
 # ======================================================
 
-if st.button("Genera PDF Completo"):
+if st.button("Genera PDF Premium Elegante"):
 
-    pdf=FPDF()
-    pdf.set_auto_page_break(auto=True,margin=10)
+    class PDF(FPDF):
+
+        def header(self):
+            try:
+                self.image("logo.png", 80, 8, 50)
+                self.ln(28)
+            except:
+                self.ln(15)
+
+            self.set_font("Arial","B",16)
+            self.cell(0,10,"VALUTAZIONE METABOLICO-FUNZIONALE",0,1,"C")
+            self.set_font("Arial","",10)
+            self.cell(0,6,f"{nome} {cognome}",0,1,"C")
+            self.ln(5)
+
+        def footer(self):
+            self.set_y(-12)
+            self.set_font("Arial","I",8)
+            self.cell(0,5,f"Pagina {self.page_no()}",0,0,"C")
+
+        def section_title(self, title):
+            self.set_font("Arial","B",12)
+            self.set_fill_color(230,230,230)
+            self.cell(0,8,title,0,1,"L",True)
+            self.ln(2)
+
+        def kpi_box(self, label, value, x, y, w, h):
+            self.set_xy(x,y)
+            self.set_fill_color(245,245,245)
+            self.rect(x,y,w,h,"DF")
+            self.set_font("Arial","B",10)
+            self.cell(w,h/2,label,0,2,"C")
+            self.set_font("Arial","B",14)
+            self.cell(w,h/2,value,0,2,"C")
+
+    pdf = PDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial",size=10)
 
-    pdf.set_font("Arial","B",14)
-    pdf.cell(0,10,"REPORT VALUTAZIONE METABOLICO-FUNZIONALE",ln=True,align="C")
-    pdf.ln(5)
-    pdf.set_font("Arial",size=10)
+    # ==================================================
+    # KPI SECTION
+    # ==================================================
+    pdf.section_title("INDICATORI PRINCIPALI")
 
-    # Anagrafica (senza mail/telefono)
-    pdf.multi_cell(0,6,f"Nome: {nome} {cognome}")
+    y_start = pdf.get_y()
+    box_width = 45
+    box_height = 20
+    spacing = 5
+    x_start = 20
+
+    pdf.kpi_box("BMI", f"{bmi:.2f}", x_start, y_start, box_width, box_height)
+    pdf.kpi_box("FTP (W)", f"{ftp:.0f}", x_start+box_width+spacing, y_start, box_width, box_height)
+    pdf.kpi_box("W/kg", f"{wkg:.2f}", x_start+2*(box_width+spacing), y_start, box_width, box_height)
+    pdf.kpi_box("FM %", f"{fm:.1f}", x_start+3*(box_width+spacing), y_start, box_width, box_height)
+
+    pdf.ln(box_height + 10)
+
+    # ==================================================
+    # DATI ANAGRAFICI
+    # ==================================================
+    pdf.section_title("DATI ANAGRAFICI")
+
+    pdf.set_font("Arial","",10)
     pdf.multi_cell(0,6,f"Sesso: {sesso}")
     pdf.multi_cell(0,6,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')} - Eta: {eta}")
     pdf.multi_cell(0,6,f"Comune: {comune} ({provincia})")
     pdf.multi_cell(0,6,f"Codice Fiscale: {cf}")
     pdf.ln(4)
 
-    # Antropometria
+    # ==================================================
+    # ANTROPOMETRIA
+    # ==================================================
+    pdf.section_title("VALUTAZIONE ANTROPOMETRICA")
+
     pdf.multi_cell(0,6,f"Peso: {peso:.2f} kg")
     pdf.multi_cell(0,6,f"Altezza: {altezza:.0f} cm")
     pdf.multi_cell(0,6,f"BMI: {bmi:.2f} ({classificazione})")
@@ -249,37 +304,83 @@ if st.button("Genera PDF Completo"):
     pdf.multi_cell(0,6,f"Massa magra: {massa_magra:.2f} kg")
     pdf.ln(4)
 
-    # Performance
+    # ==================================================
+    # PERFORMANCE
+    # ==================================================
+    pdf.section_title("PERFORMANCE")
+
     pdf.multi_cell(0,6,f"Metodo FTP: {metodo}")
     pdf.multi_cell(0,6,f"FTP: {ftp:.2f} W")
     pdf.multi_cell(0,6,f"W/kg: {wkg:.2f}")
     pdf.multi_cell(0,6,f"FTHR: {fthr:.0f} bpm")
     pdf.ln(4)
 
-    # Zone Potenza
-    pdf.cell(0,6,"Zone Potenza:",ln=True)
+    # ==================================================
+    # ZONE POTENZA
+    # ==================================================
+    pdf.section_title("ZONE DI POTENZA")
+
+    pdf.set_font("Arial","B",10)
+    pdf.cell(40,8,"Zona",1)
+    pdf.cell(60,8,"Da (W)",1)
+    pdf.cell(60,8,"A (W)",1,1)
+
+    pdf.set_font("Arial","",10)
+
+    zone = [
+        ("Z1",0.00,0.55),("Z2",0.56,0.75),("Z3",0.76,0.90),
+        ("Z4",0.91,1.05),("Z5",1.06,1.20),
+        ("Z6",1.21,1.50),("Z7",1.51,2.00),
+    ]
+
     for z,a,b in zone:
-        pdf.multi_cell(0,6,f"{z}: {round(a*ftp)} - {round(b*ftp)} W")
+        pdf.cell(40,8,z,1)
+        pdf.cell(60,8,str(round(a*ftp)),1)
+        pdf.cell(60,8,str(round(b*ftp)),1,1)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
-    # Zone Cardio
-    pdf.cell(0,6,"Zone Cardio:",ln=True)
+    # ==================================================
+    # ZONE CARDIO
+    # ==================================================
+    pdf.section_title("ZONE CARDIO")
+
+    pdf.set_font("Arial","B",10)
+    pdf.cell(40,8,"Zona",1)
+    pdf.cell(60,8,"Da (bpm)",1)
+    pdf.cell(60,8,"A (bpm)",1,1)
+
+    pdf.set_font("Arial","",10)
+
+    zone_hr = [
+        ("Z1",0.81,0.89),("Z2",0.90,0.93),
+        ("Z3",0.94,0.99),("Z4",1.00,1.05),
+        ("Z5",1.06,1.15)
+    ]
+
     for z,a,b in zone_hr:
-        pdf.multi_cell(0,6,f"{z}: {round(a*fthr)} - {round(b*fthr)} bpm")
+        pdf.cell(40,8,z,1)
+        pdf.cell(60,8,str(round(a*fthr)),1)
+        pdf.cell(60,8,str(round(b*fthr)),1,1)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
-    # Proiezione
+    # ==================================================
+    # PROIEZIONE
+    # ==================================================
+    pdf.section_title("PROIEZIONE STRATEGICA")
+
     pdf.multi_cell(0,6,f"Target FM: {target_fm:.2f}%")
     pdf.multi_cell(0,6,f"Incremento FTP: {incremento_ftp:.2f}%")
     pdf.multi_cell(0,6,f"Nuovo peso: {nuovo_peso:.2f} kg")
     pdf.multi_cell(0,6,f"Nuova FTP: {nuova_ftp:.2f} W")
     pdf.multi_cell(0,6,f"Nuovo W/kg: {nuovo_wkg:.2f}")
 
-    pdf_bytes=pdf.output(dest="S").encode("latin-1")
+    pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
-    st.download_button("Scarica PDF Completo",
-                       data=pdf_bytes,
-                       file_name="report_completo.pdf",
-                       mime="application/pdf")
+    st.download_button(
+        "Scarica PDF Premium Elegante",
+        data=pdf_bytes,
+        file_name="report_premium_elegante.pdf",
+        mime="application/pdf"
+    )
