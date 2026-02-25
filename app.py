@@ -88,31 +88,48 @@ st.write(f"Massa grassa: {fm_kg:.2f} kg")
 st.write(f"Massa magra: {massa_magra:.2f} kg")
 
 # ======================================================
-# GRAFICO BMI PROFESSIONALE
+# GRAFICO BMI CLINICO PROFESSIONALE
 # ======================================================
 
-fig, ax = plt.subplots(figsize=(8,1.8))
+fig, ax = plt.subplots(figsize=(10,2.2))
 
 ax.set_xlim(15, 40)
 ax.set_ylim(0, 1)
 
-ax.axvspan(15, 18.5, alpha=0.2)
-ax.axvspan(18.5, 25, alpha=0.2)
-ax.axvspan(25, 30, alpha=0.2)
-ax.axvspan(30, 40, alpha=0.2)
+# Bande colore OMS ufficiali
+ax.axvspan(15, 18.5, color="#4A90E2", alpha=0.35)   # Blu - Sottopeso
+ax.axvspan(18.5, 25, color="#27AE60", alpha=0.35)   # Verde - Normopeso
+ax.axvspan(25, 30, color="#F39C12", alpha=0.35)     # Arancione - Sovrappeso
+ax.axvspan(30, 40, color="#E74C3C", alpha=0.35)     # Rosso - Obesità
 
-ax.axvline(bmi, linewidth=3)
+# Linea BMI
+ax.axvline(bmi, color="black", linewidth=2.5)
+
+# Marker
+ax.scatter(bmi, 0.5, s=120, color="black", zorder=5)
+
+# Valore sopra
+ax.text(bmi, 0.8, f"{bmi:.1f}", 
+        horizontalalignment='center',
+        fontsize=11,
+        fontweight='bold')
+
+# Etichette zona
+ax.text(16.7, 0.1, "Sottopeso", ha='center', fontsize=8)
+ax.text(21.7, 0.1, "Normopeso", ha='center', fontsize=8)
+ax.text(27.5, 0.1, "Sovrappeso", ha='center', fontsize=8)
+ax.text(34.5, 0.1, "Obesità", ha='center', fontsize=8)
 
 ax.set_yticks([])
-ax.set_xlabel("BMI")
-ax.set_title("Classificazione BMI (OMS)", fontsize=10)
+ax.set_xlabel("Indice di Massa Corporea (BMI)")
+ax.set_title("Classificazione BMI secondo OMS", fontsize=11, fontweight='bold')
+
+for spine in ["top", "right", "left"]:
+    ax.spines[spine].set_visible(False)
 
 st.pyplot(fig)
 
 fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
-
-st.markdown("---")
-
 # ======================================================
 # CALCOLO FTP
 # ======================================================
