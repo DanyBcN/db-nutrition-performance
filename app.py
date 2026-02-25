@@ -8,6 +8,37 @@ import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 
 # ======================================================
+# FUNZIONI DI CALCOLO
+# ======================================================
+
+def calcola_bmi(peso, altezza_cm):
+    if altezza_cm <= 0:
+        return 0
+    h = altezza_cm / 100
+    return peso / (h ** 2)
+
+def classifica_bmi(bmi):
+    if bmi < 18.5:
+        return "Sottopeso"
+    elif bmi < 25:
+        return "Normopeso"
+    elif bmi < 30:
+        return "Sovrappeso"
+    else:
+        return "Obesità"
+
+def calcola_ftp(metodo, valore):
+    moltiplicatori = {
+        "Immissione diretta": 1.0,
+        "Test 20 minuti": 0.95,
+        "Test 8 minuti": 0.90,
+        "Ramp test": 0.75,
+    }
+    return valore * moltiplicatori.get(metodo, 1)
+
+def calcola_wkg(ftp, peso):
+    return ftp / peso if peso > 0 else 0
+# ======================================================
 # LOGO IN PAGINA
 # ======================================================
 
