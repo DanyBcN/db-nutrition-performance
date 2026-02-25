@@ -271,27 +271,132 @@ st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
 st.markdown("---")
 
 # ======================================================
-# PDF COMPLETO
+# PDF COMPLETO CON TABELLE REALI
 # ======================================================
 
-if st.button("Genera PDF"):
+if st.button("Genera PDF Completo"):
+
+    def safe(text):
+        return text.encode("latin-1","replace").decode("latin-1")
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=11)
+    pdf.set_auto_page_break(auto=True, margin=15)
 
-    pdf.cell(0,8,"REPORT VALUTAZIONE", ln=True)
+    pdf.set_font("Arial","B",16)
+    pdf.cell(0,10,"REPORT PERFORMANCE COMPLETO",0,1,"C")
     pdf.ln(5)
 
-    pdf.cell(0,8,f"Nome: {nome} {cognome}", ln=True)
-    pdf.cell(0,8,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')}", ln=True)
-    pdf.cell(0,8,f"Codice Fiscale: {cf}", ln=True)
-    pdf.cell(0,8,f"BMI: {bmi:.2f} ({classificazione})", ln=True)
-    pdf.cell(0,8,f"FTP: {ftp:.2f} W", ln=True)
-    pdf.cell(0,8,f"W/kg: {wkg:.2f}", ln=True)
-    pdf.cell(0,8,f"Nuovo W/kg: {nuovo_wkg:.2f}", ln=True)
+    pdf.set_font("Arial","",11)
 
-    pdf.output("report.pdf")
+    # DATI PRINCIPALI
+    testo = f"""
+Nome: {nome}
+Cognome: {cognome}
+Data di nascita: {data_nascita.strftime('%d %m %Y')}
+Eta: {eta} anni
 
-    with open("report.pdf","rb") as f:
-        st.download_button("Scarica PDF",f,"report.pdf")
+Peso: {peso:.1f} kg
+Altezza: {altezza:.1f} cm
+BMI: {bmi:.2f}
+Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)
+Massa magra: {massa_magra:.2f} kg
+
+Metodo FTP: {metodo}
+Valore test inserito: {valore_test:.2f} W
+FTP calcolata: {ftp:.2f} W
+W/kg: {wkg:.2f}
+"""
+    pdf.multi_cell(0,7,safe(testo))
+
+    # ======================================================
+    # TABELLA ZONE POTENZA
+    # ======================================================
+
+    if not zone_df.empty:
+
+        pdf.ln(5)
+        pdf.set_font("Arial","B",12)
+        pdf.cell(0,8,"Zone Potenza",0,1)
+        pdf.set_font("Arial","B",10)
+
+        col1 = 80
+        col2 = 40
+        col3 = 40
+
+        pdf.cell(col1,8,"Zona",1)
+        pdf.cell(col2,8,"Da (W)",1)
+        pdf.cell(col3,8,"A (W)",1)
+        pdf.ln()
+
+        pdf.set_font("Arial","",10)
+
+        for _, row in zone_df.iterrows():
+            pdf.cell(col1,8,safe(str(row["Zona"])),1)
+            pdf.cell(col2,8,str(row["Da (W)"]),1)
+            pdf.cell(col3,8,str(row["A (W)"]),1)
+            pdf.ln()
+
+    # ======================================================
+    # TABELLA ZONE CARDIO
+    # ======================================================
+
+    if not zone_hr_df.empty:
+
+        pdf.ln(5)
+        pdf.set_font("Arial","B",12)
+        pdf.cell(0,8,"Zone Cardio",0,1)
+        pdf.set_font("Arial","B",10)
+
+        col1 = 80
+        col2 = 40
+        col3 = 40
+
+        pdf.cell(col1,8,"Zona",1)
+        pdf.cell(col2,8,"Da (bpm)",1)
+        pdf.cell(col3,8,"A (bpm)",1)
+        pdf.ln()
+
+        pdf.set_font("Arial","",10)
+
+        for _, row in zone_hr_df.iterrows():
+            pdf.cell(col1,8,safe(str(row["Zona"])),1)
+            pdf.cell(col2,8,str(row["Da (bpm)"]),1)
+            pdf.cell(col3,8,str(row["A (bpm)"]),1)
+            pdf.ln()
+
+    # ======================================================
+    # PROIEZIONE
+    # ======================================================
+
+    if nuovo_peso > 0 and ftp > 0:
+
+        delta_ftp = nuova_ftp - ftp
+        delta_tempo = tempo_vecchio - tempo_nuovo
+
+        pdf.ln(6)
+        pdf.set_font("Arial","B",12)
+        pdf.cell(0,8,"Proiezione e Miglioramento",0,1)
+        pdf.set_font("Arial","",10)
+
+        testo_proj = f"""
+Giudizio: {giudizio}
+
+Peso da {peso:.1f} kg a {nuovo_peso:.1f} kg
+FTP da {ftp:.1f} W a {nuova_ftp:.1f} W (+{delta_ftp:.1f} W)
+W/kg da {wkg:.2f} a {nuovo_wkg:.2f}
+
+Salita 5 km 6%:
+Tempo da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min
+Miglioramento stimato: {delta_tempo:.1f} min
+"""
+        pdf.multi_cell(0,6,safe(testo_proj))
+
+    pdf.output("report_performance_completo.pdf")
+
+    with open("report_performance_completo.pdf","rb") as f:
+        st.download_button(
+            "Scarica PDF Completo",
+            f,
+            "report_performance_completo.pdf"
+        )
