@@ -37,7 +37,8 @@ provincia = st.text_input("Provincia di nascita (sigla)")
 data_nascita = st.date_input(
     "Data di nascita",
     min_value=date(1920,1,1),
-    max_value=date.today()
+    max_value=date.today(),
+    format="DD/MM/YYYY"
 )
 
 email = st.text_input("Email")
