@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 
 # ======================================================
-# FUNZIONE SALITA SEMPLIFICATA (SPOSTATA FUORI DALL'IF)
+# FUNZIONE SALITA (MODELLO SEMPLICE ORIGINALE)
 # ======================================================
 
 def tempo_salita(potenza, peso):
@@ -23,7 +23,7 @@ def tempo_salita(potenza, peso):
     return (lunghezza / velocita) / 60
 
 # ======================================================
-# LOGO IN PAGINA
+# LOGO
 # ======================================================
 
 col1, col2, col3 = st.columns([1,2,1])
@@ -34,7 +34,7 @@ with col2:
         pass
 
 # ======================================================
-# INIZIALIZZAZIONE VARIABILI
+# INIZIALIZZAZIONE
 # ======================================================
 
 ftp = 0.0
@@ -135,7 +135,7 @@ st.write(f"Range BMI ideale: {bmi_min}-{bmi_max}")
 st.write(f"Valutazione atleta: {giudizio_atleta}")
 
 # ======================================================
-# GRAFICI (IDENTICI AI TUOI)
+# GRAFICO BMI
 # ======================================================
 
 fig, ax = plt.subplots(figsize=(10,2.2))
@@ -155,9 +155,14 @@ ax.set_yticks([])
 st.pyplot(fig)
 fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
 
+# ======================================================
+# GRAFICO MASSA GRASSA
+# ======================================================
+
 fig2, ax2 = plt.subplots(figsize=(10,2.2))
 ax2.set_xlim(0, 30)
 ax2.set_ylim(0, 1)
+
 ax2.axvspan(fm_min, fm_max, alpha=0.3)
 ax2.axvline(fm, linewidth=2.5)
 ax2.scatter(fm, 0.5, s=120)
@@ -196,6 +201,60 @@ wkg = ftp / peso if peso > 0 else 0
 
 st.write(f"FTP stimata: {ftp:.2f} W")
 st.write(f"W/kg: {wkg:.2f}")
+
+st.markdown("---")
+
+# ======================================================
+# ZONE POTENZA
+# ======================================================
+
+if ftp > 0:
+
+    zone = [
+        ("Z1 Recovery attivo",0.00,0.55),
+        ("Z2 Fondo aerobico",0.56,0.75),
+        ("Z3 Tempo",0.76,0.90),
+        ("Z4 Soglia lattato",0.91,1.05),
+        ("Z5 VO2max",1.06,1.20),
+        ("Z6 Capacita anaerobica",1.21,1.50),
+        ("Z7 Neuromuscolare",1.51,2.00),
+    ]
+
+    zone_df = pd.DataFrame(
+        [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
+        columns=["Zona","Da (W)","A (W)"]
+    )
+
+    st.subheader("Zone Potenza")
+    st.table(zone_df)
+
+# ======================================================
+# ZONE CARDIO
+# ======================================================
+
+st.header("Frequenza Cardiaca")
+
+fthr = st.number_input("FTHR (bpm)", 0.0)
+
+if fthr > 0:
+
+    zone_hr = [
+        ("Z1 Recupero",0.81,0.89),
+        ("Z2 Aerobico base",0.90,0.93),
+        ("Z3 Tempo",0.94,0.99),
+        ("Z4 Soglia",1.00,1.05),
+        ("Z5 Alta intensita",1.06,1.15),
+    ]
+
+    zone_hr_df = pd.DataFrame(
+        [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
+        columns=["Zona","Da (bpm)","A (bpm)"]
+    )
+
+    st.subheader("Zone Cardio")
+    st.table(zone_hr_df)
+
+st.markdown("---")
 
 # ======================================================
 # PROIEZIONE
