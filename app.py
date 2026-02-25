@@ -137,37 +137,54 @@ st.write(f"Valutazione atleta: {giudizio_atleta}")
 # ======================================================
 # GRAFICI
 # ======================================================
+fig, ax = plt.subplots(figsize=(10,2))
 
-fig, ax = plt.subplots(figsize=(10,2.2))
 ax.set_xlim(15, 40)
 ax.set_ylim(0, 1)
 
-ax.axvspan(15, 18.5, alpha=0.35)
-ax.axvspan(18.5, 25, alpha=0.35)
-ax.axvspan(25, 30, alpha=0.35)
-ax.axvspan(30, 40, alpha=0.35)
-ax.axvspan(bmi_min, bmi_max, alpha=0.15)
+# Bande più leggere
+ax.axvspan(15, 18.5, color="#D6EAF8", alpha=0.6)
+ax.axvspan(18.5, 25, color="#D5F5E3", alpha=0.6)
+ax.axvspan(25, 30, color="#FCF3CF", alpha=0.6)
+ax.axvspan(30, 40, color="#FADBD8", alpha=0.6)
 
-ax.axvline(bmi, linewidth=2.5)
-ax.scatter(bmi, 0.5, s=120)
+# Range atleta
+ax.axvspan(bmi_min, bmi_max, color="#A569BD", alpha=0.15)
+
+# Linea BMI più sottile
+ax.axvline(bmi, color="#2C3E50", linewidth=1.5)
+ax.scatter(bmi, 0.5, s=60, color="#2C3E50")
+
 ax.set_yticks([])
+ax.set_xlabel("BMI", fontsize=9)
+ax.set_title("Classificazione BMI", fontsize=10)
+
+for spine in ["top","right","left"]:
+    ax.spines[spine].set_visible(False)
 
 st.pyplot(fig)
 fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
 
-fig2, ax2 = plt.subplots(figsize=(10,2.2))
+fig2, ax2 = plt.subplots(figsize=(10,2))
+
 ax2.set_xlim(0, 30)
 ax2.set_ylim(0, 1)
 
-ax2.axvspan(fm_min, fm_max, alpha=0.3)
-ax2.axvline(fm, linewidth=2.5)
-ax2.scatter(fm, 0.5, s=120)
+ax2.axvspan(fm_min, fm_max, color="#D5F5E3", alpha=0.5)
+
+ax2.axvline(fm, color="#2C3E50", linewidth=1.5)
+ax2.scatter(fm, 0.5, s=60, color="#2C3E50")
+
 ax2.set_yticks([])
+ax2.set_xlabel("Massa Grassa (%)", fontsize=9)
+ax2.set_title("Valutazione Massa Grassa", fontsize=10)
+
+for spine in ["top","right","left"]:
+    ax2.spines[spine].set_visible(False)
 
 st.pyplot(fig2)
 fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
 
-st.markdown("---")
 
 # ======================================================
 # CALCOLO FTP
@@ -355,16 +372,40 @@ if st.button("Genera PDF Professionale"):
     )
 
     if not zone_df.empty:
-        pdf.section_title("Zone Potenza")
-        pdf.set_font("Arial", "", 10)
-        for _, row in zone_df.iterrows():
-            pdf.cell(0,6,f"{row['Zona']}: {row['Da (W)']} - {row['A (W)']} W",0,1)
 
-    if not zone_hr_df.empty:
-        pdf.section_title("Zone Cardio")
-        pdf.set_font("Arial", "", 10)
-        for _, row in zone_hr_df.iterrows():
-            pdf.cell(0,6,f"{row['Zona']}: {row['Da (bpm)']} - {row['A (bpm)']} bpm",0,1)
+    pdf.section_title("Zone Potenza")
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(220, 230, 241)
+
+    pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+    pdf.cell(30, 8, "Da (W)", 1, 0, "C", True)
+    pdf.cell(30, 8, "A (W)", 1, 1, "C", True)
+
+    pdf.set_font("Arial", "", 10)
+
+    for _, row in zone_df.iterrows():
+        pdf.cell(90, 8, row["Zona"], 1)
+        pdf.cell(30, 8, str(row["Da (W)"]), 1, 0, "C")
+        pdf.cell(30, 8, str(row["A (W)"]), 1, 1, "C")
+
+   if not zone_hr_df.empty:
+
+    pdf.section_title("Zone Cardio")
+
+    pdf.set_font("Arial", "B", 10)
+    pdf.set_fill_color(220, 230, 241)
+
+    pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+    pdf.cell(30, 8, "Da (bpm)", 1, 0, "C", True)
+    pdf.cell(30, 8, "A (bpm)", 1, 1, "C", True)
+
+    pdf.set_font("Arial", "", 10)
+
+    for _, row in zone_hr_df.iterrows():
+        pdf.cell(90, 8, row["Zona"], 1)
+        pdf.cell(30, 8, str(row["Da (bpm)"]), 1, 0, "C")
+        pdf.cell(30, 8, str(row["A (bpm)"]), 1, 1, "C")
 
     pdf.output("report_performance_professionale.pdf")
 
