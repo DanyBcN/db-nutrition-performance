@@ -1,92 +1,35 @@
 import streamlit as st
 from datetime import date
-from PIL import Image
 from fpdf import FPDF
 import pandas as pd
-import numpy as np
+import math
 
 st.set_page_config(layout="wide")
 
 # ======================================================
-# LOGO CENTRATO
+# INIZIALIZZAZIONE VARIABILI (ANTI-ERROR)
 # ======================================================
 
-try:
-    logo = Image.open("logo.png")
-    c1, c2, c3 = st.columns([1,2,1])
-    with c2:
-        st.image(logo, width=250)
-except:
-    pass
+ftp = 0.0
+valore_test = 0.0
+wkg = 0.0
+nuova_ftp = 0.0
+nuovo_wkg = 0.0
+tempo_vecchio = 0.0
+tempo_nuovo = 0.0
+giudizio = ""
 
-st.markdown("---")
-
-# ======================================================
-# FUNZIONI CODICE FISCALE (STRUTTURALE CORRETTO)
-# ======================================================
-
-mesi_cf = "ABCDEHLMPRST"
-
-def consonanti(s):
-    return "".join([c for c in s.upper() if c in "BCDFGHJKLMNPQRSTVWXYZ"])
-
-def vocali(s):
-    return "".join([c for c in s.upper() if c in "AEIOU"])
-
-def carattere_controllo(cf15):
-    dispari = {
-        **dict(zip("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-        [1,0,5,7,9,13,15,17,19,21,
-         1,0,5,7,9,13,15,17,19,21,
-         2,4,18,20,11,3,6,8,12,14,
-         16,10,22,25,24,23]))
-    }
-
-    pari = {c:i for i,c in enumerate("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")}
-
-    s = 0
-    for i, c in enumerate(cf15):
-        if (i+1) % 2 == 0:
-            s += pari[c]
-        else:
-            s += dispari[c]
-
-    return chr((s % 26) + ord('A'))
-
-def genera_cf(nome, cognome, data, sesso, provincia):
-    cons_cogn = consonanti(cognome)
-    voc_cogn = vocali(cognome)
-    cod_cogn = (cons_cogn + voc_cogn + "XXX")[:3]
-
-    cons_nome = consonanti(nome)
-    if len(cons_nome) >= 4:
-        cod_nome = cons_nome[0] + cons_nome[2] + cons_nome[3]
-    else:
-        cod_nome = (cons_nome + vocali(nome) + "XXX")[:3]
-
-    anno = str(data.year)[2:]
-    mese = mesi_cf[data.month - 1]
-    giorno = data.day + (40 if sesso == "F" else 0)
-    giorno = f"{giorno:02d}"
-
-    codice_prov = provincia.upper().ljust(4,"X")[:4]
-
-    cf15 = cod_cogn + cod_nome + anno + mese + giorno + codice_prov
-    controllo = carattere_controllo(cf15)
-
-    return cf15 + controllo
+zone_df = pd.DataFrame()
+zone_hr_df = pd.DataFrame()
 
 # ======================================================
-# ANAGRAFICA
+# DATI ANAGRAFICI
 # ======================================================
 
 st.header("Dati Anagrafici")
 
 nome = st.text_input("Nome")
 cognome = st.text_input("Cognome")
-sesso = st.selectbox("Sesso", ["M","F"])
-comune = st.text_input("Comune di nascita")
-provincia = st.text_input("Provincia di nascita (sigla)")
 
 data_nascita = st.date_input(
     "Data di nascita",
@@ -95,22 +38,10 @@ data_nascita = st.date_input(
     format="DD/MM/YYYY"
 )
 
-email = st.text_input("Email")
-telefono = st.text_input("Telefono")
-indirizzo = st.text_input("Indirizzo")
-
 eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
     (data_nascita.month, data_nascita.day)
 )
-
-st.write(f"Età: {eta} anni")
-
-cf = ""
-if nome and cognome and provincia:
-    cf = genera_cf(nome, cognome, data_nascita, sesso, provincia)
-
-st.write(f"Codice Fiscale: {cf}")
 
 st.markdown("---")
 
@@ -124,27 +55,12 @@ peso = st.number_input("Peso (kg)", 30.0, 200.0)
 altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
 fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
 
-bmi = 0
-classificazione = ""
-
-if peso and altezza:
-    altezza_m = altezza / 100
-    bmi = peso / (altezza_m ** 2)
-
-    if bmi < 18.5:
-        classificazione = "Sottopeso"
-    elif bmi < 25:
-        classificazione = "Normopeso"
-    elif bmi < 30:
-        classificazione = "Sovrappeso"
-    else:
-        classificazione = "Obesità"
-
-    st.write(f"BMI: {bmi:.2f} ({classificazione})")
-
+altezza_m = altezza / 100 if altezza > 0 else 0
+bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
 fm_kg = peso * (fm/100)
 massa_magra = peso - fm_kg
 
+st.write(f"BMI: {bmi:.2f}")
 st.write(f"Massa grassa: {fm_kg:.2f} kg")
 st.write(f"Massa magra: {massa_magra:.2f} kg")
 
@@ -161,9 +77,6 @@ metodo = st.selectbox(
     ["Immissione diretta","Test 20 minuti","Test 8 minuti","Ramp test"]
 )
 
-ftp = 0
-valore_test = 0.0   # <<< IMPORTANTE: inizializzazione sicura
-
 if metodo == "Immissione diretta":
     valore_test = st.number_input("FTP (W)", 0.0)
     ftp = valore_test
@@ -179,88 +92,103 @@ elif metodo == "Test 8 minuti":
 elif metodo == "Ramp test":
     valore_test = st.number_input("Ultimo step completato (W)", 0.0)
     ftp = valore_test * 0.75
-# ======================================================
-# FTHR
-# ======================================================
 
-st.header("Frequenza Cardiaca")
+wkg = ftp / peso if peso > 0 else 0
 
-fthr_input = st.number_input("FTHR (bpm) - opzionale", 0.0)
+st.write(f"FTP stimata: {ftp:.2f} W")
+st.write(f"W/kg: {wkg:.2f}")
 
-if fthr_input > 0:
-    fthr = fthr_input
-else:
-    fc_max = 220 - eta
-    fthr = 0.95 * fc_max
-    st.write(f"FTHR stimata: {fthr:.0f} bpm")
+st.markdown("---")
 
 # ======================================================
 # ZONE POTENZA
 # ======================================================
 
 if ftp > 0:
-    st.subheader("Zone Potenza")
 
     zone = [
-        ("Z1",0.00,0.55),
-        ("Z2",0.56,0.75),
-        ("Z3",0.76,0.90),
-        ("Z4",0.91,1.05),
-        ("Z5",1.06,1.20),
-        ("Z6",1.21,1.50),
-        ("Z7",1.51,2.00),
+        ("Z1 Recovery attivo",0.00,0.55),
+        ("Z2 Fondo aerobico",0.56,0.75),
+        ("Z3 Tempo",0.76,0.90),
+        ("Z4 Soglia lattato",0.91,1.05),
+        ("Z5 VO2max",1.06,1.20),
+        ("Z6 Capacita anaerobica",1.21,1.50),
+        ("Z7 Neuromuscolare",1.51,2.00),
     ]
 
-    dati=[]
-    for z,min_p,max_p in zone:
-        dati.append([z,
-                     round(min_p*ftp),
-                     round(max_p*ftp)])
+    zone_df = pd.DataFrame(
+        [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
+        columns=["Zona","Da (W)","A (W)"]
+    )
 
-    st.table(pd.DataFrame(dati,columns=["Zona","Da (W)","A (W)"]))
+    st.subheader("Zone Potenza")
+    st.table(zone_df)
 
 # ======================================================
 # ZONE CARDIO
 # ======================================================
 
-if fthr > 0:
-    st.subheader("Zone Cardio")
+st.header("Frequenza Cardiaca")
 
-    zone_hr=[
-        ("Z1",0.81,0.89),
-        ("Z2",0.90,0.93),
-        ("Z3",0.94,0.99),
-        ("Z4",1.00,1.05),
-        ("Z5",1.06,1.15)
+fthr = st.number_input("FTHR (bpm)", 0.0)
+
+if fthr > 0:
+
+    zone_hr = [
+        ("Z1 Recupero",0.81,0.89),
+        ("Z2 Aerobico base",0.90,0.93),
+        ("Z3 Tempo",0.94,0.99),
+        ("Z4 Soglia",1.00,1.05),
+        ("Z5 Alta intensita",1.06,1.15),
     ]
 
-    dati_hr=[]
-    for z,min_p,max_p in zone_hr:
-        dati_hr.append([z,
-                        round(min_p*fthr),
-                        round(max_p*fthr)])
+    zone_hr_df = pd.DataFrame(
+        [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
+        columns=["Zona","Da (bpm)","A (bpm)"]
+    )
 
-    st.table(pd.DataFrame(dati_hr,columns=["Zona","Da (bpm)","A (bpm)"]))
+    st.subheader("Zone Cardio")
+    st.table(zone_hr_df)
 
 st.markdown("---")
 
 # ======================================================
-# PROIEZIONE
+# PROIEZIONE PERFORMANCE
 # ======================================================
 
-st.header("Proiezione Strategica")
+st.header("Proiezione Performance")
 
-target_fm = st.number_input("Target Massa Grassa (%)", 3.0, 20.0)
+nuovo_peso = st.number_input("Nuovo peso target (kg)", 0.0)
 incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
 
-nuova_fm_kg = massa_magra * (target_fm/(100-target_fm))
-nuovo_peso = massa_magra + nuova_fm_kg
-nuova_ftp = ftp * (1 + incremento_ftp/100)
-nuovo_wkg = nuova_ftp/nuovo_peso if nuovo_peso>0 else 0
+if nuovo_peso > 0 and ftp > 0:
 
-st.write(f"Nuovo peso: {nuovo_peso:.2f} kg")
-st.write(f"Nuova FTP: {nuova_ftp:.2f} W")
-st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+    nuova_ftp = ftp * (1 + incremento_ftp/100)
+    nuovo_wkg = nuova_ftp / nuovo_peso
+    delta_wkg = nuovo_wkg - wkg
+
+    if delta_wkg > 0.3:
+        giudizio = "Miglioramento significativo"
+    elif delta_wkg > 0.1:
+        giudizio = "Miglioramento moderato"
+    else:
+        giudizio = "Miglioramento lieve"
+
+    lunghezza = 5000
+    pendenza = 0.06
+    g = 9.81
+
+    def tempo_salita(potenza, peso):
+        forza = peso * g * pendenza
+        velocita = potenza / forza
+        return (lunghezza / velocita) / 60
+
+    tempo_vecchio = tempo_salita(ftp, peso)
+    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
+
+    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+    st.write(f"Giudizio: {giudizio}")
+    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
 
 st.markdown("---")
 
@@ -283,7 +211,6 @@ if st.button("Genera PDF Completo"):
 
     pdf.set_font("Arial","",11)
 
-    # DATI PRINCIPALI
     testo = f"""
 Nome: {nome}
 Cognome: {cognome}
@@ -303,72 +230,49 @@ W/kg: {wkg:.2f}
 """
     pdf.multi_cell(0,7,safe(testo))
 
-    # ======================================================
-    # TABELLA ZONE POTENZA
-    # ======================================================
-
+    # Tabella Zone Potenza
     if not zone_df.empty:
-
         pdf.ln(5)
         pdf.set_font("Arial","B",12)
         pdf.cell(0,8,"Zone Potenza",0,1)
-        pdf.set_font("Arial","B",10)
-
-        col1 = 80
-        col2 = 40
-        col3 = 40
-
-        pdf.cell(col1,8,"Zona",1)
-        pdf.cell(col2,8,"Da (W)",1)
-        pdf.cell(col3,8,"A (W)",1)
-        pdf.ln()
-
         pdf.set_font("Arial","",10)
 
+        pdf.cell(80,8,"Zona",1)
+        pdf.cell(40,8,"Da (W)",1)
+        pdf.cell(40,8,"A (W)",1)
+        pdf.ln()
+
         for _, row in zone_df.iterrows():
-            pdf.cell(col1,8,safe(str(row["Zona"])),1)
-            pdf.cell(col2,8,str(row["Da (W)"]),1)
-            pdf.cell(col3,8,str(row["A (W)"]),1)
+            pdf.cell(80,8,safe(str(row["Zona"])),1)
+            pdf.cell(40,8,str(row["Da (W)"]),1)
+            pdf.cell(40,8,str(row["A (W)"]),1)
             pdf.ln()
 
-    # ======================================================
-    # TABELLA ZONE CARDIO
-    # ======================================================
-
+    # Tabella Zone Cardio
     if not zone_hr_df.empty:
-
         pdf.ln(5)
         pdf.set_font("Arial","B",12)
         pdf.cell(0,8,"Zone Cardio",0,1)
-        pdf.set_font("Arial","B",10)
-
-        col1 = 80
-        col2 = 40
-        col3 = 40
-
-        pdf.cell(col1,8,"Zona",1)
-        pdf.cell(col2,8,"Da (bpm)",1)
-        pdf.cell(col3,8,"A (bpm)",1)
-        pdf.ln()
-
         pdf.set_font("Arial","",10)
 
+        pdf.cell(80,8,"Zona",1)
+        pdf.cell(40,8,"Da (bpm)",1)
+        pdf.cell(40,8,"A (bpm)",1)
+        pdf.ln()
+
         for _, row in zone_hr_df.iterrows():
-            pdf.cell(col1,8,safe(str(row["Zona"])),1)
-            pdf.cell(col2,8,str(row["Da (bpm)"]),1)
-            pdf.cell(col3,8,str(row["A (bpm)"]),1)
+            pdf.cell(80,8,safe(str(row["Zona"])),1)
+            pdf.cell(40,8,str(row["Da (bpm)"]),1)
+            pdf.cell(40,8,str(row["A (bpm)"]),1)
             pdf.ln()
 
-    # ======================================================
-    # PROIEZIONE
-    # ======================================================
-
+    # Proiezione
     if nuovo_peso > 0 and ftp > 0:
 
         delta_ftp = nuova_ftp - ftp
         delta_tempo = tempo_vecchio - tempo_nuovo
 
-        pdf.ln(6)
+        pdf.ln(5)
         pdf.set_font("Arial","B",12)
         pdf.cell(0,8,"Proiezione e Miglioramento",0,1)
         pdf.set_font("Arial","",10)
