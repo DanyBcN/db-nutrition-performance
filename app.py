@@ -61,34 +61,34 @@ eta = date.today().year - data_nascita.year - (
 st.markdown("---")
 
 # ======================================================
-# ANTROPOMETRIA
+# ANTROPOMETRIA PRO
 # ======================================================
 
-st.header("Valutazione Antropometrica")
+st.header("Valutazione Antropometrica Avanzata")
 
-peso = st.number_input("Peso (kg)", 30.0, 200.0)
-altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
-fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
+col1, col2 = st.columns(2)
+
+with col1:
+    peso = st.number_input("Peso (kg)", 30.0, 200.0)
+    altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
+    fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
 
 altezza_m = altezza / 100 if altezza > 0 else 0
-bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
+
+if altezza_m > 0:
+    bmi = peso / (altezza_m**2)
+else:
+    bmi = 0
+
 fm_kg = peso * (fm/100)
 massa_magra = peso - fm_kg
+ffmi = massa_magra / (altezza_m**2) if altezza_m > 0 else 0
 
-# Classificazione OMS
-if bmi < 18.5:
-    categoria_bmi = "Sottopeso"
-elif 18.5 <= bmi < 25:
-    categoria_bmi = "Normopeso"
-elif 25 <= bmi < 30:
-    categoria_bmi = "Sovrappeso"
-else:
-    categoria_bmi = "Obesità"
-
-st.write(f"BMI: {bmi:.2f} ({categoria_bmi})")
-st.write(f"Massa grassa: {fm_kg:.2f} kg")
-st.write(f"Massa magra: {massa_magra:.2f} kg")
-
+with col2:
+    st.metric("BMI", f"{bmi:.2f}")
+    st.metric("FFMI", f"{ffmi:.2f}")
+    st.metric("Massa Magra", f"{massa_magra:.1f} kg")
+    st.metric("Massa Grassa", f"{fm_kg:.1f} kg")
 # ======================================================
 # RANGE BMI ATLETA
 # ======================================================
