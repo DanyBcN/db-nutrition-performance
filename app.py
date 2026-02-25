@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 
 # ======================================================
-# LOGO IN PAGINA (NON DISTORTO)
+# LOGO IN PAGINA
 # ======================================================
 
 col1, col2, col3 = st.columns([1,2,1])
@@ -175,3 +175,8 @@ st.pyplot(fig2)
 fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
 
 st.markdown("---")
+
+# ======================================================
+# DA QUI IN POI IL TUO CODICE FTP, ZONE, PROIEZIONE E PDF
+# IDENTICO AL TUO ORIGINALE
+# ======================================================
