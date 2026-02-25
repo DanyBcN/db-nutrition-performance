@@ -43,21 +43,15 @@ zone_hr_df = pd.DataFrame()
 
 st.header("Dati Anagrafici")
 
-colA, colB, colC = st.columns(3)
+nome = st.text_input("Nome")
+cognome = st.text_input("Cognome")
 
-with colA:
-    nome = st.text_input("Nome")
-
-with colB:
-    cognome = st.text_input("Cognome")
-
-with colC:
-    data_nascita = st.date_input(
-        "Data di nascita",
-        min_value=date(1920,1,1),
-        max_value=date.today(),
-        format="DD/MM/YYYY"
-    )
+data_nascita = st.date_input(
+    "Data di nascita",
+    min_value=date(1920,1,1),
+    max_value=date.today(),
+    format="DD/MM/YYYY"
+)
 
 eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
@@ -72,20 +66,16 @@ st.markdown("---")
 
 st.header("Valutazione Antropometrica")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    peso = st.number_input("Peso (kg)", 30.0, 200.0)
-    altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
-
-with col2:
-    fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
+peso = st.number_input("Peso (kg)", 30.0, 200.0)
+altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
+fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
 
 altezza_m = altezza / 100 if altezza > 0 else 0
 bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
 fm_kg = peso * (fm/100)
 massa_magra = peso - fm_kg
 
+# Classificazione OMS
 if bmi < 18.5:
     categoria_bmi = "Sottopeso"
 elif 18.5 <= bmi < 25:
@@ -95,10 +85,9 @@ elif 25 <= bmi < 30:
 else:
     categoria_bmi = "Obesità"
 
-colM1, colM2, colM3 = st.columns(3)
-colM1.metric("BMI", f"{bmi:.2f}", categoria_bmi)
-colM2.metric("Massa grassa", f"{fm_kg:.2f} kg")
-colM3.metric("Massa magra", f"{massa_magra:.2f} kg")
+st.write(f"BMI: {bmi:.2f} ({categoria_bmi})")
+st.write(f"Massa grassa: {fm_kg:.2f} kg")
+st.write(f"Massa magra: {massa_magra:.2f} kg")
 
 # ======================================================
 # RANGE BMI ATLETA
@@ -131,65 +120,56 @@ else:
 st.write(f"Range BMI ideale: {bmi_min}-{bmi_max}")
 st.write(f"Valutazione atleta: {giudizio_atleta}")
 
-if fm < fm_min:
-    st.warning("Massa grassa sotto range fisiologico atleta.")
-elif fm > fm_max:
-    st.warning("Massa grassa sopra range ottimale atleta.")
-
 # ======================================================
-# GRAFICO BMI (MIGLIORATO)
+# GRAFICO BMI
 # ======================================================
 
-fig, ax = plt.subplots(figsize=(10,2))
+fig, ax = plt.subplots(figsize=(10,2.2))
 ax.set_xlim(15, 40)
 ax.set_ylim(0, 1)
 
-colori = [
-    (15, 18.5, "#AED6F1"),
-    (18.5, 25, "#ABEBC6"),
-    (25, 30, "#F9E79F"),
-    (30, 40, "#F5B7B1"),
-]
-
-for x1, x2, c in colori:
-    ax.axvspan(x1, x2, color=c)
+ax.axvspan(15, 18.5, color="#4A90E2", alpha=0.35)
+ax.axvspan(18.5, 25, color="#27AE60", alpha=0.35)
+ax.axvspan(25, 30, color="#F39C12", alpha=0.35)
+ax.axvspan(30, 40, color="#E74C3C", alpha=0.35)
 
 ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.15)
-ax.axvline(bmi, linewidth=3)
-ax.scatter(bmi, 0.5, s=150)
+
+ax.axvline(bmi, color="black", linewidth=2.5)
+ax.scatter(bmi, 0.5, s=120, color="black")
 ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center', fontsize=11, fontweight='bold')
 
 ax.set_yticks([])
 ax.set_xlabel("Indice di Massa Corporea (BMI)")
 ax.set_title("Classificazione BMI OMS + Range Atleta")
 
-for spine in ax.spines.values():
-    spine.set_visible(False)
+for spine in ["top", "right", "left"]:
+    ax.spines[spine].set_visible(False)
 
 st.pyplot(fig)
 fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
 
 # ======================================================
-# GRAFICO MASSA GRASSA (MIGLIORATO)
+# GRAFICO MASSA GRASSA
 # ======================================================
 
 st.subheader("Valutazione Massa Grassa")
 
-fig2, ax2 = plt.subplots(figsize=(10,2))
+fig2, ax2 = plt.subplots(figsize=(10,2.2))
 ax2.set_xlim(0, 30)
 ax2.set_ylim(0, 1)
 
-ax2.axvspan(fm_min, fm_max, color="#ABEBC6")
-ax2.axvline(fm, linewidth=3)
-ax2.scatter(fm, 0.5, s=150)
+ax2.axvspan(fm_min, fm_max, color="#27AE60", alpha=0.3)
+ax2.axvline(fm, color="black", linewidth=2.5)
+ax2.scatter(fm, 0.5, s=120, color="black")
 ax2.text(fm, 0.8, f"{fm:.1f}%", ha='center', fontsize=11, fontweight='bold')
 
 ax2.set_yticks([])
 ax2.set_xlabel("Percentuale Massa Grassa (%)")
 ax2.set_title("Valutazione Massa Grassa Atleta")
 
-for spine in ax2.spines.values():
-    spine.set_visible(False)
+for spine in ["top", "right", "left"]:
+    ax2.spines[spine].set_visible(False)
 
 st.pyplot(fig2)
 fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
@@ -197,7 +177,11 @@ fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
 st.markdown("---")
 
 # ======================================================
-# CALCOLO FTP (IDENTICO MA PIÙ ORDINATO)
+# DA QUI IN POI È IDENTICO AL TUO CODICE ORIGINALE
+# (FTP, ZONE, PROIEZIONE, PDF COMPLETO)
+# ======================================================
+# ======================================================
+# CALCOLO FTP
 # ======================================================
 
 st.header("Calcolo FTP")
@@ -210,48 +194,80 @@ metodo = st.selectbox(
 if metodo == "Immissione diretta":
     valore_test = st.number_input("FTP (W)", 0.0)
     ftp = valore_test
+
 elif metodo == "Test 20 minuti":
     valore_test = st.number_input("Media 20 min (W)", 0.0)
     ftp = valore_test * 0.95
+
 elif metodo == "Test 8 minuti":
     valore_test = st.number_input("Media 8 min (W)", 0.0)
     ftp = valore_test * 0.90
+
 elif metodo == "Ramp test":
     valore_test = st.number_input("Ultimo step completato (W)", 0.0)
     ftp = valore_test * 0.75
 
 wkg = ftp / peso if peso > 0 else 0
 
-colF1, colF2 = st.columns(2)
-colF1.metric("FTP stimata", f"{ftp:.2f} W")
-colF2.metric("W/kg", f"{wkg:.2f}")
+st.write(f"FTP stimata: {ftp:.2f} W")
+st.write(f"W/kg: {wkg:.2f}")
+
+st.markdown("---")
 
 # ======================================================
-# MODELLO SALITA REALISTICO (UPGRADE)
+# ZONE POTENZA
 # ======================================================
 
-def tempo_salita_realistico(potenza, peso, lunghezza=5000, pendenza=0.06):
-    g = 9.81
-    rho = 1.226
-    CdA = 0.32
-    Crr = 0.004
+if ftp > 0:
 
-    massa_tot = peso + 8
-    forza_grav = massa_tot * g * pendenza
-    forza_roll = massa_tot * g * Crr
+    zone = [
+        ("Z1 Recovery attivo",0.00,0.55),
+        ("Z2 Fondo aerobico",0.56,0.75),
+        ("Z3 Tempo",0.76,0.90),
+        ("Z4 Soglia lattato",0.91,1.05),
+        ("Z5 VO2max",1.06,1.20),
+        ("Z6 Capacita anaerobica",1.21,1.50),
+        ("Z7 Neuromuscolare",1.51,2.00),
+    ]
 
-    v = 5
+    zone_df = pd.DataFrame(
+        [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
+        columns=["Zona","Da (W)","A (W)"]
+    )
 
-    for _ in range(25):
-        forza_aero = 0.5 * rho * CdA * v**2
-        forza_tot = forza_grav + forza_roll + forza_aero
-        v = potenza / forza_tot
-
-    tempo_sec = lunghezza / v
-    return tempo_sec / 60
+    st.subheader("Zone Potenza")
+    st.table(zone_df)
 
 # ======================================================
-# PROIEZIONE PERFORMANCE (CON MODELLO MIGLIORATO)
+# ZONE CARDIO
+# ======================================================
+
+st.header("Frequenza Cardiaca")
+
+fthr = st.number_input("FTHR (bpm)", 0.0)
+
+if fthr > 0:
+
+    zone_hr = [
+        ("Z1 Recupero",0.81,0.89),
+        ("Z2 Aerobico base",0.90,0.93),
+        ("Z3 Tempo",0.94,0.99),
+        ("Z4 Soglia",1.00,1.05),
+        ("Z5 Alta intensita",1.06,1.15),
+    ]
+
+    zone_hr_df = pd.DataFrame(
+        [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
+        columns=["Zona","Da (bpm)","A (bpm)"]
+    )
+
+    st.subheader("Zone Cardio")
+    st.table(zone_hr_df)
+
+st.markdown("---")
+
+# ======================================================
+# PROIEZIONE PERFORMANCE
 # ======================================================
 
 st.header("Proiezione Performance")
@@ -272,17 +288,40 @@ if nuovo_peso > 0 and ftp > 0:
     else:
         giudizio = "Miglioramento lieve"
 
-    tempo_vecchio = tempo_salita_realistico(ftp, peso)
-    tempo_nuovo = tempo_salita_realistico(nuova_ftp, nuovo_peso)
+    lunghezza = 5000
+    pendenza = 0.06
+    g = 9.81
 
-    st.metric("Nuovo W/kg", f"{nuovo_wkg:.2f}", f"{delta_wkg:.2f}")
+    def tempo_salita(potenza, peso):
+    g = 9.81
+    rho = 1.226
+    CdA = 0.32
+    Crr = 0.004
+
+    massa_tot = peso + 8
+    forza_grav = massa_tot * g * pendenza
+    forza_roll = massa_tot * g * Crr
+
+    v = 5
+    for _ in range(25):
+        forza_aero = 0.5 * rho * CdA * v**2
+        forza_tot = forza_grav + forza_roll + forza_aero
+        v = potenza / forza_tot
+
+    tempo_sec = lunghezza / v
+    return tempo_sec / 60
+
+    tempo_vecchio = tempo_salita(ftp, peso)
+    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
+
+    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
     st.write(f"Giudizio: {giudizio}")
     st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
 
 st.markdown("---")
 
 # ======================================================
-# PDF (MIGLIORATO GRAFICAMENTE, MA COMPLETO)
+# PDF PROFESSIONALE DEFINITIVO
 # ======================================================
 
 if st.button("Genera PDF Professionale"):
@@ -314,29 +353,114 @@ if st.button("Genera PDF Professionale"):
             self.cell(0, 8, title, 0, 1, "L", True)
             self.ln(3)
 
-        def key_value(self, key, value):
-            self.set_font("Arial", "B", 10)
-            self.cell(60, 6, key)
+        def normal(self, text):
             self.set_font("Arial", "", 10)
-            self.cell(0, 6, safe(value), 0, 1)
+            self.multi_cell(0, 6, safe(text))
+            self.ln(3)
 
     pdf = PDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
+    # DATI ANAGRAFICI
     pdf.section_title("Dati Anagrafici")
-    pdf.key_value("Nome:", nome)
-    pdf.key_value("Cognome:", cognome)
-    pdf.key_value("Eta:", f"{eta} anni")
+    pdf.normal(
+        f"Nome: {nome}\n"
+        f"Cognome: {cognome}\n"
+        f"Data di nascita: {data_nascita.strftime('%d/%m/%Y')}\n"
+        f"Eta: {eta} anni"
+    )
 
+    # ANTROPOMETRIA
     pdf.section_title("Antropometria")
-    pdf.key_value("Peso:", f"{peso:.1f} kg")
-    pdf.key_value("BMI:", f"{bmi:.2f} ({categoria_bmi})")
-    pdf.key_value("Massa grassa:", f"{fm:.1f}%")
+    pdf.normal(
+        f"Peso: {peso:.1f} kg\n"
+        f"Altezza: {altezza:.1f} cm\n"
+        f"BMI: {bmi:.2f} ({categoria_bmi})\n"
+        f"Range BMI atleta ({tipo_sport}): {bmi_min}-{bmi_max}\n"
+        f"Valutazione atleta: {giudizio_atleta}\n"
+        f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
+        f"Massa magra: {massa_magra:.2f} kg"
+    )
 
+    pdf.section_title("Grafico BMI")
+    pdf.image("bmi_chart.png", x=30, w=150)
+
+    pdf.section_title("Grafico Massa Grassa")
+    pdf.image("fm_chart.png", x=30, w=150)
+
+    # PERFORMANCE
     pdf.section_title("Performance")
-    pdf.key_value("FTP:", f"{ftp:.1f} W")
-    pdf.key_value("W/kg:", f"{wkg:.2f}")
+    pdf.normal(
+        f"Metodo FTP: {metodo}\n"
+        f"Valore test inserito: {valore_test:.2f} W\n"
+        f"FTP calcolata: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}"
+    )
+
+    # ZONE POTENZA
+    if not zone_df.empty:
+
+        pdf.section_title("Zone Potenza")
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(200, 220, 255)
+
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (W)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (W)", 1, 1, "C", True)
+
+        pdf.set_font("Arial", "", 10)
+
+        for _, row in zone_df.iterrows():
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (W)"]), 1)
+            pdf.cell(30, 8, str(row["A (W)"]), 1)
+            pdf.ln()
+
+    # ZONE CARDIO
+    if not zone_hr_df.empty:
+
+        pdf.section_title("Zone Cardio")
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.set_fill_color(200, 220, 255)
+
+        pdf.cell(90, 8, "Zona", 1, 0, "C", True)
+        pdf.cell(30, 8, "Da (bpm)", 1, 0, "C", True)
+        pdf.cell(30, 8, "A (bpm)", 1, 1, "C", True)
+
+        pdf.set_font("Arial", "", 10)
+
+        for _, row in zone_hr_df.iterrows():
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (bpm)"]), 1)
+            pdf.cell(30, 8, str(row["A (bpm)"]), 1)
+            pdf.ln()
+
+    # PROIEZIONE
+    if nuovo_peso > 0 and ftp > 0:
+
+        pdf.ln(6)
+
+        delta_tempo = tempo_vecchio - tempo_nuovo
+
+        pdf.section_title("Proiezione Miglioramento")
+
+        testo_proj = (
+            f"Se il peso passasse da {peso:.1f} kg a {nuovo_peso:.1f} kg "
+            f"e se avesse un incremento della FTP del {incremento_ftp:.1f}%, "
+            f"passando quindi da {ftp:.1f} W a {nuova_ftp:.1f} W, "
+            f"si avrebbe un incremento del rapporto W/kg "
+            f"da {wkg:.2f} a {nuovo_wkg:.2f}.\n"
+            f"Su una salita di 5 chilometri con pendenza media del 6%, "
+            f"il tempo stimato passerebbe da {tempo_vecchio:.1f} minuti "
+            f"a {tempo_nuovo:.1f} minuti, "
+            f"con un miglioramento complessivo stimato di "
+            f"{delta_tempo:.1f} minuti."
+        )
+
+        pdf.normal(testo_proj)
 
     pdf.output("report_performance_professionale.pdf")
 
