@@ -223,162 +223,189 @@ st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
 st.markdown("---")
 
 ## ======================================================
-# PDF CLINICO PROFESSIONALE DEFINITIVO
+# PDF CLINICO PROFESSIONALE - REPORTLAB
 # ======================================================
 
 if st.button("Genera PDF Clinico Professionale"):
 
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
-    pdf.add_page()
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.lib import colors
+    from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+    from reportlab.lib.units import cm
+    from reportlab.pdfbase.ttfonts import TTFont
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.lib.pagesizes import A4
+    from reportlab.platypus import PageBreak
+    from reportlab.platypus import BaseDocTemplate, Frame, PageTemplate
+    from io import BytesIO
 
-    # -------------------------
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4)
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    # -----------------------------
+    # STILI PERSONALIZZATI
+    # -----------------------------
+    titolo_style = styles["Heading1"]
+    sezione_style = styles["Heading2"]
+    normale_style = styles["Normal"]
+
+    # -----------------------------
     # LOGO
-    # -------------------------
+    # -----------------------------
     try:
-        pdf.image("logo.png", x=70, w=70)
-        pdf.ln(30)
+        logo = Image("logo.png", width=5*cm, height=2*cm)
+        logo.hAlign = 'CENTER'
+        elements.append(logo)
+        elements.append(Spacer(1, 0.5*cm))
     except:
-        pdf.ln(15)
+        pass
 
-    # -------------------------
-    # TITOLO
-    # -------------------------
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, "REPORT VALUTAZIONE METABOLICO-FUNZIONALE", ln=True, align="C")
-    pdf.ln(8)
+    elements.append(Paragraph("REPORT VALUTAZIONE METABOLICO-FUNZIONALE", titolo_style))
+    elements.append(Spacer(1, 0.5*cm))
 
     # =====================================================
-    # DATI ANAGRAFICI - 2 COLONNE
+    # DATI ANAGRAFICI
     # =====================================================
+    elements.append(Paragraph("DATI ANAGRAFICI", sezione_style))
+    elements.append(Spacer(1, 0.3*cm))
 
-    pdf.set_font("Arial", "B", 12)
-    pdf.set_fill_color(230,230,230)
-    pdf.cell(0, 8, "DATI ANAGRAFICI", ln=True, fill=True)
+    dati_anagrafici = [
+        ["Nome", f"{nome} {cognome}"],
+        ["Sesso", sesso],
+        ["Data nascita", f"{data_nascita.strftime('%d/%m/%Y')} ({eta} anni)"],
+        ["Luogo nascita", f"{comune} ({provincia})"],
+        ["Email", email],
+        ["Telefono", telefono],
+        ["Indirizzo", indirizzo],
+    ]
 
-    pdf.set_font("Arial", size=10)
+    tabella_anagrafica = Table(dati_anagrafici, colWidths=[5*cm, 11*cm])
+    tabella_anagrafica.setStyle(TableStyle([
+        ('BACKGROUND',(0,0),(-1,0),colors.whitesmoke),
+        ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('LEFTPADDING',(0,0),(-1,-1),6),
+        ('RIGHTPADDING',(0,0),(-1,-1),6),
+    ]))
 
-    col_width = 95
-    row_height = 8
-
-    pdf.cell(col_width, row_height, f"Nome: {nome} {cognome}", border=1)
-    pdf.cell(col_width, row_height, f"Sesso: {sesso}", border=1, ln=True)
-
-    pdf.cell(col_width, row_height, f"Data nascita: {data_nascita.strftime('%d/%m/%Y')}", border=1)
-    pdf.cell(col_width, row_height, f"Eta: {eta} anni", border=1, ln=True)
-
-    pdf.cell(col_width, row_height, f"Luogo nascita: {comune} ({provincia})", border=1)
-    pdf.cell(col_width, row_height, f"Telefono: {telefono}", border=1, ln=True)
-
-    pdf.cell(190, row_height, f"Email: {email}", border=1, ln=True)
-    pdf.cell(190, row_height, f"Indirizzo: {indirizzo}", border=1, ln=True)
-
-    pdf.ln(8)
+    elements.append(tabella_anagrafica)
+    elements.append(Spacer(1, 0.5*cm))
 
     # =====================================================
     # ANTROPOMETRIA
     # =====================================================
+    elements.append(Paragraph("VALUTAZIONE ANTROPOMETRICA", sezione_style))
+    elements.append(Spacer(1, 0.3*cm))
 
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, "VALUTAZIONE ANTROPOMETRICA", ln=True, fill=True)
+    dati_antropo = [
+        ["Peso", f"{peso:.2f} kg"],
+        ["Altezza", f"{altezza:.0f} cm"],
+        ["BMI", f"{bmi:.2f} ({classificazione})"],
+        ["Massa grassa", f"{fm_kg:.2f} kg"],
+        ["Massa magra", f"{massa_magra:.2f} kg"],
+    ]
 
-    pdf.set_font("Arial", size=10)
+    tabella_antropo = Table(dati_antropo, colWidths=[5*cm, 11*cm])
+    tabella_antropo.setStyle(TableStyle([
+        ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+    ]))
 
-    pdf.cell(63, row_height, f"Peso: {peso:.2f} kg", border=1)
-    pdf.cell(63, row_height, f"Altezza: {altezza:.0f} cm", border=1)
-    pdf.cell(64, row_height, f"BMI: {bmi:.2f}", border=1, ln=True)
-
-    pdf.cell(95, row_height, f"Classificazione: {classificazione}", border=1)
-    pdf.cell(95, row_height, f"Massa grassa: {fm_kg:.2f} kg", border=1, ln=True)
-
-    pdf.cell(190, row_height, f"Massa magra: {massa_magra:.2f} kg", border=1, ln=True)
-
-    pdf.ln(8)
+    elements.append(tabella_antropo)
+    elements.append(Spacer(1, 0.5*cm))
 
     # =====================================================
     # PERFORMANCE
     # =====================================================
+    elements.append(Paragraph("PERFORMANCE", sezione_style))
+    elements.append(Spacer(1, 0.3*cm))
 
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, "PERFORMANCE", ln=True, fill=True)
+    dati_perf = [
+        ["Metodo FTP", metodo],
+        ["FTP", f"{ftp:.2f} W"],
+        ["W/kg", f"{wkg:.2f}"],
+        ["FTHR", f"{fthr:.0f} bpm"],
+    ]
 
-    pdf.set_font("Arial", size=10)
+    tabella_perf = Table(dati_perf, colWidths=[5*cm, 11*cm])
+    tabella_perf.setStyle(TableStyle([
+        ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+    ]))
 
-    pdf.cell(95, row_height, f"Metodo FTP: {metodo}", border=1)
-    pdf.cell(95, row_height, f"FTP: {ftp:.2f} W", border=1, ln=True)
-
-    pdf.cell(95, row_height, f"W/kg: {wkg:.2f}", border=1)
-    pdf.cell(95, row_height, f"FTHR: {fthr:.0f} bpm", border=1, ln=True)
-
-    pdf.ln(8)
+    elements.append(tabella_perf)
+    elements.append(Spacer(1, 0.5*cm))
 
     # =====================================================
-    # TABELLA ZONE POTENZA
+    # ZONE POTENZA
     # =====================================================
-
     if zone_potenza_df is not None:
 
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 8, "ZONE DI POTENZA", ln=True, fill=True)
+        elements.append(Paragraph("ZONE DI POTENZA", sezione_style))
+        elements.append(Spacer(1, 0.3*cm))
 
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(40, row_height, "Zona", border=1)
-        pdf.cell(75, row_height, "Da (W)", border=1)
-        pdf.cell(75, row_height, "A (W)", border=1, ln=True)
-
-        pdf.set_font("Arial", size=10)
-
+        dati_zone = [["Zona", "Da (W)", "A (W)"]]
         for _, row in zone_potenza_df.iterrows():
-            pdf.cell(40, row_height, str(row["Zona"]), border=1)
-            pdf.cell(75, row_height, str(row["Da (W)"]), border=1)
-            pdf.cell(75, row_height, str(row["A (W)"]), border=1, ln=True)
+            dati_zone.append([row["Zona"], row["Da (W)"], row["A (W)"]])
 
-        pdf.ln(8)
+        tabella_zone = Table(dati_zone, colWidths=[4*cm, 6*cm, 6*cm])
+        tabella_zone.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(-1,0),colors.lightgrey),
+            ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+            ('ALIGN',(1,1),(-1,-1),'CENTER')
+        ]))
+
+        elements.append(tabella_zone)
+        elements.append(Spacer(1, 0.5*cm))
 
     # =====================================================
-    # TABELLA ZONE CARDIO
+    # ZONE CARDIO
     # =====================================================
-
     if zone_cardio_df is not None:
 
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 8, "ZONE CARDIO", ln=True, fill=True)
+        elements.append(Paragraph("ZONE CARDIO", sezione_style))
+        elements.append(Spacer(1, 0.3*cm))
 
-        pdf.set_font("Arial", "B", 10)
-        pdf.cell(40, row_height, "Zona", border=1)
-        pdf.cell(75, row_height, "Da (bpm)", border=1)
-        pdf.cell(75, row_height, "A (bpm)", border=1, ln=True)
-
-        pdf.set_font("Arial", size=10)
-
+        dati_hr = [["Zona", "Da (bpm)", "A (bpm)"]]
         for _, row in zone_cardio_df.iterrows():
-            pdf.cell(40, row_height, str(row["Zona"]), border=1)
-            pdf.cell(75, row_height, str(row["Da (bpm)"]), border=1)
-            pdf.cell(75, row_height, str(row["A (bpm)"]), border=1, ln=True)
+            dati_hr.append([row["Zona"], row["Da (bpm)"], row["A (bpm)"]])
 
-        pdf.ln(8)
+        tabella_hr = Table(dati_hr, colWidths=[4*cm, 6*cm, 6*cm])
+        tabella_hr.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(-1,0),colors.lightgrey),
+            ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+            ('ALIGN',(1,1),(-1,-1),'CENTER')
+        ]))
+
+        elements.append(tabella_hr)
+        elements.append(Spacer(1, 0.5*cm))
 
     # =====================================================
     # PROIEZIONE
     # =====================================================
+    elements.append(Paragraph("PROIEZIONE STRATEGICA", sezione_style))
+    elements.append(Spacer(1, 0.3*cm))
 
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(0, 8, "PROIEZIONE STRATEGICA", ln=True, fill=True)
+    dati_proj = [
+        ["Nuovo peso", f"{nuovo_peso:.2f} kg"],
+        ["Nuova FTP", f"{nuova_ftp:.2f} W"],
+        ["Nuovo W/kg", f"{nuovo_wkg:.2f}"],
+    ]
 
-    pdf.set_font("Arial", size=10)
+    tabella_proj = Table(dati_proj, colWidths=[5*cm, 11*cm])
+    tabella_proj.setStyle(TableStyle([
+        ('GRID',(0,0),(-1,-1),0.5,colors.grey),
+    ]))
 
-    pdf.cell(95, row_height, f"Nuovo peso: {nuovo_peso:.2f} kg", border=1)
-    pdf.cell(95, row_height, f"Nuova FTP: {nuova_ftp:.2f} W", border=1, ln=True)
+    elements.append(tabella_proj)
 
-    pdf.cell(190, row_height, f"Nuovo W/kg: {nuovo_wkg:.2f}", border=1, ln=True)
+    # Costruzione PDF
+    doc.build(elements)
 
-    # Footer
-    pdf.set_y(-12)
-    pdf.set_font("Arial", "I", 8)
-    pdf.cell(0, 6, f"Pagina {pdf.page_no()}", align="C")
-
-    # Output Cloud Safe
-    pdf_bytes = pdf.output(dest="S").encode("latin-1")
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
 
     st.download_button(
         "Scarica PDF Clinico Professionale",
