@@ -73,14 +73,19 @@ fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
 
 sesso = st.selectbox("Sesso biologico", ["Maschio", "Femmina"])
 resistenza = st.number_input("Resistenza BIA (ohm)", 0.0)
+# ======================================================
+# LIVELLO ATTIVITÀ (PAL)
+# ======================================================
+pal_dict = {
+    "Sedentario (1.2)": 1.2,
+    "Leggero (1.375)": 1.375,
+    "Moderato (1.55)": 1.55,
+    "Intenso (1.725)": 1.725,
+    "Molto intenso (1.9)": 1.9
+}
 
-pal = st.selectbox("Livello attività (PAL)", {
-    "Sedentario (1.2)":1.2,
-    "Leggero (1.375)":1.375,
-    "Moderato (1.55)":1.55,
-    "Intenso (1.725)":1.725,
-    "Molto intenso (1.9)":1.9
-})
+pal_label = st.selectbox("Livello attività (PAL)", list(pal_dict.keys()))
+pal = pal_dict[pal_label]
 
 sesso_num = 1 if sesso == "Maschio" else 0
 
