@@ -8,20 +8,6 @@ import math
 st.set_page_config(layout="wide")
 
 # ======================================================
-# LOGO
-# ======================================================
-
-try:
-    logo = Image.open("logo.png")
-    c1, c2, c3 = st.columns([1,2,1])
-    with c2:
-        st.image(logo, width=250)
-except:
-    pass
-
-st.markdown("---")
-
-# ======================================================
 # DATI ANAGRAFICI
 # ======================================================
 
@@ -41,8 +27,6 @@ eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
     (data_nascita.month, data_nascita.day)
 )
-
-st.write(f"Età: {eta} anni")
 
 st.markdown("---")
 
@@ -103,20 +87,74 @@ st.write(f"W/kg: {wkg:.2f}")
 st.markdown("---")
 
 # ======================================================
-# PROIEZIONE AVANZATA
+# ZONE POTENZA CON DESCRIZIONE
+# ======================================================
+
+zone_df = pd.DataFrame()
+
+if ftp > 0:
+
+    zone = [
+        ("Z1 Recovery attivo",0.00,0.55),
+        ("Z2 Fondo aerobico",0.56,0.75),
+        ("Z3 Tempo",0.76,0.90),
+        ("Z4 Soglia lattato",0.91,1.05),
+        ("Z5 VO2max",1.06,1.20),
+        ("Z6 Capacità anaerobica",1.21,1.50),
+        ("Z7 Neuromuscolare",1.51,2.00),
+    ]
+
+    zone_df = pd.DataFrame(
+        [[z, round(a*ftp), round(b*ftp)] for z,a,b in zone],
+        columns=["Zona e funzione","Da (W)","A (W)"]
+    )
+
+    st.subheader("Zone Potenza")
+    st.table(zone_df)
+
+# ======================================================
+# ZONE CARDIO CON DESCRIZIONE
+# ======================================================
+
+st.header("Frequenza Cardiaca")
+
+fthr = st.number_input("FTHR (bpm)", 0.0)
+
+zone_hr_df = pd.DataFrame()
+
+if fthr > 0:
+
+    zone_hr = [
+        ("Z1 Recupero",0.81,0.89),
+        ("Z2 Aerobico base",0.90,0.93),
+        ("Z3 Tempo",0.94,0.99),
+        ("Z4 Soglia",1.00,1.05),
+        ("Z5 Alta intensità",1.06,1.15),
+    ]
+
+    zone_hr_df = pd.DataFrame(
+        [[z, round(a*fthr), round(b*fthr)] for z,a,b in zone_hr],
+        columns=["Zona e funzione","Da (bpm)","A (bpm)"]
+    )
+
+    st.subheader("Zone Cardio")
+    st.table(zone_hr_df)
+
+st.markdown("---")
+
+# ======================================================
+# PROIEZIONE + SALITA
 # ======================================================
 
 st.header("Proiezione Performance")
 
-nuovo_peso_input = st.number_input("Nuovo peso target (kg)", 0.0)
+nuovo_peso = st.number_input("Nuovo peso target (kg)", 0.0)
 incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0)
 
-if nuovo_peso_input > 0:
+if nuovo_peso > 0:
 
     nuova_ftp = ftp * (1 + incremento_ftp/100)
-    nuovo_wkg = nuova_ftp / nuovo_peso_input
-
-    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+    nuovo_wkg = nuova_ftp / nuovo_peso
 
     delta = nuovo_wkg - wkg
 
@@ -127,38 +165,30 @@ if nuovo_peso_input > 0:
     else:
         giudizio = "Miglioramento lieve"
 
+    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
     st.write(f"Giudizio: {giudizio}")
 
-    # ======================================================
-    # SIMULAZIONE SALITA
-    # ======================================================
-
-    st.subheader("Simulazione salita 5 km al 6%")
-
+    # Simulazione salita 5km 6%
     lunghezza = 5000
     pendenza = 0.06
     g = 9.81
 
-    # velocità stimata (modello semplificato potenza gravitazionale)
     def tempo_salita(potenza, peso):
         forza = peso * g * pendenza
         velocita = potenza / forza
         tempo = lunghezza / velocita
-        return tempo / 60  # minuti
+        return tempo / 60
 
     tempo_vecchio = tempo_salita(ftp, peso)
-    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso_input)
+    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
 
-    differenza = tempo_vecchio - tempo_nuovo
-
+    st.subheader("Simulazione salita 5 km al 6%")
     st.write(f"Tempo attuale: {tempo_vecchio:.1f} min")
-    st.write(f"Tempo stimato nuovo: {tempo_nuovo:.1f} min")
-    st.write(f"Miglioramento: {differenza:.1f} min")
-
-st.markdown("---")
+    st.write(f"Tempo stimato: {tempo_nuovo:.1f} min")
+    st.write(f"Guadagno: {(tempo_vecchio-tempo_nuovo):.1f} min")
 
 # ======================================================
-# PDF COMPLETO
+# PDF
 # ======================================================
 
 if st.button("Genera PDF"):
@@ -166,7 +196,7 @@ if st.button("Genera PDF"):
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial","B",16)
-    pdf.cell(0,10,"REPORT PERFORMANCE AVANZATO",0,1,"C")
+    pdf.cell(0,10,"REPORT PERFORMANCE COMPLETO",0,1,"C")
     pdf.ln(5)
 
     pdf.set_font("Arial","",11)
@@ -178,21 +208,20 @@ if st.button("Genera PDF"):
         f"BMI: {bmi:.2f}\n"
         f"Massa grassa: {fm:.1f}%\n\n"
         f"FTP: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}\n"
+        f"W/kg: {wkg:.2f}\n\n"
     )
 
-    if nuovo_peso_input > 0:
-        pdf.multi_cell(0,7,
-            f"\nNuovo peso target: {nuovo_peso_input:.1f} kg\n"
-            f"Nuova FTP: {nuova_ftp:.2f} W\n"
-            f"Nuovo W/kg: {nuovo_wkg:.2f}\n"
-            f"Giudizio: {giudizio}\n"
-            f"Tempo salita attuale: {tempo_vecchio:.1f} min\n"
-            f"Tempo salita stimato: {tempo_nuovo:.1f} min\n"
-            f"Miglioramento: {differenza:.1f} min"
-        )
+    if not zone_df.empty:
+        pdf.multi_cell(0,6,"\nZone Potenza:")
+        for _, row in zone_df.iterrows():
+            pdf.multi_cell(0,6,f"{row[0]}: {row[1]} - {row[2]} W")
 
-    pdf.output("report_avanzato.pdf")
+    if not zone_hr_df.empty:
+        pdf.multi_cell(0,6,"\nZone Cardio:")
+        for _, row in zone_hr_df.iterrows():
+            pdf.multi_cell(0,6,f"{row[0]}: {row[1]} - {row[2]} bpm")
 
-    with open("report_avanzato.pdf","rb") as f:
-        st.download_button("Scarica PDF",f,"report_avanzato.pdf")
+    pdf.output("report_finale.pdf")
+
+    with open("report_finale.pdf","rb") as f:
+        st.download_button("Scarica PDF",f,"report_finale.pdf")
