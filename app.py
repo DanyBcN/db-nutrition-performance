@@ -346,7 +346,7 @@ if st.button("Genera PDF Professionale"):
             f"e se avesse un incremento della FTP del {incremento_ftp:.1f}%, "
             f"passando quindi da {ftp:.1f} W a {nuova_ftp:.1f} W, "
             f"si avrebbe un incremento del rapporto W/kg "
-            f"da {wkg:.2f} a {nuovo_wkg:.2f}.\n\n"
+            f"da {wkg:.2f} a {nuovo_wkg:.2f}.\n"
             f"Su una salita di 5 chilometri con pendenza media del 6%, "
             f"il tempo stimato passerebbe da {tempo_vecchio:.1f} minuti "
             f"a {tempo_nuovo:.1f} minuti, "
