@@ -191,71 +191,156 @@ nuova_ftp = ftp*(1+incremento_ftp/100)
 nuovo_wkg = nuova_ftp/nuovo_peso if nuovo_peso>0 else 0
 
 # ======================================================
-# PDF COMPLETO
+# PDF PREMIUM STUDIO PRIVATO
 # ======================================================
 
-if st.button("Genera PDF Completo"):
+if st.button("Genera PDF Premium"):
 
-    pdf=FPDF()
-    pdf.set_auto_page_break(auto=True,margin=10)
+    class PDF(FPDF):
+        def header(self):
+            try:
+                self.image("logo.png", 80, 8, 50)
+                self.ln(30)
+            except:
+                self.ln(15)
+            self.set_font("Arial","B",14)
+            self.cell(0,10,"REPORT VALUTAZIONE METABOLICO-FUNZIONALE",0,1,"C")
+            self.ln(5)
+
+        def footer(self):
+            self.set_y(-10)
+            self.set_font("Arial","I",8)
+            self.cell(0,5,f"Pagina {self.page_no()}",0,0,"C")
+
+    pdf = PDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
-    pdf.set_font("Arial",size=10)
+    pdf.set_font("Arial", size=10)
 
-    pdf.set_font("Arial","B",14)
-    pdf.cell(0,10,"REPORT VALUTAZIONE METABOLICO-FUNZIONALE",ln=True,align="C")
+    # ==================================================
+    # DATI ANAGRAFICI
+    # ==================================================
+    pdf.set_font("Arial","B",12)
+    pdf.cell(0,8,"DATI ANAGRAFICI",0,1)
+    pdf.set_font("Arial", size=10)
+
+    pdf.cell(95,8,f"Nome: {nome}",1)
+    pdf.cell(95,8,f"Cognome: {cognome}",1,1)
+
+    pdf.cell(95,8,f"Sesso: {sesso}",1)
+    pdf.cell(95,8,f"Eta: {eta} anni",1,1)
+
+    pdf.cell(95,8,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')}",1)
+    pdf.cell(95,8,f"Codice Fiscale: {cf}",1,1)
+
+    pdf.cell(95,8,f"Comune: {comune}",1)
+    pdf.cell(95,8,f"Provincia: {provincia}",1,1)
+
+    pdf.cell(190,8,f"Email: {email}",1,1)
+    pdf.cell(190,8,f"Telefono: {telefono}",1,1)
+    pdf.cell(190,8,f"Indirizzo: {indirizzo}",1,1)
+
     pdf.ln(5)
-    pdf.set_font("Arial",size=10)
 
-    # Anagrafica
-    pdf.multi_cell(0,6,f"Nome: {nome} {cognome}")
-    pdf.multi_cell(0,6,f"Sesso: {sesso}")
-    pdf.multi_cell(0,6,f"Data nascita: {data_nascita.strftime('%d/%m/%Y')} - Eta: {eta}")
-    pdf.multi_cell(0,6,f"Comune: {comune} ({provincia})")
-    pdf.multi_cell(0,6,f"Codice Fiscale: {cf}")
-    pdf.multi_cell(0,6,f"Email: {email}")
-    pdf.multi_cell(0,6,f"Telefono: {telefono}")
-    pdf.multi_cell(0,6,f"Indirizzo: {indirizzo}")
-    pdf.ln(4)
+    # ==================================================
+    # ANTROPOMETRIA
+    # ==================================================
+    pdf.set_font("Arial","B",12)
+    pdf.cell(0,8,"VALUTAZIONE ANTROPOMETRICA",0,1)
+    pdf.set_font("Arial", size=10)
 
-    # Antropometria
-    pdf.multi_cell(0,6,f"Peso: {peso:.2f} kg")
-    pdf.multi_cell(0,6,f"Altezza: {altezza:.0f} cm")
-    pdf.multi_cell(0,6,f"BMI: {bmi:.2f} ({classificazione})")
-    pdf.multi_cell(0,6,f"Massa grassa: {fm_kg:.2f} kg")
-    pdf.multi_cell(0,6,f"Massa magra: {massa_magra:.2f} kg")
-    pdf.ln(4)
+    pdf.cell(63,8,f"Peso: {peso:.2f} kg",1)
+    pdf.cell(63,8,f"Altezza: {altezza:.0f} cm",1)
+    pdf.cell(64,8,f"BMI: {bmi:.2f}",1,1)
 
-    # Performance
-    pdf.multi_cell(0,6,f"Metodo FTP: {metodo}")
-    pdf.multi_cell(0,6,f"FTP: {ftp:.2f} W")
-    pdf.multi_cell(0,6,f"W/kg: {wkg:.2f}")
-    pdf.multi_cell(0,6,f"FTHR: {fthr:.0f} bpm")
-    pdf.ln(4)
+    pdf.cell(95,8,f"Classificazione: {classificazione}",1)
+    pdf.cell(95,8,f"FM%: {fm:.2f}",1,1)
 
-    # Zone Potenza
-    pdf.cell(0,6,"Zone Potenza:",ln=True)
-    for z,a,b in zone:
-        pdf.multi_cell(0,6,f"{z}: {round(a*ftp)} - {round(b*ftp)} W")
+    pdf.cell(95,8,f"Massa grassa: {fm_kg:.2f} kg",1)
+    pdf.cell(95,8,f"Massa magra: {massa_magra:.2f} kg",1,1)
 
-    pdf.ln(4)
+    pdf.ln(5)
 
-    # Zone Cardio
-    pdf.cell(0,6,"Zone Cardio:",ln=True)
-    for z,a,b in zone_hr:
-        pdf.multi_cell(0,6,f"{z}: {round(a*fthr)} - {round(b*fthr)} bpm")
+    # ==================================================
+    # PERFORMANCE
+    # ==================================================
+    pdf.set_font("Arial","B",12)
+    pdf.cell(0,8,"PERFORMANCE",0,1)
+    pdf.set_font("Arial", size=10)
 
-    pdf.ln(4)
+    pdf.cell(95,8,f"Metodo FTP: {metodo}",1)
+    pdf.cell(95,8,f"FTP: {ftp:.2f} W",1,1)
 
-    # Proiezione
-    pdf.multi_cell(0,6,f"Target FM: {target_fm:.2f}%")
-    pdf.multi_cell(0,6,f"Incremento FTP: {incremento_ftp:.2f}%")
-    pdf.multi_cell(0,6,f"Nuovo peso: {nuovo_peso:.2f} kg")
-    pdf.multi_cell(0,6,f"Nuova FTP: {nuova_ftp:.2f} W")
-    pdf.multi_cell(0,6,f"Nuovo W/kg: {nuovo_wkg:.2f}")
+    pdf.cell(95,8,f"W/kg: {wkg:.2f}",1)
+    pdf.cell(95,8,f"FTHR: {fthr:.0f} bpm",1,1)
 
-    pdf_bytes=pdf.output(dest="S").encode("latin-1")
+    pdf.ln(5)
 
-    st.download_button("Scarica PDF Completo",
-                       data=pdf_bytes,
-                       file_name="report_completo.pdf",
-                       mime="application/pdf")
+    # ==================================================
+    # ZONE POTENZA
+    # ==================================================
+    if ftp > 0:
+
+        pdf.set_font("Arial","B",12)
+        pdf.cell(0,8,"ZONE DI POTENZA",0,1)
+
+        pdf.set_font("Arial","B",10)
+        pdf.cell(40,8,"Zona",1)
+        pdf.cell(75,8,"Da (W)",1)
+        pdf.cell(75,8,"A (W)",1,1)
+
+        pdf.set_font("Arial", size=10)
+
+        for z,a,b in zone:
+            pdf.cell(40,8,z,1)
+            pdf.cell(75,8,str(round(a*ftp)),1)
+            pdf.cell(75,8,str(round(b*ftp)),1,1)
+
+        pdf.ln(5)
+
+    # ==================================================
+    # ZONE CARDIO
+    # ==================================================
+    if fthr > 0:
+
+        pdf.set_font("Arial","B",12)
+        pdf.cell(0,8,"ZONE CARDIO",0,1)
+
+        pdf.set_font("Arial","B",10)
+        pdf.cell(40,8,"Zona",1)
+        pdf.cell(75,8,"Da (bpm)",1)
+        pdf.cell(75,8,"A (bpm)",1,1)
+
+        pdf.set_font("Arial", size=10)
+
+        for z,a,b in zone_hr:
+            pdf.cell(40,8,z,1)
+            pdf.cell(75,8,str(round(a*fthr)),1)
+            pdf.cell(75,8,str(round(b*fthr)),1,1)
+
+        pdf.ln(5)
+
+    # ==================================================
+    # PROIEZIONE
+    # ==================================================
+    pdf.set_font("Arial","B",12)
+    pdf.cell(0,8,"PROIEZIONE STRATEGICA",0,1)
+    pdf.set_font("Arial", size=10)
+
+    pdf.cell(95,8,f"Target FM: {target_fm:.2f}%",1)
+    pdf.cell(95,8,f"Incremento FTP: {incremento_ftp:.2f}%",1,1)
+
+    pdf.cell(95,8,f"Nuovo peso: {nuovo_peso:.2f} kg",1)
+    pdf.cell(95,8,f"Nuova FTP: {nuova_ftp:.2f} W",1,1)
+
+    pdf.cell(190,8,f"Nuovo W/kg: {nuovo_wkg:.2f}",1,1)
+
+    # Output Cloud Safe
+    pdf_bytes = pdf.output(dest="S").encode("latin-1")
+
+    st.download_button(
+        "Scarica PDF Premium",
+        data=pdf_bytes,
+        file_name="report_premium.pdf",
+        mime="application/pdf"
+    )
