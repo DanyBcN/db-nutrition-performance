@@ -423,7 +423,7 @@ if st.button("Genera PDF Professionale"):
             pdf.cell(30,8,str(row["Da (bpm)"]),1)
             pdf.cell(30,8,str(row["A (bpm)"]),1)
             pdf.ln()
-f,
+f"
     # PROIEZIONE
     if nuovo_peso > 0 and ftp > 0:
 
