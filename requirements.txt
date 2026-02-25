@@ -3,3 +3,4 @@ pillow
 fpdf
 pandas
 numpy
+codicefiscale
