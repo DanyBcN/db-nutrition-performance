@@ -282,13 +282,17 @@ if st.button("Genera PDF Professionale"):
     pdf.set_auto_page_break(auto=True, margin=15)
 
     # DATI ANAGRAFICI
-    pdf.section_title("Dati Anagrafici")
-    pdf.normal(
-        f"Nome: {nome}\n"
-        f"Cognome: {cognome}\n"
-        f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n"
-        f"Eta: {eta} anni"
-    )
+   pdf.section_title("Dati Anagrafici")
+
+nome_safe = safe(nome) if nome else "-"
+cognome_safe = safe(cognome) if cognome else "-"
+
+pdf.normal(
+    f"Nome: {nome_safe}\n"
+    f"Cognome: {cognome_safe}\n"
+    f"Data di nascita: {data_nascita.strftime('%d/%m/%Y')}\n"
+    f"Eta: {eta} anni"
+)
 
     # ANTROPOMETRIA
     pdf.section_title("Antropometria")
