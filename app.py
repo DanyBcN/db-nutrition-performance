@@ -240,7 +240,7 @@ if nuovo_peso > 0 and ftp > 0:
 st.markdown("---")
 
 # ======================================================
-# PDF PROFESSIONALE DEFINITIVO (COMPLETO ORIGINALE + BMI)
+# PDF PROFESSIONALE DEFINITIVO
 # ======================================================
 
 if st.button("Genera PDF Professionale"):
@@ -282,20 +282,21 @@ if st.button("Genera PDF Professionale"):
     pdf.set_auto_page_break(auto=True, margin=15)
 
     # DATI ANAGRAFICI
-   pdf.section_title("Dati Anagrafici")
+    pdf.section_title("Dati Anagrafici")
 
-nome_safe = safe(nome) if nome else "-"
-cognome_safe = safe(cognome) if cognome else "-"
+    nome_safe = safe(nome) if nome else "-"
+    cognome_safe = safe(cognome) if cognome else "-"
 
-pdf.normal(
-    f"Nome: {nome_safe}\n"
-    f"Cognome: {cognome_safe}\n"
-    f"Data di nascita: {data_nascita.strftime('%d/%m/%Y')}\n"
-    f"Eta: {eta} anni"
-)
+    pdf.normal(
+        f"Nome: {nome_safe}\n"
+        f"Cognome: {cognome_safe}\n"
+        f"Data di nascita: {data_nascita.strftime('%d/%m/%Y')}\n"
+        f"Eta: {eta} anni"
+    )
 
     # ANTROPOMETRIA
     pdf.section_title("Antropometria")
+
     pdf.normal(
         f"Peso: {peso:.1f} kg\n"
         f"Altezza: {altezza:.1f} cm\n"
@@ -310,6 +311,7 @@ pdf.normal(
 
     # PERFORMANCE
     pdf.section_title("Performance")
+
     pdf.normal(
         f"Metodo FTP: {metodo}\n"
         f"Valore test inserito: {valore_test:.2f} W\n"
@@ -317,7 +319,7 @@ pdf.normal(
         f"W/kg: {wkg:.2f}"
     )
 
-    # TABELLA ZONE POTENZA
+    # ZONE POTENZA
     if not zone_df.empty:
 
         if pdf.get_y() > 220:
@@ -342,7 +344,7 @@ pdf.normal(
             pdf.cell(30,8,str(row["A (W)"]),1)
             pdf.ln()
 
-    # TABELLA ZONE CARDIO
+    # ZONE CARDIO
     if not zone_hr_df.empty:
 
         if pdf.get_y() > 220:
