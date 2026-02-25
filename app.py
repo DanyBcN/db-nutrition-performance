@@ -222,21 +222,18 @@ st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
 
 st.markdown("---")
 
-# ======================================================
-# PDF CLINICO EXECUTIVE - VERSIONE DEFINITIVA
-# ======================================================
+# Genera PDF definitivo (ReportLab, versione "prende tutti i dati")
+if st.button("Genera PDF Clinico Definitivo"):
 
-if st.button("Genera PDF Clinico Executive"):
-
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
     from reportlab.lib import colors
     from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
     from reportlab.lib.units import cm
     from reportlab.lib.pagesizes import A4
-    from reportlab.pdfbase.ttfonts import TTFont
-    from reportlab.pdfbase import pdfmetrics
     from io import BytesIO
+    from datetime import date as _date
 
+    # --- Buffer PDF ---
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -247,144 +244,184 @@ if st.button("Genera PDF Clinico Executive"):
         bottomMargin=2*cm
     )
 
-    elements = []
+    # --- Styles ---
     styles = getSampleStyleSheet()
+    titolo_style = ParagraphStyle("Titolo", parent=styles["Heading1"], fontSize=16, spaceAfter=6, alignment=1)
+    sezione_style = ParagraphStyle("Sezione", parent=styles["Heading2"], fontSize=12, textColor=colors.HexColor("#1f3c88"), spaceBefore=8, spaceAfter=4)
+    label_style = ParagraphStyle("Label", parent=styles["Normal"], fontSize=9, textColor=colors.grey)
+    value_style = ParagraphStyle("Value", parent=styles["Normal"], fontSize=10, textColor=colors.black)
 
-    # =========================
-    # STILI PERSONALIZZATI
-    # =========================
+    # --- Helper: safe string ---
+    def safe(x):
+        return str(x) if (x is not None and str(x).strip() != "") else "-"
 
-    titolo = ParagraphStyle(
-        'Titolo',
-        parent=styles['Heading1'],
-        fontSize=18,
-        spaceAfter=12
-    )
-
-    sezione = ParagraphStyle(
-        'Sezione',
-        parent=styles['Heading2'],
-        fontSize=13,
-        textColor=colors.HexColor("#1f3c88"),
-        spaceBefore=12,
-        spaceAfter=6
-    )
-
-    label_style = ParagraphStyle(
-        'Label',
-        parent=styles['Normal'],
-        fontSize=10,
-        textColor=colors.grey
-    )
-
-    value_style = ParagraphStyle(
-        'Value',
-        parent=styles['Normal'],
-        fontSize=11,
-        textColor=colors.black
-    )
-
-    # =========================
-    # LOGO
-    # =========================
+    # --- Ricalcola età (in caso sia necessario) ---
     try:
-        logo = Image("logo.png", width=4*cm, height=2*cm)
-        logo.hAlign = "RIGHT"
+        today = _date.today()
+        eta_calcolata = today.year - data_nascita.year - ((today.month, today.day) < (data_nascita.month, data_nascita.day))
+        eta_to_show = eta_calcolata
+    except Exception:
+        eta_to_show = safe(eta)  # fallback se data_nascita non valida
+
+    # --- Header / Footer callback ---
+    def _header_footer(canvas, doc):
+        canvas.saveState()
+        # header: logo a destra e titolo piccolo
+        try:
+            logo_path = "logo.png"
+            canvas.drawImage(logo_path, doc.pagesize[0] - doc.rightMargin - (3.8*cm), doc.pagesize[1] - doc.topMargin + (0.2*cm), width=3.8*cm, height=1.6*cm, preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+        canvas.setFont("Helvetica", 8)
+        canvas.drawString(doc.leftMargin, doc.pagesize[1] - doc.topMargin + 0.2*cm, "Report valutazione metabolico-funzionale")
+        # footer: numero pagina
+        canvas.setFont("Helvetica-Oblique", 8)
+        canvas.drawCentredString(doc.pagesize[0]/2.0, doc.bottomMargin/2.0, f"Pagina {doc.page}")
+        canvas.restoreState()
+
+    # --- Build elements ---
+    elements = []
+
+    # Logo + titolo (centrato)
+    try:
+        logo = Image("logo.png", width=6*cm, height=2.4*cm)
+        logo.hAlign = "CENTER"
         elements.append(logo)
-    except:
+    except Exception:
         pass
 
-    elements.append(Paragraph("REPORT VALUTAZIONE METABOLICO-FUNZIONALE", titolo))
-    elements.append(Spacer(1, 0.5*cm))
+    elements.append(Paragraph("REPORT VALUTAZIONE METABOLICO-FUNZIONALE", titolo_style))
+    elements.append(Spacer(1, 0.2*cm))
 
-    # =====================================================
-    # DATI ANAGRAFICI STRUTTURATI
-    # =====================================================
-
-    elements.append(Paragraph("DATI ANAGRAFICI", sezione))
+    # --- DATI ANAGRAFICI (2 colonne: label / value) ---
+    elements.append(Paragraph("DATI ANAGRAFICI", sezione_style))
 
     dati_anagrafici = [
-        [Paragraph("Nome e Cognome", label_style), Paragraph(f"{nome} {cognome}", value_style)],
-        [Paragraph("Sesso", label_style), Paragraph(sesso, value_style)],
-        [Paragraph("Data di nascita", label_style), Paragraph(f"{data_nascita.strftime('%d/%m/%Y')} ({eta} anni)", value_style)],
-        [Paragraph("Luogo di nascita", label_style), Paragraph(f"{comune} ({provincia})", value_style)],
-        [Paragraph("Email", label_style), Paragraph(email, value_style)],
-        [Paragraph("Telefono", label_style), Paragraph(telefono, value_style)],
-        [Paragraph("Indirizzo", label_style), Paragraph(indirizzo, value_style)],
+        [Paragraph("Nome", label_style), Paragraph(f"{safe(nome)} {safe(cognome)}", value_style)],
+        [Paragraph("Sesso", label_style), Paragraph(safe(sesso), value_style)],
+        [Paragraph("Data di nascita", label_style), Paragraph(f"{data_nascita.strftime('%d/%m/%Y') if hasattr(data_nascita,'strftime') else safe(data_nascita)} ({eta_to_show} anni)", value_style)],
+        [Paragraph("Luogo di nascita", label_style), Paragraph(f"{safe(comune)} ({safe(provincia)})", value_style)],
+        [Paragraph("Email", label_style), Paragraph(safe(email), value_style)],
+        [Paragraph("Telefono", label_style), Paragraph(safe(telefono), value_style)],
+        [Paragraph("Indirizzo", label_style), Paragraph(safe(indirizzo), value_style)],
     ]
 
-    tab_anag = Table(dati_anagrafici, colWidths=[5*cm, 9*cm])
+    tab_anag = Table(dati_anagrafici, colWidths=[5.2*cm, 9.8*cm], repeatRows=0)
     tab_anag.setStyle(TableStyle([
-        ('BOX',(0,0),(-1,-1),0.8,colors.black),
-        ('INNERGRID',(0,0),(-1,-1),0.3,colors.lightgrey),
+        ('BOX',(0,0),(-1,-1),0.6,colors.HexColor("#d9d9d9")),
+        ('INNERGRID',(0,0),(-1,-1),0.4,colors.HexColor("#e6e6e6")),
         ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
-        ('LEFTPADDING',(0,0),(-1,-1),8),
-        ('RIGHTPADDING',(0,0),(-1,-1),8),
-        ('TOPPADDING',(0,0),(-1,-1),6),
-        ('BOTTOMPADDING',(0,0),(-1,-1),6),
+        ('LEFTPADDING',(0,0),(-1,-1),6),
+        ('RIGHTPADDING',(0,0),(-1,-1),6),
+        ('TOPPADDING',(0,0),(-1,-1),4),
+        ('BOTTOMPADDING',(0,0),(-1,-1),4),
     ]))
-
     elements.append(tab_anag)
+    elements.append(Spacer(1, 0.3*cm))
 
-    # =====================================================
-    # ANTROPOMETRIA
-    # =====================================================
-
-    elements.append(Paragraph("VALUTAZIONE ANTROPOMETRICA", sezione))
+    # --- ANTROPOMETRIA ---
+    elements.append(Paragraph("VALUTAZIONE ANTROPOMETRICA", sezione_style))
 
     dati_antropo = [
-        ["Peso (kg)", f"{peso:.2f}"],
-        ["Altezza (cm)", f"{altezza:.0f}"],
-        ["BMI", f"{bmi:.2f} ({classificazione})"],
-        ["Massa grassa (kg)", f"{fm_kg:.2f}"],
-        ["Massa magra (kg)", f"{massa_magra:.2f}"],
+        [Paragraph("Peso (kg)", label_style), Paragraph(f"{peso:.2f}" if peso is not None else "-", value_style), Paragraph("Massa grassa (%)", label_style), Paragraph(f"{fm:.2f}" if fm is not None else "-", value_style)],
+        [Paragraph("Altezza (cm)", label_style), Paragraph(f"{altezza:.0f}" if altezza is not None else "-", value_style), Paragraph("Massa grassa (kg)", label_style), Paragraph(f"{fm_kg:.2f}" if 'fm_kg' in locals() else "-", value_style)],
+        [Paragraph("BMI", label_style), Paragraph(f"{bmi:.2f} ({classificazione})" if 'bmi' in locals() else "-", value_style), Paragraph("Massa magra (kg)", label_style), Paragraph(f"{massa_magra:.2f}" if 'massa_magra' in locals() else "-", value_style)],
     ]
 
-    tab_antropo = Table(dati_antropo, colWidths=[7*cm, 7*cm])
-    tab_antropo.setStyle(TableStyle([
-        ('BACKGROUND',(0,0),(-1,0),colors.whitesmoke),
-        ('GRID',(0,0),(-1,-1),0.5,colors.grey),
-        ('ALIGN',(1,0),(-1,-1),'RIGHT'),
-        ('LEFTPADDING',(0,0),(-1,-1),8),
-        ('RIGHTPADDING',(0,0),(-1,-1),8),
+    tab_ant = Table(dati_antropo, colWidths=[3.6*cm, 4.4*cm, 3.6*cm, 4.4*cm], repeatRows=0)
+    tab_ant.setStyle(TableStyle([
+        ('GRID',(0,0),(-1,-1),0.4,colors.HexColor("#e0e0e0")),
+        ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+        ('ALIGN',(1,0),(1,-1),'RIGHT'),
+        ('ALIGN',(3,0),(3,-1),'RIGHT'),
+        ('LEFTPADDING',(0,0),(-1,-1),6),
+        ('RIGHTPADDING',(0,0),(-1,-1),6),
     ]))
+    elements.append(tab_ant)
+    elements.append(Spacer(1, 0.3*cm))
 
-    elements.append(tab_antropo)
+    # --- PERFORMANCE ---
+    elements.append(Paragraph("PERFORMANCE", sezione_style))
 
-    # =====================================================
-    # ZONE POTENZA CON HEADER PROFESSIONALE
-    # =====================================================
+    dati_perf = [
+        ["Metodo FTP", safe(metodo)],
+        ["FTP (W)", f"{ftp:.2f}" if ftp is not None else "-"],
+        ["W/kg", f"{wkg:.2f}" if wkg is not None else "-"],
+        ["FTHR (bpm)", f"{fthr:.0f}" if fthr is not None else "-"],
+    ]
+    tab_perf = Table(dati_perf, colWidths=[5.2*cm, 9.8*cm], repeatRows=0)
+    tab_perf.setStyle(TableStyle([
+        ('GRID',(0,0),(-1,-1),0.4,colors.HexColor("#e0e0e0")),
+        ('LEFTPADDING',(0,0),(-1,-1),6),
+        ('RIGHTPADDING',(0,0),(-1,-1),6),
+    ]))
+    elements.append(tab_perf)
+    elements.append(Spacer(1, 0.3*cm))
 
-    if zone_potenza_df is not None:
-
-        elements.append(Paragraph("ZONE DI POTENZA", sezione))
-
+    # --- ZONE POTENZA (tabella con header ripetuto se spezza pagina) ---
+    if zone_potenza_df is not None and not zone_potenza_df.empty:
+        elements.append(Paragraph("ZONE DI POTENZA", sezione_style))
         dati_zone = [["Zona", "Da (W)", "A (W)"]]
         for _, row in zone_potenza_df.iterrows():
-            dati_zone.append([row["Zona"], row["Da (W)"], row["A (W)"]])
-
-        tab_zone = Table(dati_zone, colWidths=[4*cm, 5*cm, 5*cm])
+            dati_zone.append([safe(row["Zona"]), safe(row["Da (W)"]), safe(row["A (W)"])])
+        tab_zone = Table(dati_zone, colWidths=[4*cm, 5.6*cm, 5.6*cm], repeatRows=1)
         tab_zone.setStyle(TableStyle([
             ('BACKGROUND',(0,0),(-1,0),colors.HexColor("#1f3c88")),
             ('TEXTCOLOR',(0,0),(-1,0),colors.white),
-            ('GRID',(0,0),(-1,-1),0.4,colors.grey),
+            ('GRID',(0,0),(-1,-1),0.5,colors.HexColor("#d9d9d9")),
             ('ALIGN',(1,1),(-1,-1),'RIGHT'),
-            ('LEFTPADDING',(0,0),(-1,-1),8),
-            ('RIGHTPADDING',(0,0),(-1,-1),8),
+            ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+            ('LEFTPADDING',(0,0),(-1,-1),6),
+            ('RIGHTPADDING',(0,0),(-1,-1),6),
         ]))
+        elements.append(KeepTogether(tab_zone))
+        elements.append(Spacer(1, 0.3*cm))
 
-        elements.append(tab_zone)
+    # --- ZONE CARDIO ---
+    if zone_cardio_df is not None and not zone_cardio_df.empty:
+        elements.append(Paragraph("ZONE CARDIO", sezione_style))
+        dati_hr = [["Zona", "Da (bpm)", "A (bpm)"]]
+        for _, row in zone_cardio_df.iterrows():
+            dati_hr.append([safe(row["Zona"]), safe(row["Da (bpm)"]), safe(row["A (bpm)"])])
+        tab_hr = Table(dati_hr, colWidths=[4*cm, 5.6*cm, 5.6*cm], repeatRows=1)
+        tab_hr.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(-1,0),colors.HexColor("#1f3c88")),
+            ('TEXTCOLOR',(0,0),(-1,0),colors.white),
+            ('GRID',(0,0),(-1,-1),0.5,colors.HexColor("#d9d9d9")),
+            ('ALIGN',(1,1),(-1,-1),'RIGHT'),
+            ('VALIGN',(0,0),(-1,-1),'MIDDLE'),
+            ('LEFTPADDING',(0,0),(-1,-1),6),
+            ('RIGHTPADDING',(0,0),(-1,-1),6),
+        ]))
+        elements.append(KeepTogether(tab_hr))
+        elements.append(Spacer(1, 0.3*cm))
 
-    # =====================================================
+    # --- PROIEZIONE STRATEGICA (mostra anche target FM% e incremento FTP) ---
+    elements.append(Paragraph("PROIEZIONE STRATEGICA", sezione_style))
+    dati_proj = [
+        ["Target Massa Grassa (%)", f"{target_fm:.2f}" if 'target_fm' in locals() else safe(target_fm) if 'target_fm' in globals() else "-"],
+        ["Incremento FTP (%)", f"{incremento_ftp:.2f}" if 'incremento_ftp' in locals() else safe(incremento_ftp) if 'incremento_ftp' in globals() else "-"],
+        ["Nuovo peso (kg)", f"{nuovo_peso:.2f}" if 'nuovo_peso' in locals() else "-"],
+        ["Nuova FTP (W)", f"{nuova_ftp:.2f}" if 'nuova_ftp' in locals() else "-"],
+        ["Nuovo W/kg", f"{nuovo_wkg:.2f}" if 'nuovo_wkg' in locals() else "-"],
+    ]
+    tab_proj = Table(dati_proj, colWidths=[6*cm, 9*cm], repeatRows=0)
+    tab_proj.setStyle(TableStyle([
+        ('GRID',(0,0),(-1,-1),0.4,colors.HexColor("#e0e0e0")),
+        ('LEFTPADDING',(0,0),(-1,-1),6),
+        ('RIGHTPADDING',(0,0),(-1,-1),6),
+    ]))
+    elements.append(tab_proj)
 
-    doc.build(elements)
+    # --- Build PDF con header/footer su ogni pagina ---
+    doc.build(elements, onFirstPage=_header_footer, onLaterPages=_header_footer)
 
     pdf_bytes = buffer.getvalue()
     buffer.close()
 
     st.download_button(
-        "Scarica PDF Clinico Executive",
+        "Scarica PDF Clinico Definitivo",
         data=pdf_bytes,
-        file_name="report_clinico_executive.pdf",
+        file_name="report_clinico_definitivo.pdf",
         mime="application/pdf"
     )
