@@ -430,7 +430,7 @@ if st.button("Genera PDF Professionale"):
         delta_tempo = tempo_vecchio - tempo_nuovo
 
         pdf.section_title("Proiezione Miglioramento")
-
+pdf.ln(6)   # spazio verticale di 6 mm
         testo_proj = (
             f"Se il peso passasse da {peso:.1f} kg a {nuovo_peso:.1f} kg "
             f"e se avesse un incremento della FTP del {incremento_ftp:.1f}%, "
