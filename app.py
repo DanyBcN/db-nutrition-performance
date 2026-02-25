@@ -33,6 +33,7 @@ cognome = st.text_input("Cognome")
 sesso = st.selectbox("Sesso", ["M", "F"])
 comune = st.text_input("Comune di nascita")
 provincia = st.text_input("Provincia di nascita (sigla)")
+
 data_nascita = st.date_input(
     "Data di nascita",
     min_value=date(1920,1,1),
@@ -43,7 +44,12 @@ email = st.text_input("Email")
 telefono = st.text_input("Telefono")
 indirizzo = st.text_input("Indirizzo")
 
-data_nascita_it = data_nascita.strftime("%d %m %Y")
+# Formato italiano: gg mm aaaa
+giorno = f"{data_nascita.day:02d}"
+mese = f"{data_nascita.month:02d}"
+anno = data_nascita.year
+data_nascita_it = f"{giorno} {mese} {anno}"
+
 eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
     (data_nascita.month, data_nascita.day)
@@ -66,7 +72,7 @@ fm = st.number_input("Massa grassa (%)", 3.0, 50.0, step=0.1)
 
 altezza_m = altezza / 100
 bmi = peso / (altezza_m**2) if altezza_m > 0 else 0
-fm_kg = peso * (fm/100)
+fm_kg = peso * (fm / 100)
 massa_magra = peso - fm_kg
 
 if bmi < 18.5:
@@ -85,7 +91,7 @@ st.write(f"Massa magra: {massa_magra:.2f} kg")
 st.markdown("---")
 
 # ======================================================
-# FTP
+# CALCOLO FTP
 # ======================================================
 
 st.header("Calcolo FTP")
@@ -100,12 +106,15 @@ ftp = 0
 
 if metodo == "Immissione diretta":
     ftp = st.number_input("FTP (W)", 0.0)
+
 elif metodo == "Test 20 minuti":
     p20 = st.number_input("Media 20' (W)", 0.0)
     ftp = p20 * 0.95
+
 elif metodo == "Test 8 minuti":
     p8 = st.number_input("Media 8' (W)", 0.0)
     ftp = p8 * 0.90
+
 elif metodo == "Ramp test":
     step = st.number_input("Ultimo step (W)", 0.0)
     ftp = step * 0.75
@@ -183,14 +192,20 @@ st.header("Proiezione Strategica")
 target_fm = st.number_input("Target Massa Grassa (%)", 3.0, 20.0, step=0.1)
 incremento_ftp = st.number_input("Incremento FTP (%)", 0.0, 50.0, step=0.1)
 
-nuova_fm_kg = massa_magra * (target_fm/(100-target_fm))
-nuovo_peso = massa_magra + nuova_fm_kg
+if target_fm < 100:
+    nuova_fm_kg = massa_magra * (target_fm/(100-target_fm))
+    nuovo_peso = massa_magra + nuova_fm_kg
+else:
+    nuovo_peso = peso
+
 nuova_ftp = ftp * (1 + incremento_ftp/100)
 nuovo_wkg = nuova_ftp / nuovo_peso if nuovo_peso > 0 else 0
 
 st.write(f"Nuovo peso: {nuovo_peso:.2f} kg")
 st.write(f"Nuova FTP: {nuova_ftp:.2f} W")
 st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
+
+st.markdown("---")
 
 # ======================================================
 # PDF REPORT
@@ -205,8 +220,10 @@ if st.button("Genera PDF Performance"):
                 self.ln(28)
             except:
                 self.ln(18)
+
             self.set_font("Arial","B",16)
             self.cell(0,10,"PERFORMANCE REPORT",0,1,"C")
+
             self.set_font("Arial","",11)
             self.cell(0,6,f"{nome} {cognome}",0,1,"C")
             self.cell(0,6,f"Nato il {data_nascita_it}",0,1,"C")
