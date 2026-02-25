@@ -260,13 +260,12 @@ if st.button("Genera PDF"):
     pdf.multi_cell(0,6,f"Nuova FTP target: {nuova_ftp:.2f} W")
     pdf.multi_cell(0,6,f"Nuovo W/kg: {nuovo_wkg:.2f}")
 
-    pdf_buffer = BytesIO()
-    pdf.output(pdf_buffer)
-    pdf_buffer.seek(0)
+    # 👇 PARTE CORRETTA
+    pdf_bytes = pdf.output(dest="S").encode("latin-1")
 
     st.download_button(
         "Scarica PDF Professionale",
-        pdf_buffer,
+        data=pdf_bytes,
         file_name="report_professionale.pdf",
         mime="application/pdf"
     )
