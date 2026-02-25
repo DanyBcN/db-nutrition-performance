@@ -43,8 +43,7 @@ email = st.text_input("Email")
 telefono = st.text_input("Telefono")
 indirizzo = st.text_input("Indirizzo")
 
-data_nascita_it = data_nascita.strftime("%d/%m/%Y")
-
+data_nascita_it = data_nascita.strftime("%d %m %Y")
 eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
     (data_nascita.month, data_nascita.day)
