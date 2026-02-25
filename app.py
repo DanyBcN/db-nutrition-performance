@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import date
 from fpdf import FPDF
 import pandas as pd
+import math
 import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
@@ -18,7 +19,7 @@ with col2:
         pass
 
 # ======================================================
-# INIZIALIZZAZIONE VARIABILI
+# INIZIALIZZAZIONE VARIABILI (ANTI-ERROR)
 # ======================================================
 
 ftp = 0.0
@@ -69,7 +70,7 @@ peso = st.number_input("Peso (kg)", 30.0, 200.0)
 altezza = st.number_input("Altezza (cm)", 100.0, 220.0)
 fm = st.number_input("Massa grassa (%)", 3.0, 50.0)
 
-# NUOVI INPUT PER SMM
+# --- NUOVI INPUT PER SMM ---
 sesso = st.selectbox("Sesso biologico", ["Maschio", "Femmina"])
 resistenza = st.number_input("Resistenza BIA (ohm)", 0.0)
 
@@ -85,12 +86,14 @@ massa_magra = peso - fm_kg
 sesso_num = 1 if sesso == "Maschio" else 0
 
 if resistenza > 0:
-    smm = (0.401 * (altezza**2 / resistenza)) + (3.825 * sesso_num) - (0.071 * eta) + 5.102
+    smm = (0.401 * (altezza**2 / resistenza)) + \
+          (3.825 * sesso_num) - \
+          (0.071 * eta) + 5.102
 else:
     smm = 0
 
 # ======================================================
-# CLASSIFICAZIONE OMS BMI
+# Classificazione OMS
 # ======================================================
 
 if bmi < 18.5:
@@ -108,8 +111,6 @@ st.write(f"Massa magra: {massa_magra:.2f} kg")
 
 if smm > 0:
     st.write(f"Massa Muscolo-Scheletrica (SMM - Janssen): {smm:.2f} kg")
-
-st.markdown("---")
 
 # ======================================================
 # RANGE BMI ATLETA
@@ -143,23 +144,23 @@ st.write(f"Range BMI ideale: {bmi_min}-{bmi_max}")
 st.write(f"Valutazione atleta: {giudizio_atleta}")
 
 # ======================================================
-# GRAFICO BMI
+# GRAFICI (IDENTICI AI TUOI)
 # ======================================================
 
 fig, ax = plt.subplots(figsize=(10,2.2))
 ax.set_xlim(15, 40)
 ax.set_ylim(0, 1)
 
-ax.axvspan(15, 18.5, alpha=0.35)
-ax.axvspan(18.5, 25, alpha=0.35)
-ax.axvspan(25, 30, alpha=0.35)
-ax.axvspan(30, 40, alpha=0.35)
+ax.axvspan(15, 18.5, color="#4A90E2", alpha=0.35)
+ax.axvspan(18.5, 25, color="#27AE60", alpha=0.35)
+ax.axvspan(25, 30, color="#F39C12", alpha=0.35)
+ax.axvspan(30, 40, color="#E74C3C", alpha=0.35)
 
-ax.axvspan(bmi_min, bmi_max, alpha=0.15)
+ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.15)
 
-ax.axvline(bmi, linewidth=2.5)
-ax.scatter(bmi, 0.5, s=120)
-ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center')
+ax.axvline(bmi, color="black", linewidth=2.5)
+ax.scatter(bmi, 0.5, s=120, color="black")
+ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center', fontsize=11, fontweight='bold')
 
 ax.set_yticks([])
 ax.set_xlabel("Indice di Massa Corporea (BMI)")
@@ -170,9 +171,6 @@ for spine in ["top", "right", "left"]:
 
 st.pyplot(fig)
 fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
-
-st.markdown("---")
-
 # ======================================================
 # CALCOLO FTP
 # ======================================================
