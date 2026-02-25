@@ -1,6 +1,5 @@
 import streamlit as st
 from datetime import date
-from PIL import Image
 from fpdf import FPDF
 import pandas as pd
 import math
@@ -52,7 +51,7 @@ st.write(f"Massa magra: {massa_magra:.2f} kg")
 st.markdown("---")
 
 # ======================================================
-# FTP CON METODO
+# CALCOLO FTP
 # ======================================================
 
 st.header("Calcolo FTP")
@@ -87,7 +86,7 @@ st.write(f"W/kg: {wkg:.2f}")
 st.markdown("---")
 
 # ======================================================
-# ZONE POTENZA CON DESCRIZIONE
+# ZONE POTENZA
 # ======================================================
 
 zone_df = pd.DataFrame()
@@ -113,7 +112,7 @@ if ftp > 0:
     st.table(zone_df)
 
 # ======================================================
-# ZONE CARDIO CON DESCRIZIONE
+# ZONE CARDIO
 # ======================================================
 
 st.header("Frequenza Cardiaca")
@@ -143,7 +142,7 @@ if fthr > 0:
 st.markdown("---")
 
 # ======================================================
-# PROIEZIONE + SALITA
+# PROIEZIONE
 # ======================================================
 
 st.header("Proiezione Performance")
@@ -155,12 +154,11 @@ if nuovo_peso > 0:
 
     nuova_ftp = ftp * (1 + incremento_ftp/100)
     nuovo_wkg = nuova_ftp / nuovo_peso
+    delta_wkg = nuovo_wkg - wkg
 
-    delta = nuovo_wkg - wkg
-
-    if delta > 0.3:
+    if delta_wkg > 0.3:
         giudizio = "Miglioramento significativo"
-    elif delta > 0.1:
+    elif delta_wkg > 0.1:
         giudizio = "Miglioramento moderato"
     else:
         giudizio = "Miglioramento lieve"
@@ -168,7 +166,7 @@ if nuovo_peso > 0:
     st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
     st.write(f"Giudizio: {giudizio}")
 
-    # Simulazione salita 5km 6%
+    # Simulazione salita
     lunghezza = 5000
     pendenza = 0.06
     g = 9.81
@@ -187,107 +185,63 @@ if nuovo_peso > 0:
     st.write(f"Tempo stimato: {tempo_nuovo:.1f} min")
     st.write(f"Guadagno: {(tempo_vecchio-tempo_nuovo):.1f} min")
 
+st.markdown("---")
+
 # ======================================================
-# PDF COMPLETO DEFINITIVO (TUTTI I DATI DEL FORM)
+# PDF COMPLETO
 # ======================================================
 
 if st.button("Genera PDF Completo"):
 
     pdf = FPDF()
     pdf.add_page()
-
     pdf.set_font("Arial","B",16)
     pdf.cell(0,10,"REPORT PERFORMANCE COMPLETO",0,1,"C")
     pdf.ln(5)
 
     pdf.set_font("Arial","",11)
 
-    # ======================================================
-    # DATI ANAGRAFICI
-    # ======================================================
-
     pdf.multi_cell(0,7,
-        f"DATI ANAGRAFICI\n"
-        f"Nome: {nome}\n"
-        f"Cognome: {cognome}\n"
+        f"Nome: {nome} {cognome}\n"
         f"Data di nascita: {data_nascita.strftime('%d %m %Y')}\n"
-        f"Età: {eta} anni\n"
-    )
-
-    pdf.ln(3)
-
-    # ======================================================
-    # ANTROPOMETRIA
-    # ======================================================
-
-    pdf.multi_cell(0,7,
-        f"ANTROPOMETRIA\n"
+        f"Età: {eta} anni\n\n"
         f"Peso: {peso:.1f} kg\n"
         f"Altezza: {altezza:.1f} cm\n"
         f"BMI: {bmi:.2f}\n"
         f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
-        f"Massa magra: {massa_magra:.2f} kg\n"
+        f"Massa magra: {massa_magra:.2f} kg\n\n"
+        f"Metodo FTP: {metodo}\n"
+        f"FTP: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}\n\n"
     )
-
-    pdf.ln(3)
-
-    # ======================================================
-    # FTP
-    # ======================================================
-
-    pdf.multi_cell(0,7,
-        f"CALCOLO FTP\n"
-        f"Metodo utilizzato: {metodo}\n"
-        f"FTP risultante: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}\n"
-    )
-
-    pdf.ln(3)
-
-    # ======================================================
-    # ZONE POTENZA
-    # ======================================================
 
     if not zone_df.empty:
-        pdf.multi_cell(0,7,"ZONE POTENZA")
+        pdf.multi_cell(0,6,"ZONE POTENZA:")
         for _, row in zone_df.iterrows():
-            pdf.multi_cell(
-                0,6,
-                f"{row['Zona e funzione']} → {row['Da (W)']} - {row['A (W)']} W"
-            )
-        pdf.ln(3)
-
-    # ======================================================
-    # ZONE CARDIO
-    # ======================================================
+            pdf.multi_cell(0,6,f"{row[0]} → {row[1]} - {row[2]} W")
+        pdf.ln(2)
 
     if not zone_hr_df.empty:
-        pdf.multi_cell(0,7,"ZONE CARDIO")
+        pdf.multi_cell(0,6,"ZONE CARDIO:")
         for _, row in zone_hr_df.iterrows():
-            # ======================================================
-# PROIEZIONE + GIUDIZIO DESCRITTIVO
-# ======================================================
+            pdf.multi_cell(0,6,f"{row[0]} → {row[1]} - {row[2]} bpm")
+        pdf.ln(2)
 
-if nuovo_peso > 0:
+    if nuovo_peso > 0:
+        delta_ftp = nuova_ftp - ftp
+        delta_tempo = tempo_vecchio - tempo_nuovo
 
-    delta_wkg = nuovo_wkg - wkg
-    delta_ftp = nuova_ftp - ftp
-    delta_tempo = tempo_vecchio - tempo_nuovo
+        pdf.multi_cell(0,7,
+            f"\nPROIEZIONE\n"
+            f"Giudizio: {giudizio}\n"
+            f"Peso da {peso:.1f} kg a {nuovo_peso:.1f} kg\n"
+            f"FTP da {ftp:.1f} W a {nuova_ftp:.1f} W (+{delta_ftp:.1f} W)\n"
+            f"W/kg da {wkg:.2f} a {nuovo_wkg:.2f}\n"
+            f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min\n"
+            f"Miglioramento: {delta_tempo:.1f} min"
+        )
 
-    testo = (
-        f"PROIEZIONE PERFORMANCE\n\n"
-        f"Giudizio: {giudizio}.\n\n"
-        f"In caso di riduzione del peso corporeo da {peso:.1f} kg "
-        f"a {nuovo_peso:.1f} kg, con una variazione della massa grassa "
-        f"dal {fm:.1f}% al valore target, e un incremento della FTP "
-        f"da {ftp:.1f} W a {nuova_ftp:.1f} W "
-        f"(+{delta_ftp:.1f} W), il rapporto W/kg passerebbe "
-        f"da {wkg:.2f} a {nuovo_wkg:.2f} "
-        f"(+{delta_wkg:.2f}).\n\n"
-        f"Su una salita di 5 km al 6%, il tempo stimato "
-        f"passerebbe da {tempo_vecchio:.1f} minuti "
-        f"a {tempo_nuovo:.1f} minuti, "
-        f"con un miglioramento complessivo di {delta_tempo:.1f} minuti."
-    )
+    pdf.output("report_performance_completo.pdf")
 
-    pdf.multi_cell(0,7,testo)
+    with open("report_performance_completo.pdf","rb") as f:
+        st.download_button("Scarica PDF Completo",f,"report_performance_completo.pdf")
