@@ -145,8 +145,18 @@ elif bmi > bmi_max:
 else:
     giudizio_atleta = "Nel range ideale atleta"
 
+# Valutazione massa grassa atleta
+if fm < fm_min:
+    giudizio_fm = "Inferiore al range ideale"
+elif fm > fm_max:
+    giudizio_fm = "Superiore al range ideale"
+else:
+    giudizio_fm = "Nel range ideale"
+
 st.write(f"Range BMI ideale: {bmi_min}-{bmi_max}")
 st.write(f"Valutazione atleta: {giudizio_atleta}")
+st.write(f"Range FM ideale: {fm_min}-{fm_max}%")
+st.write(f"Valutazione massa grassa: {giudizio_fm}")
 
 # ======================================================
 # GRAFICO BMI
@@ -410,6 +420,8 @@ if st.button("Genera PDF Professionale"):
         f"Valore test inserito: {valore_test:.2f} W\n"
         f"FTP calcolata: {ftp:.2f} W\n"
         f"W/kg: {wkg:.2f}"
+        f"Range FM atleta: {fm_min}-{fm_max}%\n"
+f"Valutazione massa grassa: {giudizio_fm}\n"
     )
 
     # ZONE POTENZA
