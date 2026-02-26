@@ -146,33 +146,47 @@ st.write(f"Range FM ideale: {fm_min}-{fm_max}%")
 st.write(f"Valutazione massa grassa: {giudizio_fm}")
 
 # ======================================================
-# GRAFICO BMI
+# GRAFICO BMI MIGLIORATO
 # ======================================================
 
-fig, ax = plt.subplots(figsize=(10,2.2))
+st.subheader("Classificazione BMI")
+
+fig, ax = plt.subplots(figsize=(12, 3.5))
+
 ax.set_xlim(15, 40)
 ax.set_ylim(0, 1)
 
-ax.axvspan(15, 18.5, color="#4A90E2", alpha=0.35)
-ax.axvspan(18.5, 25, color="#27AE60", alpha=0.35)
-ax.axvspan(25, 30, color="#F39C12", alpha=0.35)
-ax.axvspan(30, 40, color="#E74C3C", alpha=0.35)
+# Zone OMS
+ax.axvspan(15, 18.5, color="#5DADE2", alpha=0.6)
+ax.axvspan(18.5, 25, color="#58D68D", alpha=0.6)
+ax.axvspan(25, 30, color="#F5B041", alpha=0.6)
+ax.axvspan(30, 40, color="#EC7063", alpha=0.6)
 
-ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.15)
+# Range atleta evidenziato
+ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.2)
 
-ax.axvline(bmi, color="black", linewidth=2.5)
-ax.scatter(bmi, 0.5, s=120, color="black")
-ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center', fontsize=11, fontweight='bold')
+# Linea BMI attuale
+ax.axvline(bmi, color="black", linewidth=3)
+ax.scatter(bmi, 0.5, s=150)
+
+# Etichetta valore
+ax.text(bmi, 0.8, f"{bmi:.1f}", ha="center", fontsize=12, fontweight="bold")
+
+# Etichette categorie
+ax.text(16.5, 0.1, "Sottopeso", ha="center", fontsize=9)
+ax.text(21.5, 0.1, "Normopeso", ha="center", fontsize=9)
+ax.text(27.5, 0.1, "Sovrappeso", ha="center", fontsize=9)
+ax.text(34, 0.1, "Obesità", ha="center", fontsize=9)
 
 ax.set_yticks([])
 ax.set_xlabel("Indice di Massa Corporea (BMI)")
-ax.set_title("Classificazione BMI OMS + Range Atleta")
+ax.set_title("Classificazione OMS con Range Atleta Evidenziato")
 
 for spine in ["top", "right", "left"]:
     ax.spines[spine].set_visible(False)
 
 st.pyplot(fig)
-fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
+fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
 
 # ======================================================
 # GRAFICO MASSA GRASSA
@@ -197,8 +211,7 @@ for spine in ["top", "right", "left"]:
     ax2.spines[spine].set_visible(False)
 
 st.pyplot(fig2)
-fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
-
+fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
 st.markdown("---")
 # ======================================================
 # CALCOLO FTP
