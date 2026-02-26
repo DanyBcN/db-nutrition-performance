@@ -88,11 +88,6 @@ eta = date.today().year - data_nascita.year - (
 
 st.markdown("---")
 
-if sesso == "Uomo":
-    bmr = 10*peso + 6.25*altezza - 5*eta + 5
-else:
-    bmr = 10*peso + 6.25*altezza - 5*eta - 161
-
 st.write(f"Metabolismo basale stimato: {bmr:.0f} kcal")
 # ======================================================
 # ANTROPOMETRIA
@@ -122,6 +117,11 @@ else:
 st.write(f"BMI: {bmi:.2f} ({categoria_bmi})")
 st.write(f"Massa grassa: {fm_kg:.2f} kg")
 st.write(f"Massa magra: {massa_magra:.2f} kg")
+
+if sesso == "Uomo":
+    bmr = 10*peso + 6.25*altezza - 5*eta + 5
+else:
+    bmr = 10*peso + 6.25*altezza - 5*eta - 161
 
 # ======================================================
 # RANGE BMI ATLETA
