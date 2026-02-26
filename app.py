@@ -85,9 +85,9 @@ eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
     (data_nascita.month, data_nascita.day)
 )
+sesso = st.selectbox("Sesso", ["Uomo", "Donna"])
 
 st.markdown("---")
-sesso = st.selectbox("Sesso", ["Uomo", "Donna"])
 
 if sesso == "Uomo":
     bmr = 10*peso + 6.25*altezza - 5*eta + 5
