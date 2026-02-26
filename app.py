@@ -85,7 +85,6 @@ eta = date.today().year - data_nascita.year - (
     (date.today().month, date.today().day) <
     (data_nascita.month, data_nascita.day)
 )
-sesso = st.selectbox("Sesso", ["Uomo", "Donna"])
 
 st.markdown("---")
 
