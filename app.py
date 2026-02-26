@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import date
 from fpdf import FPDF
 import pandas as pd
+import math
 import matplotlib.pyplot as plt
 
 st.set_page_config(layout="wide")
@@ -18,11 +19,14 @@ nuovo_wkg = 0.0
 tempo_vecchio = 0.0
 tempo_nuovo = 0.0
 giudizio = ""
+
 categoria_bmi = ""
 giudizio_atleta = ""
 giudizio_fm = ""
+
 zone_df = pd.DataFrame()
 zone_hr_df = pd.DataFrame()
+
 bmr = 0.0
 
 # ======================================================
@@ -90,7 +94,7 @@ st.write(f"Massa grassa: {fm_kg:.2f} kg")
 st.write(f"Massa magra: {massa_magra:.2f} kg")
 
 # =========================
-# BMR
+# METABOLISMO BASALE
 # =========================
 
 if peso > 0 and altezza > 0:
@@ -142,61 +146,57 @@ st.write(f"Range FM ideale: {fm_min}-{fm_max}%")
 st.write(f"Valutazione massa grassa: {giudizio_fm}")
 
 # ======================================================
-# FTP
+# GRAFICO BMI
 # ======================================================
+
+fig, ax = plt.subplots(figsize=(10,2.2))
+ax.set_xlim(15, 40)
+ax.set_ylim(0, 1)
+
+ax.axvspan(15, 18.5, color="#4A90E2", alpha=0.35)
+ax.axvspan(18.5, 25, color="#27AE60", alpha=0.35)
+ax.axvspan(25, 30, color="#F39C12", alpha=0.35)
+ax.axvspan(30, 40, color="#E74C3C", alpha=0.35)
+
+ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.15)
+
+ax.axvline(bmi, color="black", linewidth=2.5)
+ax.scatter(bmi, 0.5, s=120, color="black")
+ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center', fontsize=11, fontweight='bold')
+
+ax.set_yticks([])
+ax.set_xlabel("Indice di Massa Corporea (BMI)")
+ax.set_title("Classificazione BMI OMS + Range Atleta")
+
+for spine in ["top", "right", "left"]:
+    ax.spines[spine].set_visible(False)
+
+st.pyplot(fig)
+fig.savefig("bmi_chart.png", dpi=300, bbox_inches="tight")
+
+# ======================================================
+# GRAFICO MASSA GRASSA
+# ======================================================
+
+st.subheader("Valutazione Massa Grassa")
+
+fig2, ax2 = plt.subplots(figsize=(10,2.2))
+ax2.set_xlim(0, 30)
+ax2.set_ylim(0, 1)
+
+ax2.axvspan(fm_min, fm_max, color="#27AE60", alpha=0.3)
+ax2.axvline(fm, color="black", linewidth=2.5)
+ax2.scatter(fm, 0.5, s=120, color="black")
+ax2.text(fm, 0.8, f"{fm:.1f}%", ha='center', fontsize=11, fontweight='bold')
+
+ax2.set_yticks([])
+ax2.set_xlabel("Percentuale Massa Grassa (%)")
+ax2.set_title("Valutazione Massa Grassa Atleta")
+
+for spine in ["top", "right", "left"]:
+    ax2.spines[spine].set_visible(False)
+
+st.pyplot(fig2)
+fig2.savefig("fm_chart.png", dpi=300, bbox_inches="tight")
 
 st.markdown("---")
-st.header("Calcolo FTP")
-
-metodo = st.selectbox(
-    "Metodo FTP",
-    ["Immissione diretta","Test 20 minuti","Test 8 minuti","Ramp test"]
-)
-
-if metodo == "Immissione diretta":
-    valore_test = st.number_input("FTP (W)", 0.0)
-    ftp = valore_test
-elif metodo == "Test 20 minuti":
-    valore_test = st.number_input("Media 20 min (W)", 0.0)
-    ftp = valore_test * 0.95
-elif metodo == "Test 8 minuti":
-    valore_test = st.number_input("Media 8 min (W)", 0.0)
-    ftp = valore_test * 0.90
-elif metodo == "Ramp test":
-    valore_test = st.number_input("Ultimo step completato (W)", 0.0)
-    ftp = valore_test * 0.75
-
-wkg = ftp / peso if peso > 0 else 0
-
-st.write(f"FTP stimata: {ftp:.2f} W")
-st.write(f"W/kg: {wkg:.2f}")
-
-# ======================================================
-# PDF
-# ======================================================
-
-if st.button("Genera PDF Professionale"):
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Arial", size=12)
-
-    pdf.cell(0, 10, "REPORT PERFORMANCE", ln=True)
-
-    pdf.cell(0, 8, f"Nome: {nome}", ln=True)
-    pdf.cell(0, 8, f"Cognome: {cognome}", ln=True)
-    pdf.cell(0, 8, f"Eta: {eta} anni", ln=True)
-    pdf.cell(0, 8, f"Peso: {peso:.1f} kg", ln=True)
-    pdf.cell(0, 8, f"BMI: {bmi:.2f}", ln=True)
-    pdf.cell(0, 8, f"BMR: {bmr:.0f} kcal", ln=True)
-    pdf.cell(0, 8, f"FTP: {ftp:.2f} W", ln=True)
-    pdf.cell(0, 8, f"W/kg: {wkg:.2f}", ln=True)
-
-    pdf.output("report_performance_professionale.pdf")
-
-    with open("report_performance_professionale.pdf", "rb") as f:
-        st.download_button(
-            "Scarica PDF Professionale",
-            f,
-            "report_performance_professionale.pdf"
-        )
