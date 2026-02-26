@@ -348,20 +348,23 @@ if st.button("Genera PDF Professionale"):
             self.ln(5)
 
         def section_title(self, title):
+            self.set_fill_color(230, 240, 255)
             self.set_font("Arial", "B", 12)
-            self.cell(0, 8, title, 0, 1)
-            self.ln(2)
+            self.cell(0, 8, title, 0, 1, "L", True)
+            self.ln(3)
 
         def normal(self, text):
             self.set_font("Arial", "", 10)
             self.multi_cell(0, 6, safe(text))
-            self.ln(2)
+            self.ln(3)
 
     pdf = PDF()
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
+    # ==================================================
     # DATI ANAGRAFICI
+    # ==================================================
     pdf.section_title("Dati Anagrafici")
     pdf.normal(
         f"Nome: {nome}\n"
@@ -370,7 +373,9 @@ if st.button("Genera PDF Professionale"):
         f"Eta: {eta} anni"
     )
 
+    # ==================================================
     # ANTROPOMETRIA
+    # ==================================================
     pdf.section_title("Antropometria")
     pdf.normal(
         f"Peso: {peso:.1f} kg\n"
@@ -391,7 +396,9 @@ if st.button("Genera PDF Professionale"):
     pdf.section_title("Grafico Massa Grassa")
     pdf.image("fm_chart.png", x=30, w=150)
 
+    # ==================================================
     # PERFORMANCE
+    # ==================================================
     pdf.section_title("Performance")
     pdf.normal(
         f"Metodo FTP: {metodo}\n"
@@ -399,6 +406,71 @@ if st.button("Genera PDF Professionale"):
         f"FTP calcolata: {ftp:.2f} W\n"
         f"W/kg: {wkg:.2f}"
     )
+
+    # ==================================================
+    # ZONE POTENZA
+    # ==================================================
+    if not zone_df.empty:
+
+        pdf.section_title("Zone Potenza")
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(90, 8, "Zona", 1)
+        pdf.cell(30, 8, "Da (W)", 1)
+        pdf.cell(30, 8, "A (W)", 1)
+        pdf.ln()
+
+        pdf.set_font("Arial", "", 10)
+
+        for _, row in zone_df.iterrows():
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (W)"]), 1)
+            pdf.cell(30, 8, str(row["A (W)"]), 1)
+            pdf.ln()
+
+    # ==================================================
+    # ZONE CARDIO
+    # ==================================================
+    if not zone_hr_df.empty:
+
+        pdf.section_title("Zone Cardio")
+
+        pdf.set_font("Arial", "B", 10)
+        pdf.cell(90, 8, "Zona", 1)
+        pdf.cell(30, 8, "Da (bpm)", 1)
+        pdf.cell(30, 8, "A (bpm)", 1)
+        pdf.ln()
+
+        pdf.set_font("Arial", "", 10)
+
+        for _, row in zone_hr_df.iterrows():
+            pdf.cell(90, 8, safe(str(row["Zona"])), 1)
+            pdf.cell(30, 8, str(row["Da (bpm)"]), 1)
+            pdf.cell(30, 8, str(row["A (bpm)"]), 1)
+            pdf.ln()
+
+    # ==================================================
+    # PROIEZIONE
+    # ==================================================
+    if nuovo_peso > 0 and ftp > 0:
+
+        pdf.section_title("Proiezione Miglioramento")
+
+        delta_tempo = tempo_vecchio - tempo_nuovo
+
+        testo_proj = (
+            f"Peso attuale: {peso:.1f} kg\n"
+            f"Peso target: {nuovo_peso:.1f} kg\n"
+            f"FTP attuale: {ftp:.1f} W\n"
+            f"FTP prevista: {nuova_ftp:.1f} W\n"
+            f"W/kg attuale: {wkg:.2f}\n"
+            f"W/kg previsto: {nuovo_wkg:.2f}\n\n"
+            f"Tempo salita 5 km 6%: da {tempo_vecchio:.1f} min "
+            f"a {tempo_nuovo:.1f} min\n"
+            f"Miglioramento stimato: {delta_tempo:.1f} minuti"
+        )
+
+        pdf.normal(testo_proj)
 
     pdf.output("report_performance_professionale.pdf")
 
