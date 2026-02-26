@@ -73,7 +73,7 @@ st.header("Dati Anagrafici")
 
 nome = st.text_input("Nome")
 cognome = st.text_input("Cognome")
-
+sesso = st.selectbox("Sesso", ["Uomo", "Donna"])
 data_nascita = st.date_input(
     "Data di nascita",
     min_value=date(1920,1,1),
