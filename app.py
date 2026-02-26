@@ -158,7 +158,7 @@ else:
     color_bmi = "green"
 
 # Linea BMI colorata
-ax.axvline(bmi, color=color_bmi, linewidth=3)
+ax.axvline(ax.axvline(bmi, color=color_bmi, linewidth=3)
 ax.scatter(bmi, 0.5, s=150, color=color_bmi)
 
 # ======================================================
