@@ -87,7 +87,14 @@ eta = date.today().year - data_nascita.year - (
 )
 
 st.markdown("---")
+sesso = st.selectbox("Sesso", ["Uomo", "Donna"])
 
+if sesso == "Uomo":
+    bmr = 10*peso + 6.25*altezza - 5*eta + 5
+else:
+    bmr = 10*peso + 6.25*altezza - 5*eta - 161
+
+st.write(f"Metabolismo basale stimato: {bmr:.0f} kcal")
 # ======================================================
 # ANTROPOMETRIA
 # ======================================================
