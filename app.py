@@ -65,6 +65,9 @@ giudizio_atleta = ""
 zone_df = pd.DataFrame()
 zone_hr_df = pd.DataFrame()
 
+bmr = 0.0
+tdee = 0.0
+
 # ======================================================
 # DATI ANAGRAFICI
 # ======================================================
