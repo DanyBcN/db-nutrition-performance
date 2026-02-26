@@ -404,7 +404,7 @@ if st.button("Genera PDF Professionale"):
     )
 
     pdf.section_title("Grafico BMI")
-    pdf.image("bmi_chart.png", x=30, w=150)
+    pdf.image("bmi_chart.png", x=15, w=180)
 
     pdf.section_title("Grafico Massa Grassa")
     pdf.image("fm_chart.png", x=30, w=150)
