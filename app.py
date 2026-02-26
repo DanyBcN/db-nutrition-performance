@@ -8,6 +8,34 @@ import matplotlib.pyplot as plt
 st.set_page_config(layout="wide")
 
 # ======================================================
+# FUNZIONI DI CALCOLO
+# ======================================================
+
+def calcola_bmi(peso, altezza_cm):
+    if altezza_cm <= 0:
+        return 0
+    altezza_m = altezza_cm / 100
+    return peso / (altezza_m ** 2)
+
+
+def calcola_massa_grassa(peso, percentuale_fm):
+    fm_kg = peso * (percentuale_fm / 100)
+    massa_magra = peso - fm_kg
+    return fm_kg, massa_magra
+
+
+def calcola_ftp(metodo, valore_test):
+    if metodo == "Immissione diretta":
+        return valore_test
+    elif metodo == "Test 20 minuti":
+        return valore_test * 0.95
+    elif metodo == "Test 8 minuti":
+        return valore_test * 0.90
+    elif metodo == "Ramp test":
+        return valore_test * 0.75
+    return 0
+
+# ======================================================
 # LOGO IN PAGINA
 # ======================================================
 
