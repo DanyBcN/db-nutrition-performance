@@ -510,3 +510,5 @@ if st.button("Genera PDF Professionale"):
             f,
             "report_performance_professionale.pdf"
         )
+        tempo_vecchio = tempo_salita(ftp, peso)
+tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
