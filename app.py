@@ -358,35 +358,7 @@ if nuovo_peso > 0 and ftp > 0:
     st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
 
 st.markdown("---")
-def tempo_salita(potenza, peso_atleta):
 
-    if potenza <= 0 or peso_atleta <= 0:
-        return 0
-
-    peso_tot = peso_atleta + 8  # atleta + bici
-    g = 9.81
-    pendenza = 0.06
-    lunghezza = 5000
-    crr = 0.004
-    rho = 1.226
-    cda = 0.32
-    efficienza = 0.97
-
-    v = 4  # m/s iniziale (~14 km/h)
-
-    for _ in range(50):
-        forza_grav = peso_tot * g * pendenza
-        forza_roll = peso_tot * g * crr
-        forza_aero = 0.5 * rho * cda * v**2
-        forza_tot = forza_grav + forza_roll + forza_aero
-
-        if forza_tot <= 0:
-            return 0
-
-        v = (potenza * efficienza) / forza_tot
-
-    tempo = (lunghezza / v) / 60
-    return tempo
 # ======================================================
 # PDF PROFESSIONALE
 # ======================================================
@@ -542,5 +514,4 @@ if st.button("Genera PDF Professionale"):
             f,
             "report_performance_professionale.pdf"
         )
-        tempo_vecchio = tempo_salita(ftp, peso)
-tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
+ 
