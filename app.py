@@ -4,7 +4,39 @@ from fpdf import FPDF
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
+# ======================================================
+# FUNZIONE TEMPO SALITA (METTILA QUI)
+# ======================================================
 
+def tempo_salita(potenza, peso_atleta):
+
+    if potenza <= 0 or peso_atleta <= 0:
+        return 0
+
+    peso_tot = peso_atleta + 8  # atleta + bici
+    g = 9.81
+    pendenza = 0.06
+    lunghezza = 5000
+    crr = 0.004
+    rho = 1.226
+    cda = 0.32
+    efficienza = 0.97
+
+    v = 4
+
+    for _ in range(50):
+        forza_grav = peso_tot * g * pendenza
+        forza_roll = peso_tot * g * crr
+        forza_aero = 0.5 * rho * cda * v**2
+        forza_tot = forza_grav + forza_roll + forza_aero
+
+        if forza_tot <= 0:
+            return 0
+
+        v = (potenza * efficienza) / forza_tot
+
+    tempo = (lunghezza / v) / 60
+    return tempo
 st.set_page_config(layout="wide")
 
 # ======================================================
