@@ -8,15 +8,13 @@ import matplotlib.pyplot as plt
 # FUNZIONE TEMPO SALITA (METTILA QUI)
 # ======================================================
 
-def tempo_salita(potenza, peso_atleta):
+def tempo_salita(potenza, peso_atleta, lunghezza, pendenza, peso_bici):
 
     if potenza <= 0 or peso_atleta <= 0:
         return 0
 
-    peso_tot = peso_atleta + 8
+    peso_tot = peso_atleta + peso_bici
     g = 9.81
-    pendenza = 0.06
-    lunghezza = 5000
     crr = 0.004
     rho = 1.226
     cda = 0.32
@@ -437,12 +435,17 @@ if nuovo_peso > 0 and ftp > 0:
 
     
 
-    tempo_vecchio = tempo_salita(ftp, peso)
-    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
+    tempo_vecchio = tempo_salita(ftp, peso, lunghezza, pendenza, peso_bici)
+    tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso, lunghezza, pendenza, peso_bici)
 
     st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
     st.write(f"Giudizio: {giudizio}")
-    st.write(f"Salita 5 km 6%: da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min")
+    st.write(
+    f"Salita {lunghezza/1000:.1f} km al {pendenza*100:.1f}%: "
+    f"da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min"
+    delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
+    st.write(f"Riduzione tempo: {delta_percentuale:.1f}%")
+)
 
 st.markdown("---")
 
@@ -499,23 +502,23 @@ if st.button("Genera PDF Professionale"):
     # ==================================================
     pdf.section_title("Antropometria")
     pdf.normal(
-        f"Peso: {peso:.1f} kg\n"
-        f"Altezza: {altezza:.1f} cm\n"
-        f"BMI: {bmi:.2f} ({categoria_bmi})\n"
-        f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
-        f"Massa magra: {massa_magra:.2f} kg\n"
-        f"BMR: {bmr:.0f} kcal\n"
-        f"Range BMI atleta ({tipo_sport}): {bmi_min}-{bmi_max}\n"
-        f"Valutazione atleta: {giudizio_atleta}\n"
-        f"Range FM atleta: {fm_min}-{fm_max}%\n"
-        f"Valutazione massa grassa: {giudizio_fm}"
-        f"FFMI: {ffmi:.2f}\n"
-f"FMI: {fmi:.2f}\n"
-f"Rapporto MM/MG: {ratio_mm_mg:.2f}\n"
-f"BMR Cunningham: {bmr_cunningham:.0f} kcal\n"
-f"TDEE stimato: {tdee:.0f} kcal\n"
-f"Disponibilità energetica: {energia_disponibile:.1f} kcal/kg FFM\n"
-    )
+    f"Peso: {peso:.1f} kg\n"
+    f"Altezza: {altezza:.1f} cm\n"
+    f"BMI: {bmi:.2f} ({categoria_bmi})\n"
+    f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
+    f"Massa magra: {massa_magra:.2f} kg\n"
+    f"BMR Mifflin: {bmr:.0f} kcal\n"
+    f"BMR Cunningham: {bmr_cunningham:.0f} kcal\n"
+    f"TDEE stimato: {tdee:.0f} kcal\n"
+    f"Disponibilità energetica: {energia_disponibile:.1f} kcal/kg FFM\n\n"
+    f"FFMI: {ffmi:.2f}\n"
+    f"FMI: {fmi:.2f}\n"
+    f"Rapporto MM/MG: {ratio_mm_mg:.2f}\n\n"
+    f"Range BMI atleta ({tipo_sport}): {bmi_min}-{bmi_max}\n"
+    f"Valutazione atleta: {giudizio_atleta}\n"
+    f"Range FM atleta: {fm_min}-{fm_max}%\n"
+    f"Valutazione massa grassa: {giudizio_fm}"
+)
 
     pdf.section_title("Grafico BMI")
     pdf.image("bmi_chart.png", x=15, w=180)
@@ -593,9 +596,10 @@ f"Disponibilità energetica: {energia_disponibile:.1f} kcal/kg FFM\n"
             f"FTP prevista: {nuova_ftp:.1f} W\n"
             f"W/kg attuale: {wkg:.2f}\n"
             f"W/kg previsto: {nuovo_wkg:.2f}\n\n"
-            f"Tempo salita 5 km 6%: da {tempo_vecchio:.1f} min "
+            f"Tempo salita {lunghezza/1000:.1f} km al {pendenza*100:.1f}%: "
             f"a {tempo_nuovo:.1f} min\n"
             f"Miglioramento stimato: {delta_tempo:.1f} minuti"
+            f"Riduzione percentuale tempo: {delta_percentuale:.1f}%\n"
         )
 
         pdf.normal(testo_proj)
