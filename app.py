@@ -432,8 +432,8 @@ if nuovo_peso > 0 and ftp > 0:
         giudizio = "Miglioramento lieve"
 
    lunghezza = st.number_input("Lunghezza salita (m)", 5000)
-pendenza = st.number_input("Pendenza (%)", 6.0) / 100
-peso_bici = st.number_input("Peso bici (kg)", 8.0)
+   pendenza = st.number_input("Pendenza (%)", 6.0) / 100
+   peso_bici = st.number_input("Peso bici (kg)", 8.0)
 
     
 
