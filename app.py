@@ -445,7 +445,6 @@ if nuovo_peso > 0 and ftp > 0:
     )
     delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
     st.write(f"Riduzione tempo: {delta_percentuale:.1f}%"
-    st.write(f"Miglioramento: {delta_minuti:.1f} minuti in meno")
     )
 
 st.markdown("---")
