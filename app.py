@@ -148,10 +148,8 @@ st.write(f"Valutazione massa grassa: {giudizio_fm}")
 # ======================================================
 # GRAFICO BMI MIGLIORATO
 # ======================================================
-# Range atleta
-ax.axvspan(bmi_min, bmi_max, color="purple", alpha=0.2)
 
-# 👇 PRIMA definisci il colore
+# Determina colore in base al range atleta
 if bmi < bmi_min:
     color_bmi = "blue"
 elif bmi > bmi_max:
@@ -159,7 +157,7 @@ elif bmi > bmi_max:
 else:
     color_bmi = "green"
 
-# 👇 POI disegni la linea
+# Linea BMI colorata
 ax.axvline(bmi, color=color_bmi, linewidth=3)
 ax.scatter(bmi, 0.5, s=150, color=color_bmi)
 
