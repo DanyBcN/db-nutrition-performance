@@ -445,6 +445,7 @@ if nuovo_peso > 0 and ftp > 0:
     )
     delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
     st.write(f"Riduzione tempo: {delta_percentuale:.1f}%"
+    st.write(f"Miglioramento: {delta_minuti:.1f} minuti in meno")
     )
 
 st.markdown("---")
@@ -588,7 +589,7 @@ if st.button("Genera PDF Professionale"):
         pdf.section_title("Proiezione Miglioramento")
 
         delta_tempo = tempo_vecchio - tempo_nuovo
-
+       
         testo_proj = (
             f"Peso attuale: {peso:.1f} kg\n"
             f"Peso target: {nuovo_peso:.1f} kg\n"
