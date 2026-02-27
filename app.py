@@ -442,9 +442,10 @@ if nuovo_peso > 0 and ftp > 0:
     st.write(f"Giudizio: {giudizio}")
     st.write(f"Salita {lunghezza/1000:.1f} km al {pendenza*100:.1f}%: "
     f"da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min"
+    )
     delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
     st.write(f"Riduzione tempo: {delta_percentuale:.1f}%")
-)
+    )
 
 st.markdown("---")
 
