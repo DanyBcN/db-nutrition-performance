@@ -127,7 +127,19 @@ else:
 st.write(f"BMI: {bmi:.2f} ({categoria_bmi})")
 st.write(f"Massa grassa: {fm_kg:.2f} kg")
 st.write(f"Massa magra: {massa_magra:.2f} kg")
+# ======================================================
+# INDICI AVANZATI COMPOSIZIONE CORPOREA
+# ======================================================
 
+st.subheader("Indici Avanzati Composizione Corporea")
+
+ffmi = massa_magra / (altezza_m**2) if altezza_m > 0 else 0
+fmi = fm_kg / (altezza_m**2) if altezza_m > 0 else 0
+ratio_mm_mg = massa_magra / fm_kg if fm_kg > 0 else 0
+
+st.write(f"FFMI (Fat Free Mass Index): {ffmi:.2f}")
+st.write(f"FMI (Fat Mass Index): {fmi:.2f}")
+st.write(f"Rapporto Massa Magra / Massa Grassa: {ratio_mm_mg:.2f}")
 # =========================
 # METABOLISMO BASALE
 # =========================
@@ -139,7 +151,45 @@ if peso > 0 and altezza > 0:
         bmr = 10*peso + 6.25*altezza - 5*eta - 161
 
     st.write(f"Metabolismo basale stimato: {bmr:.0f} kcal")
+# BMR Cunningham (specifico per atleta)
+bmr_cunningham = 500 + 22 * massa_magra
+st.write(f"BMR Cunningham: {bmr_cunningham:.0f} kcal")
+# ======================================================
+# FABBISOGNO ENERGETICO
+# ======================================================
 
+st.subheader("Fabbisogno Energetico")
+
+livello_attivita = st.selectbox(
+    "Livello attività",
+    ["Sedentario","Moderato","Intenso","Atleta competitivo"]
+)
+
+fattori = {
+    "Sedentario":1.4,
+    "Moderato":1.6,
+    "Intenso":1.8,
+    "Atleta competitivo":2.0
+}
+
+tdee = bmr_cunningham * fattori[livello_attivita]
+st.write(f"Fabbisogno energetico stimato (TDEE): {tdee:.0f} kcal")
+
+kcal_allenamento = st.number_input("Dispendio medio allenamento (kcal)", 0.0)
+
+energia_disponibile = (
+    (tdee - kcal_allenamento) / massa_magra
+    if massa_magra > 0 else 0
+)
+
+st.write(f"Disponibilità energetica: {energia_disponibile:.1f} kcal/kg FFM")
+
+if energia_disponibile < 30:
+    st.error("⚠ Possibile rischio RED-S (bassa disponibilità energetica)")
+elif energia_disponibile < 45:
+    st.warning("Disponibilità energetica borderline")
+else:
+    st.success("Disponibilità energetica ottimale")
 # ======================================================
 # RANGE ATLETA
 # ======================================================
@@ -271,6 +321,19 @@ wkg = ftp / peso if peso > 0 else 0
 st.write(f"FTP stimata: {ftp:.2f} W")
 st.write(f"W/kg: {wkg:.2f}")
 # ======================================================
+# INDICI PERFORMANCE AVANZATI
+# ======================================================
+
+st.subheader("Indicatori Performance Avanzati")
+
+vo2max = (ftp / peso) * 10.8 + 7 if peso > 0 else 0
+wkg_ffm = ftp / massa_magra if massa_magra > 0 else 0
+cp = ftp * 1.05
+
+st.write(f"VO2max stimato: {vo2max:.1f} ml/kg/min")
+st.write(f"W/kg massa magra: {wkg_ffm:.2f}")
+st.write(f"Potenza critica stimata: {cp:.0f} W")
+# ======================================================
 # CLASSIFICAZIONE W/kg
 # ======================================================
 
@@ -368,9 +431,9 @@ if nuovo_peso > 0 and ftp > 0:
     else:
         giudizio = "Miglioramento lieve"
 
-    lunghezza = 5000
-    pendenza = 0.06
-    g = 9.81
+   lunghezza = st.number_input("Lunghezza salita (m)", 5000)
+pendenza = st.number_input("Pendenza (%)", 6.0) / 100
+peso_bici = st.number_input("Peso bici (kg)", 8.0)
 
     
 
@@ -446,6 +509,12 @@ if st.button("Genera PDF Professionale"):
         f"Valutazione atleta: {giudizio_atleta}\n"
         f"Range FM atleta: {fm_min}-{fm_max}%\n"
         f"Valutazione massa grassa: {giudizio_fm}"
+        f"FFMI: {ffmi:.2f}\n"
+f"FMI: {fmi:.2f}\n"
+f"Rapporto MM/MG: {ratio_mm_mg:.2f}\n"
+f"BMR Cunningham: {bmr_cunningham:.0f} kcal\n"
+f"TDEE stimato: {tdee:.0f} kcal\n"
+f"Disponibilità energetica: {energia_disponibile:.1f} kcal/kg FFM\n"
     )
 
     pdf.section_title("Grafico BMI")
