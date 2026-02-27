@@ -145,11 +145,21 @@ st.write(f"Valutazione atleta: {giudizio_atleta}")
 st.write(f"Range FM ideale: {fm_min}-{fm_max}%")
 st.write(f"Valutazione massa grassa: {giudizio_fm}")
 
-# ======================================================
+## ======================================================
 # GRAFICO BMI MIGLIORATO
 # ======================================================
 
-# Determina colore in base al range atleta
+st.subheader("Valutazione BMI")
+
+fig, ax = plt.subplots(figsize=(10, 2.2))
+
+ax.set_xlim(15, 35)
+ax.set_ylim(0, 1)
+
+# Range atleta
+ax.axvspan(bmi_min, bmi_max, color="#27AE60", alpha=0.3)
+
+# Colore punto BMI
 if bmi < bmi_min:
     color_bmi = "blue"
 elif bmi > bmi_max:
@@ -157,9 +167,20 @@ elif bmi > bmi_max:
 else:
     color_bmi = "green"
 
-# Linea BMI colorata
 ax.axvline(bmi, color=color_bmi, linewidth=3)
 ax.scatter(bmi, 0.5, s=150, color=color_bmi)
+ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center', fontsize=11, fontweight='bold')
+
+ax.set_yticks([])
+ax.set_xlabel("BMI")
+ax.set_title("Valutazione BMI Atleta")
+
+for spine in ["top", "right", "left"]:
+    ax.spines[spine].set_visible(False)
+
+st.pyplot(fig)
+
+fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
 
 # ======================================================
 # GRAFICO MASSA GRASSA
@@ -184,7 +205,7 @@ for spine in ["top", "right", "left"]:
     ax2.spines[spine].set_visible(False)
 
 st.pyplot(fig2)
-fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
+fig2.savefig("fm_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
 st.markdown("---")
 # ======================================================
 # CALCOLO FTP
