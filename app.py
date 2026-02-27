@@ -455,7 +455,7 @@ if st.button("Genera PDF Professionale"):
     # PERFORMANCE
     # ==================================================
     pdf.section_title("Performance")
-   pdf.normal(
+    pdf.normal(
     f"Metodo FTP: {metodo}\n"
     f"Valore test inserito: {valore_test:.2f} W\n"
     f"FTP calcolata: {ftp:.2f} W\n"
