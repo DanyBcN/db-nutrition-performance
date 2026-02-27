@@ -318,7 +318,7 @@ if nuovo_peso > 0 and ftp > 0:
 
     
 
-    tempo_vecchio = tempo_(ftp, peso)
+    tempo_vecchio = tempo_salita(ftp, peso)
     tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
 
     st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
