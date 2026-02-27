@@ -13,7 +13,7 @@ def tempo_salita(potenza, peso_atleta):
     if potenza <= 0 or peso_atleta <= 0:
         return 0
 
-    peso_tot = peso_atleta + 8  # atleta + bici
+    peso_tot = peso_atleta + 8
     g = 9.81
     pendenza = 0.06
     lunghezza = 5000
@@ -23,17 +23,20 @@ def tempo_salita(potenza, peso_atleta):
     efficienza = 0.97
 
     v = 4
+    tolleranza = 0.0001
 
-    for _ in range(50):
+    for _ in range(100):
         forza_grav = peso_tot * g * pendenza
         forza_roll = peso_tot * g * crr
         forza_aero = 0.5 * rho * cda * v**2
         forza_tot = forza_grav + forza_roll + forza_aero
 
-        if forza_tot <= 0:
-            return 0
+        nuova_v = (potenza * efficienza) / forza_tot
 
-        v = (potenza * efficienza) / forza_tot   # ← DEVE stare dentro il for
+        if abs(nuova_v - v) < tolleranza:
+            break
+
+        v = nuova_v
 
     tempo = (lunghezza / v) / 60
     return tempo
