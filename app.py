@@ -319,9 +319,30 @@ if nuovo_peso > 0 and ftp > 0:
     def tempo_salita(potenza, peso):
         if potenza <= 0 or peso <= 0:
             return 0
-        forza = peso * g * pendenza
-        velocita = potenza / forza
-        return (lunghezza / velocita) / 60
+        def tempo_salita(potenza, peso_atleta):
+    if potenza <= 0 or peso_atleta <= 0:
+        return 0
+
+    peso_tot = peso_atleta + 8  # bici 8 kg
+    g = 9.81
+    pendenza = 0.06
+    lunghezza = 5000
+    crr = 0.004
+    rho = 1.226
+    cda = 0.32
+    efficienza = 0.97
+
+    # iterazione per stimare velocità
+    v = 5  # m/s iniziale
+    for _ in range(100):
+        forza_grav = peso_tot * g * pendenza
+        forza_roll = peso_tot * g * crr
+        forza_aero = 0.5 * rho * cda * v**2
+        pot_richiesta = (forza_grav + forza_roll + forza_aero) * v / efficienza
+        v = potenza / (forza_grav + forza_roll + forza_aero)
+
+    tempo = (lunghezza / v) / 60
+    return tempo
 
     tempo_vecchio = tempo_salita(ftp, peso)
     tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso)
