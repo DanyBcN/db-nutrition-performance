@@ -33,7 +33,7 @@ def tempo_salita(potenza, peso_atleta):
         if forza_tot <= 0:
             return 0
 
-        v = (potenza * efficienza) / forza_tot
+       v = (potenza * efficienza) / forza_tot
 
     tempo = (lunghezza / v) / 60
     return tempo
