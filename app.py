@@ -267,7 +267,28 @@ wkg = ftp / peso if peso > 0 else 0
 
 st.write(f"FTP stimata: {ftp:.2f} W")
 st.write(f"W/kg: {wkg:.2f}")
+# ======================================================
+# CLASSIFICAZIONE W/kg
+# ======================================================
 
+livello_ciclista = ""
+
+if wkg < 2.0:
+    livello_ciclista = "Principiante"
+elif wkg < 3.0:
+    livello_ciclista = "Amatore base"
+elif wkg < 4.0:
+    livello_ciclista = "Amatore intermedio"
+elif wkg < 5.0:
+    livello_ciclista = "Amatore avanzato"
+elif wkg < 6.0:
+    livello_ciclista = "Elite nazionale"
+else:
+    livello_ciclista = "Elite internazionale"
+
+if ftp > 0:
+    st.subheader("Classificazione Livello Ciclista")
+    st.write(f"Livello stimato: {livello_ciclista}")
 st.markdown("---")
 
 # ======================================================
@@ -434,12 +455,13 @@ if st.button("Genera PDF Professionale"):
     # PERFORMANCE
     # ==================================================
     pdf.section_title("Performance")
-    pdf.normal(
-        f"Metodo FTP: {metodo}\n"
-        f"Valore test inserito: {valore_test:.2f} W\n"
-        f"FTP calcolata: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}"
-    )
+   pdf.normal(
+    f"Metodo FTP: {metodo}\n"
+    f"Valore test inserito: {valore_test:.2f} W\n"
+    f"FTP calcolata: {ftp:.2f} W\n"
+    f"W/kg: {wkg:.2f}\n"
+    f"Livello ciclista stimato: {livello_ciclista}"
+)
 
     # ==================================================
     # ZONE POTENZA
