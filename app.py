@@ -612,8 +612,7 @@ testo_proj = (
     f"Miglioramento assoluto: {delta_tempo:.1f} minuti\n"
     f"Riduzione percentuale del tempo: {delta_percentuale:.1f}%\n"
 )
-
-        pdf.normal(testo_proj)
+    pdf.normal(testo_proj)
 
     pdf.output("report_performance_professionale.pdf")
 
