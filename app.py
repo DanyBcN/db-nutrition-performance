@@ -541,17 +541,17 @@ else:
 pdf.ln(75)
 pdf.image("bmi_bar.png", x=40, w=120)
 
-    # ==================================================
+      # ==================================================
     # PERFORMANCE
     # ==================================================
     pdf.section_title("Performance")
     pdf.normal(
-    f"Metodo FTP: {metodo}\n"
-    f"Valore test inserito: {valore_test:.2f} W\n"
-    f"FTP calcolata: {ftp:.2f} W\n"
-    f"W/kg: {wkg:.2f}\n"
-    f"Livello ciclista stimato: {livello_ciclista}"
-)
+        f"Metodo FTP: {metodo}\n"
+        f"Valore test inserito: {valore_test:.2f} W\n"
+        f"FTP calcolata: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}\n"
+        f"Livello ciclista stimato: {livello_ciclista}"
+    )
 
     # ==================================================
     # ZONE POTENZA
