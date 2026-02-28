@@ -38,6 +38,15 @@ def tempo_salita(potenza, peso_atleta, lunghezza, pendenza, peso_bici):
 
     tempo = (lunghezza / v) / 60
     return tempo
+    def categoria_bmi_premium(bmi):
+    if bmi < 18.5:
+        return "Sottopeso", "#AEB6BF"
+    elif bmi < 25:
+        return "Normopeso", "#1F618D"
+    elif bmi < 30:
+        return "Sovrappeso", "#B9770E"
+    else:
+        return "Obesità", "#7B241C"
 st.set_page_config(layout="centered")
 
 # ======================================================
@@ -232,45 +241,36 @@ st.write(f"Valutazione massa grassa: {giudizio_fm}")
 # GRAFICO BMI MIGLIORATO
 # ======================================================
 
-st.subheader("Rischio Metabolico in funzione del BMI")
+st.subheader("Valutazione Composizione Corporea")
 
-import numpy as np
+categoria_label, colore = categoria_bmi_premium(bmi)
 
-fig, ax = plt.subplots(figsize=(8, 3.2))
+# Selezione silhouette
+if sesso == "Uomo":
+    silhouette = "img/uomo_base.png"
+else:
+    silhouette = "img/donna_base.png"
 
-# Curva morbida di rischio
-x = np.linspace(15, 45, 400)
-y = 0.0025 * (x - 22)**2 + 0.15  # curva parabolica centrata su BMI ideale
-
-ax.plot(x, y, color="black", linewidth=2)
-
-# Aree colorate stile OMS
-ax.fill_between(x, y, where=(x < 18.5), color="#1E8449", alpha=0.9)
-ax.fill_between(x, y, where=((x >= 18.5) & (x < 25)), color="#F4D03F", alpha=0.9)
-ax.fill_between(x, y, where=((x >= 25) & (x < 30)), color="#EB984E", alpha=0.9)
-ax.fill_between(x, y, where=(x >= 30), color="#E74C3C", alpha=0.9)
-
-# Linea BMI paziente
-ax.axvline(bmi, color="black", linestyle="--", linewidth=2)
-ax.text(bmi, max(y)*0.95, f"{bmi:.1f}", ha="center", fontsize=12, fontweight="bold")
-
-# Estetica
-ax.set_xlim(15, 45)
-ax.set_ylim(0, max(y)+0.1)
-ax.set_yticks([])
-ax.set_xlabel("Indice di Massa Corporea (BMI)")
-ax.set_title("Rischio relativo di sviluppare patologie metaboliche")
-
-for spine in ["top", "right", "left"]:
-    ax.spines[spine].set_visible(False)
-
-plt.tight_layout()
-
-col1, col2, col3 = st.columns([1,3,1])
-with col2:
-    st.pyplot(fig, use_container_width=True)
-
-fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
+# Mostra silhouette con colore dinamico
+st.markdown(
+    f"""
+    <div style="text-align:center;">
+        <img src="{silhouette}" width="280" 
+        style="filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.15)); 
+               border-radius:8px;
+               background-color:white;
+               padding:20px;
+               border:4px solid {colore};">
+        <h3 style="margin-top:10px; color:{colore};">
+            {categoria_label}
+        </h3>
+        <p style="font-size:18px;">
+            BMI: <strong>{bmi:.1f}</strong>
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # ======================================================
 # GRAFICO MASSA GRASSA
@@ -532,11 +532,9 @@ if st.button("Genera PDF Professionale"):
     f"Valutazione massa grassa: {giudizio_fm}"
 )
 
-    pdf.image("bmi_chart.png", x=40, w=120)
-    pdf.image("fm_chart.png", x=40, w=120)
-
-    pdf.section_title("Grafico Massa Grassa")
-    pdf.image("fm_chart.png", x=30, w=150)
+    pdf.section_title("Valutazione BMI")
+    pdf.image("bmi_silhouette.png", x=60, w=90)
+    pdf.ln(10)
 
     # ==================================================
     # PERFORMANCE
