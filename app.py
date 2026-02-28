@@ -675,7 +675,7 @@ if nuovo_peso > 0 and ftp > 0:
 
         pdf.normal(testo_proj)
 
-    pdf.output("report_performance_professionale.pdf")
+        pdf.output("report_performance_professionale.pdf")
 
     with open("report_performance_professionale.pdf", "rb") as f:
         st.download_button(
