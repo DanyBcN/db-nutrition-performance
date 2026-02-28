@@ -561,6 +561,8 @@ pdf.image("bmi_bar.png", x=40, w=120)
 
 pdf.ln(10)
 
+   if st.button("Genera PDF Professionale"):
+
     # ==================================================
     # PERFORMANCE
     # ==================================================
