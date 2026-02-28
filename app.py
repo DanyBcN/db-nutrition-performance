@@ -579,24 +579,48 @@ if st.button("Genera PDF Professionale"):
             pdf.cell(30, 8, str(row["A (bpm)"]), 1)
             pdf.ln()
 
+       # ==================================================
+    # PROIEZIONE
     # ==================================================
-# PROIEZIONE
-# ==================================================
-if nuovo_peso > 0 and ftp > 0:
+    if nuovo_peso > 0 and ftp > 0:
 
-    pdf.section_title("Proiezione Miglioramento")
+        pdf.section_title("Proiezione Miglioramento")
 
-    delta_tempo = tempo_vecchio - tempo_nuovo
-    delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
+        delta_tempo_pdf = tempo_vecchio - tempo_nuovo
+        delta_percentuale_pdf = (
+            (tempo_vecchio - tempo_nuovo) / tempo_vecchio * 100
+            if tempo_vecchio > 0 else 0
+        )
 
-    testo_proj = (
-        f"Tempo stimato con dati attuali: {tempo_vecchio:.1f} min\n"
-        f"Tempo stimato con nuovo peso/FTP: {tempo_nuovo:.1f} min\n\n"
-        f"Miglioramento assoluto: {delta_tempo:.1f} minuti\n"
-        f"Riduzione percentuale del tempo: {delta_percentuale:.1f}%\n"
-    )
+        testo_proj = (
+            f"Peso attuale: {peso:.1f} kg\n"
+            f"Peso target: {nuovo_peso:.1f} kg\n"
+            f"Variazione peso: {peso - nuovo_peso:.1f} kg\n\n"
 
-    pdf.normal(testo_proj)
+            f"FTP attuale: {ftp:.1f} W\n"
+            f"FTP prevista: {nuova_ftp:.1f} W\n\n"
 
-pdf.output("report_performance_professionale.pdf")
- 
+            f"W/kg attuale: {wkg:.2f}\n"
+            f"W/kg previsto: {nuovo_wkg:.2f}\n\n"
+
+            f"--- SIMULAZIONE SALITA ---\n"
+            f"Lunghezza: {lunghezza/1000:.1f} km\n"
+            f"Pendenza media: {pendenza*100:.1f}%\n\n"
+
+            f"Tempo stimato con dati attuali: {tempo_vecchio:.1f} min\n"
+            f"Tempo stimato con nuovo peso/FTP: {tempo_nuovo:.1f} min\n\n"
+
+            f"Miglioramento assoluto: {delta_tempo_pdf:.1f} minuti\n"
+            f"Riduzione percentuale del tempo: {delta_percentuale_pdf:.1f}%\n"
+        )
+
+        pdf.normal(testo_proj)
+
+    pdf.output("report_performance_professionale.pdf")
+
+    with open("report_performance_professionale.pdf", "rb") as f:
+        st.download_button(
+            "Scarica PDF Professionale",
+            f,
+            "report_performance_professionale.pdf"
+        )
