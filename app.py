@@ -531,15 +531,35 @@ if st.button("Genera PDF Professionale"):
     f"Valutazione massa grassa: {giudizio_fm}"
 )
 
-    pdf.section_title("Valutazione BMI")
+   pdf.section_title("Valutazione BMI")
 
-    if sesso == "Uomo":
-        pdf.image("img/uomo_luxury.png", x=70, w=70)
-    else:
-        pdf.image("img/donna_luxury.png", x=70, w=70)
+categoria_label, colore = categoria_bmi_premium(bmi)
 
-    pdf.ln(75)
-    pdf.image("bmi_bar.png", x=40, w=120)
+# Silhouette centrata
+if sesso == "Uomo":
+    pdf.image("img/uomo_luxury.png", x=70, w=70)
+else:
+    pdf.image("img/donna_luxury.png", x=70, w=70)
+
+pdf.ln(75)
+
+# Valore BMI grande
+pdf.set_font("Arial", "B", 20)
+pdf.cell(0, 12, f"BMI: {bmi:.1f}", 0, 1, "C")
+
+# Categoria
+pdf.set_font("Arial", "", 13)
+pdf.cell(0, 8, f"Categoria OMS: {categoria_label}", 0, 1, "C")
+
+# Range atleta
+pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
+
+pdf.ln(5)
+
+# Barra grafica
+pdf.image("bmi_bar.png", x=40, w=120)
+
+pdf.ln(10)
 
     # ==================================================
     # PERFORMANCE
