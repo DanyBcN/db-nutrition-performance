@@ -490,14 +490,6 @@ if nuovo_peso > 0 and ftp > 0:
 # PDF PROFESSIONALE
 # ======================================================
 
-
-
-   
-
- # ======================================================
-# PDF PROFESSIONALE
-# ======================================================
-
 if st.button("Genera PDF Professionale"):
 
     def safe(text):
@@ -530,9 +522,7 @@ if st.button("Genera PDF Professionale"):
     pdf.add_page()
     pdf.set_auto_page_break(auto=True, margin=15)
 
-    # ==========================
-    # DATI ANAGRAFICI
-    # ==========================
+    # DATI
     pdf.section_title("Dati Anagrafici")
     pdf.normal(
         f"Nome: {nome}\n"
@@ -541,9 +531,7 @@ if st.button("Genera PDF Professionale"):
         f"Eta: {eta} anni"
     )
 
-    # ==========================
     # ANTROPOMETRIA
-    # ==========================
     pdf.section_title("Antropometria")
     pdf.normal(
         f"Peso: {peso:.1f} kg\n"
@@ -553,54 +541,32 @@ if st.button("Genera PDF Professionale"):
         f"Massa magra: {massa_magra:.2f} kg"
     )
 
-    # ==========================
-    # VALUTAZIONE BMI
-    # ==========================
-    pdf.section_title("Valutazione BMI")
+    # COMPOSIZIONE CORPOREA
+    pdf.section_title("Composizione Corporea")
 
-pdf.image("bmi_chart.png", x=20, w=170)
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 8, f"BMI {bmi:.1f}  |  {categoria_bmi}", 0, 1, "L")
+    pdf.ln(2)
+    pdf.image("bmi_chart.png", x=20, w=170)
+    pdf.ln(6)
 
-pdf.ln(8)
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 8, f"Massa Grassa {fm:.1f}%  |  Range atleta {fm_min}-{fm_max}%", 0, 1, "L")
+    pdf.ln(2)
+    pdf.image("fm_chart.png", x=20, w=170)
+    pdf.ln(6)
 
-pdf.set_font("Arial", "B", 14)
-pdf.cell(0, 8, f"BMI: {bmi:.1f}", 0, 1, "C")
-
-pdf.set_font("Arial", "", 11)
-pdf.cell(0, 6, f"Categoria OMS: {categoria_bmi}", 0, 1, "C")
-pdf.cell(0, 6, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
-
-pdf.ln(4)
-    # ==========================
-    # VALUTAZIONE MASSA GRASSA
-    # ==========================
-pdf.section_title("Valutazione Massa Grassa")
-
-pdf.image("fm_chart.png", x=20, w=170)
-
-pdf.ln(8)
-
-pdf.set_font("Arial", "B", 14)
-pdf.cell(0, 8, f"Massa grassa: {fm:.1f}%", 0, 1, "C")
-
-pdf.set_font("Arial", "", 11)
-pdf.cell(0, 6, f"Range ideale atleta: {fm_min}-{fm_max}%", 0, 1, "C")
-
-pdf.ln(4)
-    # ==========================
     # PERFORMANCE
-    # ==========================
-pdf.section_title("Performance")
-pdf.normal(
+    pdf.section_title("Performance")
+    pdf.normal(
         f"Metodo FTP: {metodo}\n"
         f"FTP calcolata: {ftp:.2f} W\n"
         f"W/kg: {wkg:.2f}\n"
         f"Livello ciclista stimato: {livello_ciclista}"
     )
-    # ==================================================
-    # ZONE POTENZA
-    # ==================================================
-if not zone_df.empty:
 
+    # ZONE POTENZA
+    if not zone_df.empty:
         pdf.section_title("Zone Potenza")
 
         pdf.set_font("Arial", "B", 10)
@@ -610,18 +576,14 @@ if not zone_df.empty:
         pdf.ln()
 
         pdf.set_font("Arial", "", 10)
-
-for _, row in zone_df.iterrows():
+        for _, row in zone_df.iterrows():
             pdf.cell(90, 8, safe(str(row["Zona"])), 1)
             pdf.cell(30, 8, str(row["Da (W)"]), 1)
             pdf.cell(30, 8, str(row["A (W)"]), 1)
             pdf.ln()
 
-    # ==================================================
     # ZONE CARDIO
-    # ==================================================
-if not zone_hr_df.empty:
-
+    if not zone_hr_df.empty:
         pdf.section_title("Zone Cardio")
 
         pdf.set_font("Arial", "B", 10)
@@ -631,18 +593,14 @@ if not zone_hr_df.empty:
         pdf.ln()
 
         pdf.set_font("Arial", "", 10)
-
-for _, row in zone_hr_df.iterrows():
+        for _, row in zone_hr_df.iterrows():
             pdf.cell(90, 8, safe(str(row["Zona"])), 1)
             pdf.cell(30, 8, str(row["Da (bpm)"]), 1)
             pdf.cell(30, 8, str(row["A (bpm)"]), 1)
             pdf.ln()
 
-       # ==================================================
     # PROIEZIONE
-    # ==================================================
-if nuovo_peso > 0 and ftp > 0:
-
+    if nuovo_peso > 0 and ftp > 0:
         pdf.section_title("Proiezione Miglioramento")
 
         delta_tempo_pdf = tempo_vecchio - tempo_nuovo
@@ -653,31 +611,19 @@ if nuovo_peso > 0 and ftp > 0:
 
         testo_proj = (
             f"Peso attuale: {peso:.1f} kg\n"
-            f"Peso target: {nuovo_peso:.1f} kg\n"
-            f"Variazione peso: {peso - nuovo_peso:.1f} kg\n\n"
-
+            f"Peso target: {nuovo_peso:.1f} kg\n\n"
             f"FTP attuale: {ftp:.1f} W\n"
             f"FTP prevista: {nuova_ftp:.1f} W\n\n"
-
             f"W/kg attuale: {wkg:.2f}\n"
             f"W/kg previsto: {nuovo_wkg:.2f}\n\n"
-
-            f"--- SIMULAZIONE SALITA ---\n"
-            f"Lunghezza: {lunghezza/1000:.1f} km\n"
-            f"Pendenza media: {pendenza*100:.1f}%\n\n"
-
-            f"Tempo stimato con dati attuali: {tempo_vecchio:.1f} min\n"
-            f"Tempo stimato con nuovo peso/FTP: {tempo_nuovo:.1f} min\n\n"
-
-            f"Miglioramento assoluto: {delta_tempo_pdf:.1f} minuti\n"
-            f"Riduzione percentuale del tempo: {delta_percentuale_pdf:.1f}%\n"
+            f"Miglioramento tempo salita: {delta_tempo_pdf:.1f} min ({delta_percentuale_pdf:.1f}%)"
         )
 
         pdf.normal(testo_proj)
 
-        pdf.output("report_performance_professionale.pdf")
+    pdf.output("report_performance_professionale.pdf")
 
-with open("report_performance_professionale.pdf", "rb") as f:
+    with open("report_performance_professionale.pdf", "rb") as f:
         st.download_button(
             "Scarica PDF Professionale",
             f,
