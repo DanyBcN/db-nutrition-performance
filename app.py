@@ -232,33 +232,34 @@ st.write(f"Valutazione massa grassa: {giudizio_fm}")
 # GRAFICO BMI MIGLIORATO
 # ======================================================
 
-st.subheader("Valutazione BMI")
+st.subheader("Rischio Metabolico in funzione del BMI")
 
-fig, ax = plt.subplots(figsize=(7, 2.4))
+import numpy as np
 
-ax.set_xlim(15, 35)
-ax.set_ylim(0, 1)
+fig, ax = plt.subplots(figsize=(8, 3.2))
 
-# Range atleta
-ax.axvspan(bmi_min, bmi_max, color="#2ECC71", alpha=0.25)
+# Curva morbida di rischio
+x = np.linspace(15, 45, 400)
+y = 0.0025 * (x - 22)**2 + 0.15  # curva parabolica centrata su BMI ideale
 
-# Barra centrale elegante
-ax.axhline(0.5, xmin=0, xmax=1, linewidth=8, color="#EAECEE")
+ax.plot(x, y, color="black", linewidth=2)
 
-# Colore punto
-if bmi < bmi_min:
-    color_bmi = "#3498DB"
-elif bmi > bmi_max:
-    color_bmi = "#E74C3C"
-else:
-    color_bmi = "#27AE60"
+# Aree colorate stile OMS
+ax.fill_between(x, y, where=(x < 18.5), color="#1E8449", alpha=0.9)
+ax.fill_between(x, y, where=((x >= 18.5) & (x < 25)), color="#F4D03F", alpha=0.9)
+ax.fill_between(x, y, where=((x >= 25) & (x < 30)), color="#EB984E", alpha=0.9)
+ax.fill_between(x, y, where=(x >= 30), color="#E74C3C", alpha=0.9)
 
-ax.scatter(bmi, 0.5, s=250, color=color_bmi, zorder=5)
-ax.text(bmi, 0.72, f"{bmi:.1f}", ha="center", fontsize=14, fontweight="bold")
+# Linea BMI paziente
+ax.axvline(bmi, color="black", linestyle="--", linewidth=2)
+ax.text(bmi, max(y)*0.95, f"{bmi:.1f}", ha="center", fontsize=12, fontweight="bold")
 
+# Estetica
+ax.set_xlim(15, 45)
+ax.set_ylim(0, max(y)+0.1)
 ax.set_yticks([])
-ax.set_xticks(range(15, 36, 2))
-ax.set_xlabel("BMI")
+ax.set_xlabel("Indice di Massa Corporea (BMI)")
+ax.set_title("Rischio relativo di sviluppare patologie metaboliche")
 
 for spine in ["top", "right", "left"]:
     ax.spines[spine].set_visible(False)
@@ -270,7 +271,6 @@ with col2:
     st.pyplot(fig, use_container_width=True)
 
 fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
-
 
 # ======================================================
 # GRAFICO MASSA GRASSA
