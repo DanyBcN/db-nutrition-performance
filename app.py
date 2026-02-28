@@ -531,7 +531,14 @@ if st.button("Genera PDF Professionale"):
     f"Valutazione massa grassa: {giudizio_fm}"
 )
 
-    pdf.section_title("Valutazione BMI")
+   
+
+  # ======================================================
+# PDF PROFESSIONALE
+# ======================================================
+
+if st.button("Genera PDF Professionale"):
+     pdf.section_title("Valutazione BMI")
 
 categoria_label, colore = categoria_bmi_premium(bmi)
 
@@ -561,19 +568,16 @@ pdf.image("bmi_bar.png", x=40, w=120)
 
 pdf.ln(10)
 
-   if st.button("Genera PDF Professionale"):
+    def safe(text):
+        ...
 
-    # ==================================================
-    # PERFORMANCE
-    # ==================================================
-    pdf.section_title("Performance")
-    pdf.normal(
-        f"Metodo FTP: {metodo}\n"
-        f"Valore test inserito: {valore_test:.2f} W\n"
-        f"FTP calcolata: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}\n"
-        f"Livello ciclista stimato: {livello_ciclista}"
-    )
+    class PDF(FPDF):
+        ...
+
+    pdf = PDF()
+    pdf.add_page()
+
+    # Tutto il contenuto PDF qui dentro
 
     # ==================================================
     # ZONE POTENZA
