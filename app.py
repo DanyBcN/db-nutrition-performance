@@ -562,7 +562,7 @@ if st.button("Genera PDF Professionale"):
         f"Livello ciclista stimato: {livello_ciclista}"
     )
 
-    pdf.output("report_performance_professionale.pdf")
+   
 
     with open("report_performance_professionale.pdf", "rb") as f:
         st.download_button(
