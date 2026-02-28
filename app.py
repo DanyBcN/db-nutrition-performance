@@ -4,6 +4,31 @@ from fpdf import FPDF
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
+import os
+
+def salva_atleta(nome, cognome, peso, fm, bmi, ftp, wkg):
+    file = "archivio_atleti.csv"
+
+    nuova_riga = {
+        "Nome": nome,
+        "Cognome": cognome,
+        "Data": date.today(),
+        "Peso": peso,
+        "FM": fm,
+        "BMI": bmi,
+        "FTP": ftp,
+        "Wkg": wkg
+    }
+
+    df_nuovo = pd.DataFrame([nuova_riga])
+
+    if os.path.exists(file):
+        df = pd.read_csv(file)
+        df = pd.concat([df, df_nuovo], ignore_index=True)
+    else:
+        df = df_nuovo
+
+    df.to_csv(file, index=False)
 # ======================================================
 # FUNZIONE TEMPO SALITA (METTILA QUI)
 # ======================================================
@@ -486,6 +511,34 @@ if nuovo_peso > 0 and ftp > 0:
     st.write(f"Riduzione percentuale del tempo: {delta_percentuale:.1f}%")
     st.markdown("---")
 
+if st.button("Salva in Archivio"):
+    salva_atleta(nome, cognome, peso, fm, bmi, ftp, wkg)
+    st.success("Atleta salvato in archivio")
+
+st.header("Storico Atleta")
+
+file = "archivio_atleti.csv"
+
+if os.path.exists(file):
+
+    df = pd.read_csv(file)
+
+    atleta_df = df[
+        (df["Nome"] == nome) &
+        (df["Cognome"] == cognome)
+    ]
+
+    if not atleta_df.empty:
+
+        st.subheader("Progressione nel tempo")
+        st.dataframe(atleta_df)
+
+        fig_prog, ax = plt.subplots(figsize=(8,4))
+        ax.plot(atleta_df["Data"], atleta_df["Peso"], marker="o")
+        ax.set_title("Evoluzione Peso")
+        ax.set_ylabel("Peso (kg)")
+        ax.set_xticklabels(atleta_df["Data"], rotation=45)
+        st.pyplot(fig_prog)
 # ======================================================
 # PDF PROFESSIONALE
 # ======================================================
