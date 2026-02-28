@@ -564,8 +564,10 @@ if nuovo_peso > 0 and ftp > 0:
 st.header("Archivio Atleti")
 
 conn = sqlite3.connect("performance_lab.db")
-c = conn.cursor()
 
+df = None
+
+c = conn.cursor()
 c.execute("SELECT id, nome, cognome FROM atleti")
 lista_atleti = c.fetchall()
 
@@ -589,42 +591,63 @@ if lista_atleti:
 
         st.subheader("Storico Valutazioni")
         st.dataframe(df)
-# ======================================================
-# MODIFICA VISITA
-# ======================================================
 
-st.subheader("Modifica Visita")
+        # =========================
+        # GRAFICI
+        # =========================
+        fig1, ax1 = plt.subplots()
+        ax1.plot(df["data"], df["peso"], marker="o")
+        ax1.set_title("Evoluzione Peso")
+        ax1.tick_params(axis='x', rotation=45)
+        st.pyplot(fig1)
 
-visite = df[["id", "data"]]
+        fig2, ax2 = plt.subplots()
+        ax2.plot(df["data"], df["ftp"], marker="o")
+        ax2.set_title("Evoluzione FTP")
+        ax2.tick_params(axis='x', rotation=45)
+        st.pyplot(fig2)
 
-visita_scelta = st.selectbox(
-    "Seleziona visita da modificare",
-    visite.itertuples(index=False),
-    format_func=lambda x: f"{x.data}"
-)
+        # ======================================================
+        # MODIFICA VISITA
+        # ======================================================
 
-visita_id = visita_scelta.id
+        st.subheader("Modifica Visita")
 
-visita_corrente = df[df["id"] == visita_id].iloc[0]
+        visita_scelta = st.selectbox(
+            "Seleziona visita",
+            df["id"],
+            format_func=lambda x: df[df["id"] == x]["data"].values[0]
+        )
 
-peso_mod = st.number_input("Peso (kg)", value=float(visita_corrente["peso"]))
-fm_mod = st.number_input("FM (%)", value=float(visita_corrente["fm"]))
-ftp_mod = st.number_input("FTP (W)", value=float(visita_corrente["ftp"]))
+        visita_corrente = df[df["id"] == visita_scelta].iloc[0]
 
-altezza_m_mod = altezza / 100 if altezza > 0 else 0
-bmi_mod = peso_mod / (altezza_m_mod**2) if altezza_m_mod > 0 else 0
-wkg_mod = ftp_mod / peso_mod if peso_mod > 0 else 0
+        peso_mod = st.number_input(
+            "Peso (kg)", value=float(visita_corrente["peso"]), key="peso_mod"
+        )
 
-if st.button("Salva Modifiche Visita"):
+        fm_mod = st.number_input(
+            "FM (%)", value=float(visita_corrente["fm"]), key="fm_mod"
+        )
 
-    conn.execute("""
-        UPDATE valutazioni
-        SET peso=?, fm=?, bmi=?, ftp=?, wkg=?
-        WHERE id=?
-    """, (peso_mod, fm_mod, bmi_mod, ftp_mod, wkg_mod, visita_id))
+        ftp_mod = st.number_input(
+            "FTP (W)", value=float(visita_corrente["ftp"]), key="ftp_mod"
+        )
 
-    conn.commit()
-    st.success("Visita aggiornata correttamente")
+        bmi_mod = peso_mod / (altezza_m**2) if altezza_m > 0 else 0
+        wkg_mod = ftp_mod / peso_mod if peso_mod > 0 else 0
+
+        if st.button("Salva Modifiche Visita"):
+
+            conn.execute("""
+                UPDATE valutazioni
+                SET peso=?, fm=?, bmi=?, ftp=?, wkg=?
+                WHERE id=?
+            """, (peso_mod, fm_mod, bmi_mod, ftp_mod, wkg_mod, visita_scelta))
+
+            conn.commit()
+            st.success("Visita aggiornata correttamente")
+
+conn.close()
         # =========================
         # GRAFICO PESO
         # =========================
