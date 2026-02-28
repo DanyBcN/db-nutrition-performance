@@ -573,7 +573,7 @@ pdf.ln(4)
     # ==========================
     # VALUTAZIONE MASSA GRASSA
     # ==========================
-    pdf.section_title("Valutazione Massa Grassa")
+pdf.section_title("Valutazione Massa Grassa")
 
 pdf.image("fm_chart.png", x=20, w=170)
 
