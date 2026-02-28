@@ -234,7 +234,7 @@ st.write(f"Valutazione massa grassa: {giudizio_fm}")
 
 st.subheader("Valutazione BMI")
 
-fig, ax = plt.subplots(figsize=(10, 2.2))
+fig, ax = plt.subplots(figsize=(6, 1.8))
 
 ax.set_xlim(15, 35)
 ax.set_ylim(0, 1)
@@ -263,7 +263,8 @@ for spine in ["top", "right", "left"]:
 
 st.pyplot(fig)
 
-fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
+fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
+
 
 # ======================================================
 # GRAFICO MASSA GRASSA
@@ -271,7 +272,8 @@ fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
 
 st.subheader("Valutazione Massa Grassa")
 
-fig2, ax2 = plt.subplots(figsize=(10,2.2))
+fig2, ax2 = plt.subplots(figsize=(6,1.8))
+plt.tight_layout()
 ax2.set_xlim(0, 30)
 ax2.set_ylim(0, 1)
 
@@ -288,7 +290,7 @@ for spine in ["top", "right", "left"]:
     ax2.spines[spine].set_visible(False)
 
 st.pyplot(fig2)
-fig2.savefig("fm_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.3)
+fig2.savefig("fm_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
 st.markdown("---")
 # ======================================================
 # CALCOLO FTP
@@ -519,8 +521,8 @@ if st.button("Genera PDF Professionale"):
     f"Valutazione massa grassa: {giudizio_fm}"
 )
 
-    pdf.section_title("Grafico BMI")
-    pdf.image("bmi_chart.png", x=15, w=180)
+    pdf.image("bmi_chart.png", x=40, w=120)
+    pdf.image("fm_chart.png", x=40, w=120)
 
     pdf.section_title("Grafico Massa Grassa")
     pdf.image("fm_chart.png", x=30, w=150)
