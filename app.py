@@ -620,7 +620,7 @@ for _, row in zone_df.iterrows():
     # ==================================================
     # ZONE CARDIO
     # ==================================================
-    if not zone_hr_df.empty:
+if not zone_hr_df.empty:
 
         pdf.section_title("Zone Cardio")
 
@@ -632,7 +632,7 @@ for _, row in zone_df.iterrows():
 
         pdf.set_font("Arial", "", 10)
 
-        for _, row in zone_hr_df.iterrows():
+for _, row in zone_hr_df.iterrows():
             pdf.cell(90, 8, safe(str(row["Zona"])), 1)
             pdf.cell(30, 8, str(row["Da (bpm)"]), 1)
             pdf.cell(30, 8, str(row["A (bpm)"]), 1)
@@ -641,7 +641,7 @@ for _, row in zone_df.iterrows():
        # ==================================================
     # PROIEZIONE
     # ==================================================
-    if nuovo_peso > 0 and ftp > 0:
+if nuovo_peso > 0 and ftp > 0:
 
         pdf.section_title("Proiezione Miglioramento")
 
