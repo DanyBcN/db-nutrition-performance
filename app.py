@@ -464,72 +464,7 @@ if nuovo_peso > 0 and ftp > 0:
 # PDF PROFESSIONALE
 # ======================================================
 
-if st.button("Genera PDF Professionale"):
 
-    def safe(text):
-        return text.encode("latin-1", "replace").decode("latin-1")
-
-    class PDF(FPDF):
-
-        def header(self):
-            try:
-                self.image("logo.png", 75, 8, 60)
-                self.ln(30)
-            except:
-                self.ln(20)
-
-            self.set_font("Arial", "B", 18)
-            self.cell(0, 10, "REPORT PERFORMANCE", 0, 1, "C")
-            self.ln(5)
-
-        def section_title(self, title):
-            self.set_fill_color(230, 240, 255)
-            self.set_font("Arial", "B", 12)
-            self.cell(0, 8, title, 0, 1, "L", True)
-            self.ln(3)
-
-        def normal(self, text):
-            self.set_font("Arial", "", 10)
-            self.multi_cell(0, 6, safe(text))
-            self.ln(3)
-
-    pdf = PDF()
-    pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
-
-    # ==================================================
-    # DATI ANAGRAFICI
-    # ==================================================
-    pdf.section_title("Dati Anagrafici")
-    pdf.normal(
-        f"Nome: {nome}\n"
-        f"Cognome: {cognome}\n"
-        f"Data di nascita: {data_nascita.strftime('%d/%m/%Y')}\n"
-        f"Eta: {eta} anni"
-    )
-
-    # ==================================================
-    # ANTROPOMETRIA
-    # ==================================================
-    pdf.section_title("Antropometria")
-    pdf.normal(
-    f"Peso: {peso:.1f} kg\n"
-    f"Altezza: {altezza:.1f} cm\n"
-    f"BMI: {bmi:.2f} ({categoria_bmi})\n"
-    f"Massa grassa: {fm:.1f}% ({fm_kg:.2f} kg)\n"
-    f"Massa magra: {massa_magra:.2f} kg\n"
-    f"BMR Mifflin: {bmr:.0f} kcal\n"
-    f"BMR Cunningham: {bmr_cunningham:.0f} kcal\n"
-    f"TDEE stimato: {tdee:.0f} kcal\n"
-    f"Disponibilità energetica: {energia_disponibile:.1f} kcal/kg FFM\n\n"
-    f"FFMI: {ffmi:.2f}\n"
-    f"FMI: {fmi:.2f}\n"
-    f"Rapporto MM/MG: {ratio_mm_mg:.2f}\n\n"
-    f"Range BMI atleta ({tipo_sport}): {bmi_min}-{bmi_max}\n"
-    f"Valutazione atleta: {giudizio_atleta}\n"
-    f"Range FM atleta: {fm_min}-{fm_max}%\n"
-    f"Valutazione massa grassa: {giudizio_fm}"
-)
 
    
 
