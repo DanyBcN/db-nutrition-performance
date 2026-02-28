@@ -433,25 +433,19 @@ if nuovo_peso > 0 and ftp > 0:
     pendenza = st.number_input("Pendenza (%)", 6.0) / 100
     peso_bici = st.number_input("Peso bici (kg)", 8.0)
 
-    
-
     tempo_vecchio = tempo_salita(ftp, peso, lunghezza, pendenza, peso_bici)
     tempo_nuovo = tempo_salita(nuova_ftp, nuovo_peso, lunghezza, pendenza, peso_bici)
 
-    st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
-    st.write(f"Giudizio: {giudizio}")
     delta_tempo = tempo_vecchio - tempo_nuovo
     delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
 
     st.subheader("Simulazione salita")
 
-    st.write(f"📍 Salita: {lunghezza/1000:.1f} km al {pendenza*100:.1f}%")
-
-    st.write(f"⏱ Tempo stimato con dati attuali: {tempo_vecchio:.1f} min")
-    st.write(f"⏱ Tempo stimato con peso target e nuova FTP: {tempo_nuovo:.1f} min")
-
-   st.write(f"📉 Miglioramento: {delta_tempo:.1f} minuti")
-   st.write(f"📊 Riduzione percentuale: {delta_percentuale:.1f}%")
+    st.write(f"Salita: {lunghezza/1000:.1f} km al {pendenza*100:.1f}%")
+    st.write(f"Tempo stimato con dati attuali: {tempo_vecchio:.1f} min")
+    st.write(f"Tempo stimato con peso target e nuova FTP: {tempo_nuovo:.1f} min")
+    st.write(f"Miglioramento assoluto: {delta_tempo:.1f} minuti")
+    st.write(f"Riduzione percentuale del tempo: {delta_percentuale:.1f}%")
 
    st.markdown("---")
 
