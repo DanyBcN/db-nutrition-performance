@@ -37,8 +37,10 @@ def tempo_salita(potenza, peso_atleta, lunghezza, pendenza, peso_bici):
         v = nuova_v
 
     tempo = (lunghezza / v) / 60
-    return tempo
-    def categoria_bmi_premium(bmi):
+return tempo
+
+
+def categoria_bmi_premium(bmi):
     if bmi < 18.5:
         return "Sottopeso", "#AEB6BF"
     elif bmi < 25:
@@ -47,6 +49,8 @@ def tempo_salita(potenza, peso_atleta, lunghezza, pendenza, peso_bici):
         return "Sovrappeso", "#B9770E"
     else:
         return "Obesità", "#7B241C"
+
+
 st.set_page_config(layout="centered")
 
 # ======================================================
