@@ -560,6 +560,16 @@ if st.button("Genera PDF Professionale"):
     pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
 
     pdf.ln(10)
+    # ==========================
+    # PERFORMANCE
+    # ==========================
+    pdf.section_title("Performance")
+    pdf.normal(
+        f"Metodo FTP: {metodo}\n"
+        f"FTP calcolata: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}\n"
+        f"Livello ciclista stimato: {livello_ciclista}"
+    )
     # ==================================================
     # ZONE POTENZA
     # ==================================================
