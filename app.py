@@ -543,34 +543,23 @@ if st.button("Genera PDF Professionale"):
 # ==========================
 # VALUTAZIONE BMI
 # ==========================
-pdf.section_title("Valutazione BMI")
-
-pdf.image("bmi_chart.png", x=25, w=160)
-
-pdf.ln(65)
-
-pdf.set_font("Arial", "B", 16)
-pdf.cell(0, 10, f"BMI: {bmi:.1f}", 0, 1, "C")
-
-pdf.set_font("Arial", "", 12)
-pdf.cell(0, 8, f"Categoria OMS: {categoria_bmi}", 0, 1, "C")
-pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
-
-pdf.ln(10)
     # ==========================
-    # PERFORMANCE
+    # VALUTAZIONE BMI
     # ==========================
-    pdf.section_title("Performance")
-    pdf.normal(
-        f"Metodo FTP: {metodo}\n"
-        f"FTP calcolata: {ftp:.2f} W\n"
-        f"W/kg: {wkg:.2f}\n"
-        f"Livello ciclista stimato: {livello_ciclista}"
-    )
+    pdf.section_title("Valutazione BMI")
 
-   
+    pdf.image("bmi_chart.png", x=25, w=160)
 
-    
+    pdf.ln(65)
+
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, f"BMI: {bmi:.1f}", 0, 1, "C")
+
+    pdf.set_font("Arial", "", 12)
+    pdf.cell(0, 8, f"Categoria OMS: {categoria_bmi}", 0, 1, "C")
+    pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
+
+    pdf.ln(10)
     # ==================================================
     # ZONE POTENZA
     # ==================================================
