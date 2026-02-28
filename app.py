@@ -531,7 +531,7 @@ if st.button("Genera PDF Professionale"):
     f"Valutazione massa grassa: {giudizio_fm}"
 )
 
-      pdf.section_title("Valutazione BMI")
+    pdf.section_title("Valutazione BMI")
 
     if sesso == "Uomo":
         pdf.image("img/uomo_luxury.png", x=70, w=70)
