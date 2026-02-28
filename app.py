@@ -648,37 +648,7 @@ if lista_atleti:
             st.success("Visita aggiornata correttamente")
 
 conn.close()
-        # =========================
-        # GRAFICO PESO
-        # =========================
-        fig1, ax1 = plt.subplots()
-        ax1.plot(df["data"], df["peso"], marker="o")
-        ax1.set_title("Evoluzione Peso")
-        ax1.set_ylabel("Peso (kg)")
-        ax1.tick_params(axis='x', rotation=45)
-        st.pyplot(fig1)
-
-        # =========================
-        # GRAFICO FTP
-        # =========================
-        fig2, ax2 = plt.subplots()
-        ax2.plot(df["data"], df["ftp"], marker="o")
-        ax2.set_title("Evoluzione FTP")
-        ax2.set_ylabel("FTP (W)")
-        ax2.tick_params(axis='x', rotation=45)
-        st.pyplot(fig2)
-
-        # =========================
-        # GRAFICO W/kg
-        # =========================
-        fig3, ax3 = plt.subplots()
-        ax3.plot(df["data"], df["wkg"], marker="o")
-        ax3.set_title("Evoluzione W/kg")
-        ax3.set_ylabel("W/kg")
-        ax3.tick_params(axis='x', rotation=45)
-        st.pyplot(fig3)
-
-conn.close()
+       
 # ======================================================
 # PDF PROFESSIONALE
 # ======================================================
