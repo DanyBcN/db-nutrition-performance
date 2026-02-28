@@ -4,6 +4,7 @@ from fpdf import FPDF
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
+import os
 import sqlite3
 
 def init_db():
@@ -177,9 +178,7 @@ eta = date.today().year - data_nascita.year - (
 )
 
 st.markdown("---")
-if st.button("Salva Valutazione in Archivio"):
-    salva_valutazione(nome, cognome, data_nascita, peso, fm, bmi, ftp, wkg)
-    st.success("Valutazione salvata nel database")
+
 # ======================================================
 # ANTROPOMETRIA
 # ======================================================
@@ -514,7 +513,9 @@ if fthr > 0:
     st.table(zone_hr_df)
 
 st.markdown("---")
-
+if st.button("Salva Valutazione in Archivio"):
+    salva_valutazione(nome, cognome, data_nascita, peso, fm, bmi, ftp, wkg)
+    st.success("Valutazione salvata nel database")
 # ======================================================
 # PROIEZIONE PERFORMANCE
 # ======================================================
@@ -556,73 +557,7 @@ if nuovo_peso > 0 and ftp > 0:
     st.write(f"Riduzione percentuale del tempo: {delta_percentuale:.1f}%")
     st.markdown("---")
 
-if st.button("Salva in Archivio"):
-    salva_atleta(nome, cognome, peso, fm, bmi, ftp, wkg)
-    st.success("Atleta salvato in archivio")
 
-st.header("Storico Atleta")
-
-file = "archivio_atleti.csv"
-
-if os.path.exists(file):
-
-    df = pd.read_csv(file)
-
-    atleta_df = df[
-        (df["Nome"] == nome) &
-        (df["Cognome"] == cognome)
-    ]
-
-    if not atleta_df.empty:
-
-        st.subheader("Progressione nel tempo")
-        st.dataframe(atleta_df)
-
-        fig_prog, ax = plt.subplots(figsize=(8,4))
-        ax.plot(atleta_df["Data"], atleta_df["Peso"], marker="o")
-        ax.set_title("Evoluzione Peso")
-        ax.set_ylabel("Peso (kg)")
-        ax.set_xticklabels(atleta_df["Data"], rotation=45)
-        st.pyplot(fig_prog)
-
-st.header("Dashboard Archivio Atleti")
-
-conn = sqlite3.connect("performance_lab.db")
-c = conn.cursor()
-
-c.execute("SELECT id, nome, cognome FROM atleti")
-lista_atleti = c.fetchall()
-
-if lista_atleti:
-
-    atleta_scelto = st.selectbox(
-        "Seleziona Atleta",
-        lista_atleti,
-        format_func=lambda x: f"{x[1]} {x[2]}"
-    )
-
-    atleta_id = atleta_scelto[0]
-
-    df = pd.read_sql_query(
-        "SELECT * FROM valutazioni WHERE atleta_id=?",
-        conn,
-        params=(atleta_id,)
-    )
-
-    if not df.empty:
-        st.dataframe(df)
-
-        fig1, ax1 = plt.subplots()
-        ax1.plot(df["data"], df["peso"], marker="o")
-        ax1.set_title("Evoluzione Peso")
-        st.pyplot(fig1)
-
-        fig2, ax2 = plt.subplots()
-        ax2.plot(df["data"], df["ftp"], marker="o")
-        ax2.set_title("Evoluzione FTP")
-        st.pyplot(fig2)
-
-conn.close()
 # ======================================================
 # PDF PROFESSIONALE
 # ======================================================
