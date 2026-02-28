@@ -241,37 +241,32 @@ st.write(f"Valutazione massa grassa: {giudizio_fm}")
 # GRAFICO BMI MIGLIORATO
 # ======================================================
 
-st.subheader("Valutazione Composizione Corporea")
+st.subheader("Valutazione BMI – Medical Sport Lab")
 
 categoria_label, colore = categoria_bmi_premium(bmi)
 
-# Selezione silhouette
 if sesso == "Uomo":
-    silhouette = "img/uomo_base.png"
+    percorso = "img/uomo_luxury.png"
 else:
-    silhouette = "img/donna_base.png"
+    percorso = "img/donna_luxury.png"
 
-# Mostra silhouette con colore dinamico
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    st.image(percorso, width=260)
+
 st.markdown(
     f"""
-    <div style="text-align:center;">
-        <img src="{silhouette}" width="280" 
-        style="filter: drop-shadow(0px 4px 8px rgba(0,0,0,0.15)); 
-               border-radius:8px;
-               background-color:white;
-               padding:20px;
-               border:4px solid {colore};">
-        <h3 style="margin-top:10px; color:{colore};">
+    <div style="text-align:center; margin-top:10px;">
+        <h3 style="color:{colore}; margin-bottom:5px;">
             {categoria_label}
         </h3>
-        <p style="font-size:18px;">
+        <p style="font-size:20px;">
             BMI: <strong>{bmi:.1f}</strong>
         </p>
     </div>
     """,
     unsafe_allow_html=True
 )
-
 # ======================================================
 # GRAFICO MASSA GRASSA
 # ======================================================
@@ -533,8 +528,14 @@ if st.button("Genera PDF Professionale"):
 )
 
     pdf.section_title("Valutazione BMI")
-    pdf.image("bmi_silhouette.png", x=60, w=90)
-    pdf.ln(10)
+
+if sesso == "Uomo":
+    pdf.image("img/uomo_luxury.png", x=70, w=70)
+else:
+    pdf.image("img/donna_luxury.png", x=70, w=70)
+
+pdf.ln(75)
+pdf.image("bmi_bar.png", x=40, w=120)
 
     # ==================================================
     # PERFORMANCE
