@@ -287,34 +287,47 @@ fig_bmi.savefig("bmi_chart.png", dpi=400, bbox_inches="tight")
 # ======================================================
 # GRAFICO MASSA GRASSA
 # ======================================================
+# ======================================================
+# GRAFICO MASSA GRASSA DINAMICO (STILE BMI)
+# ======================================================
 
 st.subheader("Valutazione Massa Grassa")
 
-fig2, ax2 = plt.subplots(figsize=(7, 2.4))
+fig_fm, ax = plt.subplots(figsize=(10, 2.2))
 
-ax2.set_xlim(0, 30)
-ax2.set_ylim(0, 1)
+# Range dinamico centrato sul valore
+min_range = max(0, fm_min - 5)
+max_range = fm_max + 10
 
-ax2.axvspan(fm_min, fm_max, color="#2ECC71", alpha=0.25)
-ax2.axhline(0.5, xmin=0, xmax=1, linewidth=8, color="#EAECEE")
+ax.set_xlim(min_range, max_range)
+ax.set_ylim(0, 1)
 
-ax2.scatter(fm, 0.5, s=250, color="#2C3E50", zorder=5)
-ax2.text(fm, 0.72, f"{fm:.1f}%", ha="center", fontsize=14, fontweight="bold")
+# Segmenti
+segmenti_fm = [
+    (min_range, fm_min, "#E74C3C"),      # sotto range
+    (fm_min, fm_max, "#1ABC9C"),         # ideale
+    (fm_max, max_range, "#F39C12"),      # sopra range
+]
 
-ax2.set_yticks([])
-ax2.set_xticks(range(0, 31, 5))
-ax2.set_xlabel("Percentuale Massa Grassa (%)")
+for start, end, color in segmenti_fm:
+    ax.axvspan(start, end, ymin=0.3, ymax=0.7, color=color)
+
+# Indicatore valore
+ax.axvline(fm, ymin=0.2, ymax=0.8, linewidth=3)
+ax.text(fm, 0.85, f"{fm:.1f}%", ha="center", fontsize=12, fontweight="bold")
+
+# Pulizia
+ax.set_yticks([])
+ax.set_xticks([fm_min, fm_max])
+ax.set_xlabel("Percentuale Massa Grassa (%)")
 
 for spine in ["top", "right", "left"]:
-    ax2.spines[spine].set_visible(False)
+    ax.spines[spine].set_visible(False)
 
 plt.tight_layout()
 
-col1, col2, col3 = st.columns([1,3,1])
-with col2:
-    st.pyplot(fig2, use_container_width=True)
-
-fig2.savefig("fm_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
+st.pyplot(fig_fm)
+fig_fm.savefig("fm_chart.png", dpi=400, bbox_inches="tight")
 # ======================================================
 # CALCOLO FTP
 # ======================================================
