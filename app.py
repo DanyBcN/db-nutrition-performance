@@ -4,31 +4,39 @@ from fpdf import FPDF
 import pandas as pd
 import math
 import matplotlib.pyplot as plt
-import os
+import sqlite3
 
-def salva_atleta(nome, cognome, peso, fm, bmi, ftp, wkg):
-    file = "archivio_atleti.csv"
+def init_db():
+    conn = sqlite3.connect("performance_lab.db")
+    c = conn.cursor()
 
-    nuova_riga = {
-        "Nome": nome,
-        "Cognome": cognome,
-        "Data": date.today(),
-        "Peso": peso,
-        "FM": fm,
-        "BMI": bmi,
-        "FTP": ftp,
-        "Wkg": wkg
-    }
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS atleti (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT,
+            cognome TEXT,
+            data_nascita TEXT
+        )
+    """)
 
-    df_nuovo = pd.DataFrame([nuova_riga])
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS valutazioni (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            atleta_id INTEGER,
+            data TEXT,
+            peso REAL,
+            fm REAL,
+            bmi REAL,
+            ftp REAL,
+            wkg REAL,
+            FOREIGN KEY (atleta_id) REFERENCES atleti(id)
+        )
+    """)
 
-    if os.path.exists(file):
-        df = pd.read_csv(file)
-        df = pd.concat([df, df_nuovo], ignore_index=True)
-    else:
-        df = df_nuovo
+    conn.commit()
+    conn.close()
 
-    df.to_csv(file, index=False)
+init_db()
 # ======================================================
 # FUNZIONE TEMPO SALITA (METTILA QUI)
 # ======================================================
@@ -75,7 +83,42 @@ def categoria_bmi_premium(bmi):
     else:
         return "Obesità", "#7B241C"
 
+def salva_valutazione(nome, cognome, data_nascita, peso, fm, bmi, ftp, wkg):
+    conn = sqlite3.connect("performance_lab.db")
+    c = conn.cursor()
 
+    c.execute("""
+        SELECT id FROM atleti
+        WHERE nome=? AND cognome=? AND data_nascita=?
+    """, (nome, cognome, str(data_nascita)))
+
+    atleta = c.fetchone()
+
+    if atleta:
+        atleta_id = atleta[0]
+    else:
+        c.execute("""
+            INSERT INTO atleti (nome, cognome, data_nascita)
+            VALUES (?, ?, ?)
+        """, (nome, cognome, str(data_nascita)))
+        atleta_id = c.lastrowid
+
+    c.execute("""
+        INSERT INTO valutazioni
+        (atleta_id, data, peso, fm, bmi, ftp, wkg)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+    """, (
+        atleta_id,
+        str(date.today()),
+        peso,
+        fm,
+        bmi,
+        ftp,
+        wkg
+    ))
+
+    conn.commit()
+    conn.close()
 st.set_page_config(layout="centered")
 
 # ======================================================
@@ -134,7 +177,9 @@ eta = date.today().year - data_nascita.year - (
 )
 
 st.markdown("---")
-
+if st.button("Salva Valutazione in Archivio"):
+    salva_valutazione(nome, cognome, data_nascita, peso, fm, bmi, ftp, wkg)
+    st.success("Valutazione salvata nel database")
 # ======================================================
 # ANTROPOMETRIA
 # ======================================================
@@ -539,6 +584,45 @@ if os.path.exists(file):
         ax.set_ylabel("Peso (kg)")
         ax.set_xticklabels(atleta_df["Data"], rotation=45)
         st.pyplot(fig_prog)
+
+st.header("Dashboard Archivio Atleti")
+
+conn = sqlite3.connect("performance_lab.db")
+c = conn.cursor()
+
+c.execute("SELECT id, nome, cognome FROM atleti")
+lista_atleti = c.fetchall()
+
+if lista_atleti:
+
+    atleta_scelto = st.selectbox(
+        "Seleziona Atleta",
+        lista_atleti,
+        format_func=lambda x: f"{x[1]} {x[2]}"
+    )
+
+    atleta_id = atleta_scelto[0]
+
+    df = pd.read_sql_query(
+        "SELECT * FROM valutazioni WHERE atleta_id=?",
+        conn,
+        params=(atleta_id,)
+    )
+
+    if not df.empty:
+        st.dataframe(df)
+
+        fig1, ax1 = plt.subplots()
+        ax1.plot(df["data"], df["peso"], marker="o")
+        ax1.set_title("Evoluzione Peso")
+        st.pyplot(fig1)
+
+        fig2, ax2 = plt.subplots()
+        ax2.plot(df["data"], df["ftp"], marker="o")
+        ax2.set_title("Evoluzione FTP")
+        st.pyplot(fig2)
+
+conn.close()
 # ======================================================
 # PDF PROFESSIONALE
 # ======================================================
