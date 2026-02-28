@@ -589,7 +589,42 @@ if lista_atleti:
 
         st.subheader("Storico Valutazioni")
         st.dataframe(df)
+# ======================================================
+# MODIFICA VISITA
+# ======================================================
 
+st.subheader("Modifica Visita")
+
+visite = df[["id", "data"]]
+
+visita_scelta = st.selectbox(
+    "Seleziona visita da modificare",
+    visite.itertuples(index=False),
+    format_func=lambda x: f"{x.data}"
+)
+
+visita_id = visita_scelta.id
+
+visita_corrente = df[df["id"] == visita_id].iloc[0]
+
+peso_mod = st.number_input("Peso (kg)", value=float(visita_corrente["peso"]))
+fm_mod = st.number_input("FM (%)", value=float(visita_corrente["fm"]))
+ftp_mod = st.number_input("FTP (W)", value=float(visita_corrente["ftp"]))
+
+altezza_m_mod = altezza / 100 if altezza > 0 else 0
+bmi_mod = peso_mod / (altezza_m_mod**2) if altezza_m_mod > 0 else 0
+wkg_mod = ftp_mod / peso_mod if peso_mod > 0 else 0
+
+if st.button("Salva Modifiche Visita"):
+
+    conn.execute("""
+        UPDATE valutazioni
+        SET peso=?, fm=?, bmi=?, ftp=?, wkg=?
+        WHERE id=?
+    """, (peso_mod, fm_mod, bmi_mod, ftp_mod, wkg_mod, visita_id))
+
+    conn.commit()
+    st.success("Visita aggiornata correttamente")
         # =========================
         # GRAFICO PESO
         # =========================
