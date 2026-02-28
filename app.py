@@ -540,9 +540,6 @@ if st.button("Genera PDF Professionale"):
         f"Massa magra: {massa_magra:.2f} kg"
     )
 
-# ==========================
-# VALUTAZIONE BMI
-# ==========================
     # ==========================
     # VALUTAZIONE BMI
     # ==========================
@@ -560,6 +557,20 @@ if st.button("Genera PDF Professionale"):
     pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
 
     pdf.ln(10)
+    # ==========================
+    # VALUTAZIONE MASSA GRASSA
+    # ==========================
+    pdf.section_title("Valutazione Massa Grassa")
+
+    pdf.image("fm_chart.png", x=25, w=160)
+
+    pdf.ln(50)
+
+    pdf.set_font("Arial", "", 12)
+    pdf.cell(0, 8, f"Massa grassa: {fm:.1f}%", 0, 1, "C")
+    pdf.cell(0, 8, f"Range ideale atleta: {fm_min}-{fm_max}%", 0, 1, "C")
+
+    pdf.ln(5)
     # ==========================
     # PERFORMANCE
     # ==========================
