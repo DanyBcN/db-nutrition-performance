@@ -478,7 +478,6 @@ if st.button("Genera PDF Professionale"):
         return text.encode("latin-1", "replace").decode("latin-1")
 
     class PDF(FPDF):
-
         def header(self):
             try:
                 self.image("logo.png", 75, 8, 60)
@@ -564,12 +563,7 @@ if st.button("Genera PDF Professionale"):
 
    
 
-    with open("report_performance_professionale.pdf", "rb") as f:
-        st.download_button(
-            "Scarica PDF Professionale",
-            f,
-            "report_performance_professionale.pdf"
-        )
+    
     # ==================================================
     # ZONE POTENZA
     # ==================================================
