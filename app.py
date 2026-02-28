@@ -677,7 +677,7 @@ if nuovo_peso > 0 and ftp > 0:
 
         pdf.output("report_performance_professionale.pdf")
 
-    with open("report_performance_professionale.pdf", "rb") as f:
+with open("report_performance_professionale.pdf", "rb") as f:
         st.download_button(
             "Scarica PDF Professionale",
             f,
