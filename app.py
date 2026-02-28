@@ -37,7 +37,7 @@ def tempo_salita(potenza, peso_atleta, lunghezza, pendenza, peso_bici):
         v = nuova_v
 
     tempo = (lunghezza / v) / 60
-return tempo
+    return tempo
 
 
 def categoria_bmi_premium(bmi):
@@ -531,17 +531,17 @@ if st.button("Genera PDF Professionale"):
     f"Valutazione massa grassa: {giudizio_fm}"
 )
 
-    pdf.section_title("Valutazione BMI")
+      pdf.section_title("Valutazione BMI")
 
-if sesso == "Uomo":
-    pdf.image("img/uomo_luxury.png", x=70, w=70)
-else:
-    pdf.image("img/donna_luxury.png", x=70, w=70)
+    if sesso == "Uomo":
+        pdf.image("img/uomo_luxury.png", x=70, w=70)
+    else:
+        pdf.image("img/donna_luxury.png", x=70, w=70)
 
-pdf.ln(75)
-pdf.image("bmi_bar.png", x=40, w=120)
+    pdf.ln(75)
+    pdf.image("bmi_bar.png", x=40, w=120)
 
-      # ==================================================
+    # ==================================================
     # PERFORMANCE
     # ==================================================
     pdf.section_title("Performance")
