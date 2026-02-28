@@ -234,36 +234,40 @@ st.write(f"Valutazione massa grassa: {giudizio_fm}")
 
 st.subheader("Valutazione BMI")
 
-fig, ax = plt.subplots(figsize=(6, 1.8))
+fig, ax = plt.subplots(figsize=(7, 2.4))
 
 ax.set_xlim(15, 35)
 ax.set_ylim(0, 1)
 
 # Range atleta
-ax.axvspan(bmi_min, bmi_max, color="#27AE60", alpha=0.3)
+ax.axvspan(bmi_min, bmi_max, color="#2ECC71", alpha=0.25)
 
-# Colore punto BMI
+# Barra centrale elegante
+ax.axhline(0.5, xmin=0, xmax=1, linewidth=8, color="#EAECEE")
+
+# Colore punto
 if bmi < bmi_min:
-    color_bmi = "blue"
+    color_bmi = "#3498DB"
 elif bmi > bmi_max:
-    color_bmi = "red"
+    color_bmi = "#E74C3C"
 else:
-    color_bmi = "green"
+    color_bmi = "#27AE60"
 
-ax.axvline(bmi, color=color_bmi, linewidth=3)
-ax.scatter(bmi, 0.5, s=150, color=color_bmi)
-ax.text(bmi, 0.8, f"{bmi:.1f}", ha='center', fontsize=11, fontweight='bold')
+ax.scatter(bmi, 0.5, s=250, color=color_bmi, zorder=5)
+ax.text(bmi, 0.72, f"{bmi:.1f}", ha="center", fontsize=14, fontweight="bold")
 
 ax.set_yticks([])
+ax.set_xticks(range(15, 36, 2))
 ax.set_xlabel("BMI")
-ax.set_title("Valutazione BMI Atleta")
 
 for spine in ["top", "right", "left"]:
     ax.spines[spine].set_visible(False)
 
-col1, col2, col3 = st.columns([1,2,1])
+plt.tight_layout()
+
+col1, col2, col3 = st.columns([1,3,1])
 with col2:
-   st.pyplot(fig, use_container_width=True)
+    st.pyplot(fig, use_container_width=True)
 
 fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
 
@@ -274,31 +278,29 @@ fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
 
 st.subheader("Valutazione Massa Grassa")
 
-fig2, ax2 = plt.subplots(figsize=(6,1.8))
-plt.tight_layout()
+fig2, ax2 = plt.subplots(figsize=(7, 2.4))
+
 ax2.set_xlim(0, 30)
 ax2.set_ylim(0, 1)
 
-ax2.axvspan(fm_min, fm_max, color="#27AE60", alpha=0.3)
-ax2.axvline(fm, color="black", linewidth=2.5)
-ax2.scatter(fm, 0.5, s=120, color="black")
-ax2.text(fm, 0.8, f"{fm:.1f}%", ha='center', fontsize=11, fontweight='bold')
+ax2.axvspan(fm_min, fm_max, color="#2ECC71", alpha=0.25)
+ax2.axhline(0.5, xmin=0, xmax=1, linewidth=8, color="#EAECEE")
+
+ax2.scatter(fm, 0.5, s=250, color="#2C3E50", zorder=5)
+ax2.text(fm, 0.72, f"{fm:.1f}%", ha="center", fontsize=14, fontweight="bold")
 
 ax2.set_yticks([])
+ax2.set_xticks(range(0, 31, 5))
 ax2.set_xlabel("Percentuale Massa Grassa (%)")
-ax2.set_title("Valutazione Massa Grassa Atleta")
 
 for spine in ["top", "right", "left"]:
     ax2.spines[spine].set_visible(False)
 
-col1, col2, col3 = st.columns([1,2,1])
-with col2:
-   for spine in ["top", "right", "left"]:
-    ax2.spines[spine].set_visible(False)
+plt.tight_layout()
 
-col1, col2, col3 = st.columns([1,2,1])
+col1, col2, col3 = st.columns([1,3,1])
 with col2:
-    st.pyplot(fig2)
+    st.pyplot(fig2, use_container_width=True)
 
 fig2.savefig("fm_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
 # ======================================================
