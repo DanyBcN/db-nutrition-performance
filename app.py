@@ -533,52 +533,108 @@ if st.button("Genera PDF Professionale"):
 
    
 
-  # ======================================================
+ # ======================================================
 # PDF PROFESSIONALE
 # ======================================================
 
 if st.button("Genera PDF Professionale"):
-     pdf.section_title("Valutazione BMI")
-
-categoria_label, colore = categoria_bmi_premium(bmi)
-
-# Silhouette centrata
-if sesso == "Uomo":
-    pdf.image("img/uomo_luxury.png", x=70, w=70)
-else:
-    pdf.image("img/donna_luxury.png", x=70, w=70)
-
-pdf.ln(75)
-
-# Valore BMI grande
-pdf.set_font("Arial", "B", 20)
-pdf.cell(0, 12, f"BMI: {bmi:.1f}", 0, 1, "C")
-
-# Categoria
-pdf.set_font("Arial", "", 13)
-pdf.cell(0, 8, f"Categoria OMS: {categoria_label}", 0, 1, "C")
-
-# Range atleta
-pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
-
-pdf.ln(5)
-
-# Barra grafica
-pdf.image("bmi_bar.png", x=40, w=120)
-
-pdf.ln(10)
 
     def safe(text):
-        ...
+        return text.encode("latin-1", "replace").decode("latin-1")
 
     class PDF(FPDF):
-        ...
+
+        def header(self):
+            try:
+                self.image("logo.png", 75, 8, 60)
+                self.ln(30)
+            except:
+                self.ln(20)
+
+            self.set_font("Arial", "B", 18)
+            self.cell(0, 10, "REPORT PERFORMANCE", 0, 1, "C")
+            self.ln(5)
+
+        def section_title(self, title):
+            self.set_fill_color(230, 240, 255)
+            self.set_font("Arial", "B", 12)
+            self.cell(0, 8, title, 0, 1, "L", True)
+            self.ln(3)
+
+        def normal(self, text):
+            self.set_font("Arial", "", 10)
+            self.multi_cell(0, 6, safe(text))
+            self.ln(3)
 
     pdf = PDF()
     pdf.add_page()
+    pdf.set_auto_page_break(auto=True, margin=15)
 
-    # Tutto il contenuto PDF qui dentro
+    # ==========================
+    # DATI ANAGRAFICI
+    # ==========================
+    pdf.section_title("Dati Anagrafici")
+    pdf.normal(
+        f"Nome: {nome}\n"
+        f"Cognome: {cognome}\n"
+        f"Data di nascita: {data_nascita.strftime('%d/%m/%Y')}\n"
+        f"Eta: {eta} anni"
+    )
 
+    # ==========================
+    # ANTROPOMETRIA
+    # ==========================
+    pdf.section_title("Antropometria")
+    pdf.normal(
+        f"Peso: {peso:.1f} kg\n"
+        f"Altezza: {altezza:.1f} cm\n"
+        f"BMI: {bmi:.2f} ({categoria_bmi})\n"
+        f"Massa grassa: {fm:.1f}%\n"
+        f"Massa magra: {massa_magra:.2f} kg"
+    )
+
+    # ==========================
+    # VALUTAZIONE BMI PREMIUM
+    # ==========================
+    pdf.section_title("Valutazione BMI")
+
+    categoria_label, colore = categoria_bmi_premium(bmi)
+
+    if sesso == "Uomo":
+        pdf.image("img/uomo_luxury.png", x=70, w=70)
+    else:
+        pdf.image("img/donna_luxury.png", x=70, w=70)
+
+    pdf.ln(75)
+
+    pdf.set_font("Arial", "B", 20)
+    pdf.cell(0, 12, f"BMI: {bmi:.1f}", 0, 1, "C")
+
+    pdf.set_font("Arial", "", 13)
+    pdf.cell(0, 8, f"Categoria OMS: {categoria_label}", 0, 1, "C")
+    pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
+
+    pdf.ln(10)
+
+    # ==========================
+    # PERFORMANCE
+    # ==========================
+    pdf.section_title("Performance")
+    pdf.normal(
+        f"Metodo FTP: {metodo}\n"
+        f"FTP calcolata: {ftp:.2f} W\n"
+        f"W/kg: {wkg:.2f}\n"
+        f"Livello ciclista stimato: {livello_ciclista}"
+    )
+
+    pdf.output("report_performance_professionale.pdf")
+
+    with open("report_performance_professionale.pdf", "rb") as f:
+        st.download_button(
+            "Scarica PDF Professionale",
+            f,
+            "report_performance_professionale.pdf"
+        )
     # ==================================================
     # ZONE POTENZA
     # ==================================================
