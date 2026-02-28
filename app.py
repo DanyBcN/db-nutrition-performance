@@ -241,36 +241,48 @@ st.write(f"Valutazione atleta: {giudizio_atleta}")
 st.write(f"Range FM ideale: {fm_min}-{fm_max}%")
 st.write(f"Valutazione massa grassa: {giudizio_fm}")
 
-## ======================================================
-# GRAFICO BMI MIGLIORATO
+# ======================================================
+# GRAFICO BMI DINAMICO
 # ======================================================
 
-st.subheader("Valutazione BMI – Medical Sport Lab")
+st.subheader("Valutazione BMI Grafica")
 
-categoria_label, colore = categoria_bmi_premium(bmi)
+fig_bmi, ax = plt.subplots(figsize=(10, 2.5))
 
-if sesso == "Uomo":
-    percorso = "img/uomo_luxury.png"
-else:
-    percorso = "img/donna_luxury.png"
+# Range totale
+ax.set_xlim(15, 45)
+ax.set_ylim(0, 1)
 
-col1, col2, col3 = st.columns([1,2,1])
-with col2:
-    st.image(percorso, width=260)
+# Segmenti OMS
+categorie = [
+    (15, 16, "#8B0000"),
+    (16, 17, "#E74C3C"),
+    (17, 18.5, "#F39C12"),
+    (18.5, 25, "#1ABC9C"),
+    (25, 30, "#16A085"),
+    (30, 35, "#F39C12"),
+    (35, 40, "#E67E22"),
+    (40, 45, "#C0392B"),
+]
 
-st.markdown(
-    f"""
-    <div style="text-align:center; margin-top:10px;">
-        <h3 style="color:{colore}; margin-bottom:5px;">
-            {categoria_label}
-        </h3>
-        <p style="font-size:20px;">
-            BMI: <strong>{bmi:.1f}</strong>
-        </p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+for start, end, color in categorie:
+    ax.axvspan(start, end, ymin=0.3, ymax=0.7, color=color)
+
+# Linea indicatore BMI
+ax.axvline(bmi, ymin=0.2, ymax=0.8, linewidth=3)
+ax.text(bmi, 0.85, f"{bmi:.1f}", ha="center", fontsize=12, fontweight="bold")
+
+# Pulizia grafica
+ax.set_yticks([])
+ax.set_xticks([16,18.5,25,30,35,40])
+ax.set_xlabel("BMI")
+
+for spine in ["top", "right", "left"]:
+    ax.spines[spine].set_visible(False)
+
+plt.tight_layout()
+
+st.pyplot(fig_bmi)
 # ======================================================
 # GRAFICO MASSA GRASSA
 # ======================================================
