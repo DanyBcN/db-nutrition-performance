@@ -38,7 +38,7 @@ def tempo_salita(potenza, peso_atleta, lunghezza, pendenza, peso_bici):
 
     tempo = (lunghezza / v) / 60
     return tempo
-st.set_page_config(layout="wide")
+st.set_page_config(layout="centered")
 
 # ======================================================
 # INIZIALIZZAZIONE VARIABILI
@@ -261,7 +261,11 @@ ax.set_title("Valutazione BMI Atleta")
 for spine in ["top", "right", "left"]:
     ax.spines[spine].set_visible(False)
 
-st.pyplot(fig)
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    st.pyplot(fig)
 
 fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
 
@@ -289,9 +293,16 @@ ax2.set_title("Valutazione Massa Grassa Atleta")
 for spine in ["top", "right", "left"]:
     ax2.spines[spine].set_visible(False)
 
-st.pyplot(fig2)
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+   for spine in ["top", "right", "left"]:
+    ax2.spines[spine].set_visible(False)
+
+col1, col2, col3 = st.columns([1,2,1])
+with col2:
+    st.pyplot(fig2)
+
 fig2.savefig("fm_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
-st.markdown("---")
 # ======================================================
 # CALCOLO FTP
 # ======================================================
