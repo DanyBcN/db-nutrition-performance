@@ -440,14 +440,20 @@ if nuovo_peso > 0 and ftp > 0:
 
     st.write(f"Nuovo W/kg: {nuovo_wkg:.2f}")
     st.write(f"Giudizio: {giudizio}")
-    st.write(f"Salita {lunghezza/1000:.1f} km al {pendenza*100:.1f}%: "
-    f"da {tempo_vecchio:.1f} min a {tempo_nuovo:.1f} min"
-    )
+    delta_tempo = tempo_vecchio - tempo_nuovo
     delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
-    st.write(f"Riduzione tempo: {delta_percentuale:.1f}%"
-    )
 
-st.markdown("---")
+    st.subheader("Simulazione salita")
+
+    st.write(f"📍 Salita: {lunghezza/1000:.1f} km al {pendenza*100:.1f}%")
+
+    st.write(f"⏱ Tempo stimato con dati attuali: {tempo_vecchio:.1f} min")
+    st.write(f"⏱ Tempo stimato con peso target e nuova FTP: {tempo_nuovo:.1f} min")
+
+   st.write(f"📉 Miglioramento: {delta_tempo:.1f} minuti")
+   st.write(f"📊 Riduzione percentuale: {delta_percentuale:.1f}%")
+
+   st.markdown("---")
 
 # ======================================================
 # PDF PROFESSIONALE
@@ -589,18 +595,30 @@ if st.button("Genera PDF Professionale"):
 
         delta_tempo = tempo_vecchio - tempo_nuovo
        
-        testo_proj = (
-            f"Peso attuale: {peso:.1f} kg\n"
-            f"Peso target: {nuovo_peso:.1f} kg\n"
-            f"FTP attuale: {ftp:.1f} W\n"
-            f"FTP prevista: {nuova_ftp:.1f} W\n"
-            f"W/kg attuale: {wkg:.2f}\n"
-            f"W/kg previsto: {nuovo_wkg:.2f}\n\n"
-            f"Tempo salita {lunghezza/1000:.1f} km al {pendenza*100:.1f}%: "
-            f"a {tempo_nuovo:.1f} min\n"
-            f"Miglioramento stimato: {delta_tempo:.1f} minuti"
-            f"Riduzione percentuale tempo: {delta_percentuale:.1f}%\n"
-        )
+        delta_tempo = tempo_vecchio - tempo_nuovo
+delta_percentuale = ((tempo_vecchio - tempo_nuovo) / tempo_vecchio) * 100
+
+testo_proj = (
+    f"Peso attuale: {peso:.1f} kg\n"
+    f"Peso target: {nuovo_peso:.1f} kg\n"
+    f"Variazione peso: {peso - nuovo_peso:.1f} kg\n\n"
+    
+    f"FTP attuale: {ftp:.1f} W\n"
+    f"FTP prevista: {nuova_ftp:.1f} W\n\n"
+    
+    f"W/kg attuale: {wkg:.2f}\n"
+    f"W/kg previsto: {nuovo_wkg:.2f}\n\n"
+    
+    f"--- SIMULAZIONE SALITA ---\n"
+    f"Lunghezza: {lunghezza/1000:.1f} km\n"
+    f"Pendenza media: {pendenza*100:.1f}%\n\n"
+    
+    f"Tempo stimato con dati attuali: {tempo_vecchio:.1f} min\n"
+    f"Tempo stimato con nuovo peso/FTP: {tempo_nuovo:.1f} min\n\n"
+    
+    f"Miglioramento assoluto: {delta_tempo:.1f} minuti\n"
+    f"Riduzione percentuale del tempo: {delta_percentuale:.1f}%\n"
+)
 
         pdf.normal(testo_proj)
 
