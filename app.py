@@ -283,6 +283,7 @@ for spine in ["top", "right", "left"]:
 plt.tight_layout()
 
 st.pyplot(fig_bmi)
+fig_bmi.savefig("bmi_chart.png", dpi=400, bbox_inches="tight")
 # ======================================================
 # GRAFICO MASSA GRASSA
 # ======================================================
@@ -539,29 +540,23 @@ if st.button("Genera PDF Professionale"):
         f"Massa magra: {massa_magra:.2f} kg"
     )
 
-    # ==========================
-    # VALUTAZIONE BMI PREMIUM
-    # ==========================
-    pdf.section_title("Valutazione BMI")
+# ==========================
+# VALUTAZIONE BMI
+# ==========================
+pdf.section_title("Valutazione BMI")
 
-    categoria_label, colore = categoria_bmi_premium(bmi)
+pdf.image("bmi_chart.png", x=25, w=160)
 
-    if sesso == "Uomo":
-        pdf.image("img/uomo_luxury.png", x=70, w=70)
-    else:
-        pdf.image("img/donna_luxury.png", x=70, w=70)
+pdf.ln(65)
 
-    pdf.ln(75)
+pdf.set_font("Arial", "B", 16)
+pdf.cell(0, 10, f"BMI: {bmi:.1f}", 0, 1, "C")
 
-    pdf.set_font("Arial", "B", 20)
-    pdf.cell(0, 12, f"BMI: {bmi:.1f}", 0, 1, "C")
+pdf.set_font("Arial", "", 12)
+pdf.cell(0, 8, f"Categoria OMS: {categoria_bmi}", 0, 1, "C")
+pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
 
-    pdf.set_font("Arial", "", 13)
-    pdf.cell(0, 8, f"Categoria OMS: {categoria_label}", 0, 1, "C")
-    pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
-
-    pdf.ln(10)
-
+pdf.ln(10)
     # ==========================
     # PERFORMANCE
     # ==========================
