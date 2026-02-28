@@ -263,9 +263,7 @@ for spine in ["top", "right", "left"]:
 
 col1, col2, col3 = st.columns([1,2,1])
 with col2:
-    col1, col2, col3 = st.columns([1,2,1])
-with col2:
-    st.pyplot(fig)
+   st.pyplot(fig, use_container_width=True)
 
 fig.savefig("bmi_chart.png", dpi=400, bbox_inches="tight", pad_inches=0.1)
 
