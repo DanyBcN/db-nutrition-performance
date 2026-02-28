@@ -558,32 +558,34 @@ if st.button("Genera PDF Professionale"):
     # ==========================
     pdf.section_title("Valutazione BMI")
 
-    pdf.image("bmi_chart.png", x=25, w=160)
+pdf.image("bmi_chart.png", x=20, w=170)
 
-    pdf.ln(65)
+pdf.ln(8)
 
-    pdf.set_font("Arial", "B", 16)
-    pdf.cell(0, 10, f"BMI: {bmi:.1f}", 0, 1, "C")
+pdf.set_font("Arial", "B", 14)
+pdf.cell(0, 8, f"BMI: {bmi:.1f}", 0, 1, "C")
 
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 8, f"Categoria OMS: {categoria_bmi}", 0, 1, "C")
-    pdf.cell(0, 8, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
+pdf.set_font("Arial", "", 11)
+pdf.cell(0, 6, f"Categoria OMS: {categoria_bmi}", 0, 1, "C")
+pdf.cell(0, 6, f"Range atleta ({tipo_sport}): {bmi_min} - {bmi_max}", 0, 1, "C")
 
-    pdf.ln(10)
+pdf.ln(4)
     # ==========================
     # VALUTAZIONE MASSA GRASSA
     # ==========================
     pdf.section_title("Valutazione Massa Grassa")
 
-    pdf.image("fm_chart.png", x=25, w=160)
+pdf.image("fm_chart.png", x=20, w=170)
 
-    pdf.ln(50)
+pdf.ln(8)
 
-    pdf.set_font("Arial", "", 12)
-    pdf.cell(0, 8, f"Massa grassa: {fm:.1f}%", 0, 1, "C")
-    pdf.cell(0, 8, f"Range ideale atleta: {fm_min}-{fm_max}%", 0, 1, "C")
+pdf.set_font("Arial", "B", 14)
+pdf.cell(0, 8, f"Massa grassa: {fm:.1f}%", 0, 1, "C")
 
-    pdf.ln(5)
+pdf.set_font("Arial", "", 11)
+pdf.cell(0, 6, f"Range ideale atleta: {fm_min}-{fm_max}%", 0, 1, "C")
+
+pdf.ln(4)
     # ==========================
     # PERFORMANCE
     # ==========================
