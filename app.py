@@ -446,8 +446,7 @@ if nuovo_peso > 0 and ftp > 0:
     st.write(f"Tempo stimato con peso target e nuova FTP: {tempo_nuovo:.1f} min")
     st.write(f"Miglioramento assoluto: {delta_tempo:.1f} minuti")
     st.write(f"Riduzione percentuale del tempo: {delta_percentuale:.1f}%")
-
-   st.markdown("---")
+    st.markdown("---")
 
 # ======================================================
 # PDF PROFESSIONALE
