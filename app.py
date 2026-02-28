@@ -589,8 +589,8 @@ pdf.ln(4)
     # ==========================
     # PERFORMANCE
     # ==========================
-    pdf.section_title("Performance")
-    pdf.normal(
+pdf.section_title("Performance")
+pdf.normal(
         f"Metodo FTP: {metodo}\n"
         f"FTP calcolata: {ftp:.2f} W\n"
         f"W/kg: {wkg:.2f}\n"
