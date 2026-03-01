@@ -3,3 +3,4 @@ pandas
 Pillow
 fpdf
 matplotlib
+reportlab
