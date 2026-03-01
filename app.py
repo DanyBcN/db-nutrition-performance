@@ -154,20 +154,34 @@ if menu == "Nuova Analisi":
 
         st.divider()
         sc1, sc2 = st.columns(2)
-        with sc1:
+       with sc1:
             if st.button("💾 SALVA IN ARCHIVIO"):
-                conn = get_connection(); c = conn.cursor()
-                # Controllo se l'atleta esiste già per non duplicarlo nell'anagrafica
-                c.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['c'], r['n']))
-                atleta_db = c.fetchone()
-                if atleta_db:
-                    a_id = atleta_db[0]
-                else:
-                    c.execute("INSERT INTO atleti (nome, cognome, profilo, altezza) VALUES (?,?,?,?)", (r['n'], r['c'], r['prof'], r['alt']))
-                    a_id = c.lastrowid
-                
-                c.execute("INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, t_att, t_tar, dist_km, grad, bike_w) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (a_id, r['data'], r['p'], r['fm'], r['ftp'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['t_a'], r['t_t'], r['d'], r['g'], r['b']))
-                conn.commit(); conn.close(); st.success("Salvato!")
+                try:
+                    with get_connection() as conn:
+                        c = conn.cursor()
+                        # Controllo esistenza atleta
+                        c.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['c'], r['n']))
+                        atleta_db = c.fetchone()
+                        
+                        if atleta_db:
+                            a_id = atleta_db[0]
+                            # Opzionale: aggiorna l'altezza se è cambiata
+                            c.execute("UPDATE atleti SET altezza=?, profilo=? WHERE id=?", (r['alt'], r['prof'], a_id))
+                        else:
+                            c.execute("INSERT INTO atleti (nome, cognome, profilo, altezza) VALUES (?,?,?,?)", 
+                                     (r['n'], r['c'], r['prof'], r['alt']))
+                            a_id = c.lastrowid
+                        
+                        # Inserimento visita
+                        c.execute("""INSERT INTO visite 
+                                     (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, t_att, t_tar, dist_km, grad, bike_w) 
+                                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", 
+                                  (a_id, r['data'], r['p'], r['fm'], r['ftp'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['t_a'], r['t_t'], r['d'], r['g'], r['b']))
+                        
+                        conn.commit()
+                        st.success(f"Dati di {r['n']} {r['c']} salvati con successo!")
+                except sqlite3.Error as e:
+                    st.error(f"Errore nel database: {e}")
 
         with sc2:
             pdf = FPDF()
