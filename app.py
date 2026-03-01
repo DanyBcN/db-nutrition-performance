@@ -31,7 +31,7 @@ def init_db():
 init_db()
 
 # ---------------------------------------------------------
-# 2. MOTORE SCIENTIFICO AVANZATO
+# 2. MOTORE SCIENTIFICO
 # ---------------------------------------------------------
 class BioPerformance:
     @staticmethod
@@ -39,13 +39,12 @@ class BioPerformance:
         bmi = peso / ((altezza/100)**2)
         ffm = peso * (1 - fm/100)
         ffmi = ffm / ((altezza/100)**2)
-        
-        eval_text = f"ANALISI BIOMETRICA:\n- BMI: {bmi:.1f} kg/m2\n- Massa Magra (FFM): {ffm:.1f} kg\n- Indice FFMI: {ffmi:.1f} kg/m2\n\n"
-        eval_text += f"VALUTAZIONE CLINICA: Profilo '{profilo}'. "
+        eval_text = f"Analisi Biometrica:\n- BMI: {bmi:.1f} kg/m2\n- Massa Magra (FFM): {ffm:.1f} kg\n- Indice FFMI: {ffmi:.1f} kg/m2\n\n"
+        eval_text += f"Valutazione Clinica: L'atleta rientra nel profilo '{profilo}'. "
         if fm > 15 and profilo == "Scalatore":
-            eval_text += "Necessaria ottimizzazione del rapporto potenza/peso tramite ricomposizione corporea."
+            eval_text += "Si rileva un margine di miglioramento tramite ricomposizione corporea."
         else:
-            eval_text += "Composizione corporea ottimale per i target definiti."
+            eval_text += "Composizione corporea in linea con i target prestativi."
         return eval_text
 
     @staticmethod
@@ -55,16 +54,6 @@ class BioPerformance:
         speed_ms = float(watt) / f_res
         return (float(km) * 1000 / speed_ms) / 60
 
-    @staticmethod
-    def get_zones(ftp, lthr):
-        return [
-            ("Z1 Recupero", 0, int(ftp*0.55), 0, int(lthr*0.68)),
-            ("Z2 Endurance", int(ftp*0.56), int(ftp*0.75), int(lthr*0.69), int(lthr*0.83)),
-            ("Z3 Tempo", int(ftp*0.76), int(ftp*0.90), int(lthr*0.84), int(lthr*0.94)),
-            ("Z4 Soglia", int(ftp*0.91), int(ftp*1.05), int(lthr*0.95), int(lthr*1.05)),
-            ("Z5 VO2max", int(ftp*1.06), int(ftp*1.20), int(lthr*1.06), 220)
-        ]
-
 def pdf_safe(text):
     if not text: return ""
     rep = {"à": "a", "è": "e", "é": "e", "ì": "i", "ò": "o", "ù": "u", "²": "2", "₂": "2", "VO₂": "VO2", "VO2": "VO2"}
@@ -72,7 +61,7 @@ def pdf_safe(text):
     return str(text).encode('latin-1', 'replace').decode('latin-1')
 
 # ---------------------------------------------------------
-# 3. INTERFACCIA STREAMLIT
+# 3. INTERFACCIA (LOGO NELLA SIDEBAR)
 # ---------------------------------------------------------
 with st.sidebar:
     if os.path.exists(LOGO_PATH):
@@ -114,38 +103,37 @@ if menu == "➕ Nuova Valutazione":
         grad = st.number_input("Pendenza %", 0.0, 20.0, 7.0)
         bike = st.number_input("Peso Bici (kg)", 5.0, 15.0, 8.0)
 
-    if st.button("🚀 ELABORA ANALISI PROFESSIONALE", use_container_width=True):
+    if st.button("🚀 ELABORA ANALISI", use_container_width=True):
         t_a = BioPerformance.estimate_time(ftp_att, p_att, dist, grad, bike)
         t_t = BioPerformance.estimate_time(ftp_tar, p_tar, dist, grad, bike)
-        zones = BioPerformance.get_zones(ftp_tar, lthr)
         giudizio = BioPerformance.get_eval(profilo, p_att, altezza, fm_att)
+        zp = [("Z1 Recupero", 0, int(ftp_tar*0.55)), ("Z2 Endurance", int(ftp_tar*0.56), int(ftp_tar*0.75)), 
+              ("Z3 Tempo", int(ftp_tar*0.76), int(ftp_tar*0.90)), ("Z4 Soglia", int(ftp_tar*0.91), int(ftp_tar*1.05)), 
+              ("Z5 VO2max", int(ftp_tar*1.06), 600)]
         
         st.session_state['report'] = {
             'nome': nome, 'cognome': cog, 'alt': altezza, 'prof': profilo,
             'p_a': p_att, 'fm_a': fm_att, 'ftp_a': ftp_att, 'lthr': lthr,
             'p_t': p_tar, 'fm_t': fm_tar, 'ftp_t': ftp_tar,
             'dist': dist, 'grad': grad, 'bike': bike,
-            't_a': t_a, 't_t': t_t, 'zones': zones, 'giudizio': giudizio, 'data': date.today().strftime("%d/%m/%Y"), 'raw_data': date.today().isoformat()
+            't_a': t_a, 't_t': t_t, 'giudizio': giudizio, 'zp': zp, 'data': date.today().strftime("%d/%m/%Y"), 'raw_data': date.today().isoformat()
         }
 
     if 'report' in st.session_state:
         r = st.session_state['report']
         st.divider()
-        
-        # Visualizzazione a schermo
-        c1, c2 = st.columns([2, 1])
-        with c1:
-            st.info("### Valutazione Biometrica")
-            st.text(r['giudizio'])
-            st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
-        with c2:
+        c_res1, c_res2 = st.columns([2, 1])
+        with c_res1:
+            st.success("### Risultato Valutazione")
+            st.write(r['giudizio'])
+            st.table(pd.DataFrame(r['zp'], columns=["Zona Potenza", "Min (W)", "Max (W)"]))
+        with c_res2:
             st.metric("Tempo Target", f"{r['t_t']:.2f} min", f"-{r['t_a']-r['t_t']:.2f} min")
             st.metric("W/kg Target", f"{r['ftp_t']/r['p_t']:.2f}")
 
-        # Azioni
-        cs, cp = st.columns(2)
-        with cs:
-            if st.button("💾 SALVA E AGGIORNA ARCHIVIO"):
+        c_save, c_pdf = st.columns(2)
+        with c_save:
+            if st.button("💾 SALVA IN ARCHIVIO"):
                 with get_connection() as conn:
                     cursor = conn.cursor()
                     cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
@@ -157,54 +145,54 @@ if menu == "➕ Nuova Valutazione":
                     cursor.execute("""INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, dist_km, grad, bike_w, t_att, t_tar) 
                                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (a_id, r['raw_data'], r['p_a'], r['fm_a'], r['ftp_a'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['dist'], r['grad'], r['bike'], r['t_a'], r['t_t']))
                     conn.commit()
-                st.success("Dati salvati."); st.rerun()
+                st.success("Salvato!"); st.rerun()
 
-        with cp:
-            # --- GENERAZIONE PDF PROFESSIONALE ---
+        with c_pdf:
             pdf = FPDF()
             pdf.add_page()
-            
-            # Header con logo e rettangolo blu
             pdf.set_fill_color(0, 51, 102); pdf.rect(0, 0, 210, 45, 'F')
             if os.path.exists(LOGO_PATH): pdf.image(LOGO_PATH, 10, 8, 38)
-            pdf.set_text_color(255, 255, 255); pdf.set_font("Arial", 'B', 22)
-            pdf.cell(190, 18, "PERFORMANCE LAB PRO", 0, 1, 'R')
-            pdf.set_font("Arial", 'I', 10); pdf.cell(190, 5, pdf_safe(f"Report Clinico Atleta - {r['data']}"), 0, 1, 'R')
-            
-            pdf.ln(25); pdf.set_text_color(0, 0, 0); pdf.set_font("Arial", 'B', 12)
-            pdf.set_fill_color(240, 240, 240); pdf.cell(190, 10, pdf_safe(f"ATLETA: {r['nome'].upper()} {r['cognome'].upper()}"), 1, 1, 'L', True)
-            
-            # Box Biometrico
+            pdf.set_text_color(255, 255, 255); pdf.set_font("Arial", 'B', 22); pdf.cell(190, 18, "PERFORMANCE LAB PRO", 0, 1, 'R')
+            pdf.set_font("Arial", 'I', 10); pdf.cell(190, 5, pdf_safe(f"Report Nutrizionale e Prestativo - {r['data']}"), 0, 1, 'R')
+            pdf.ln(25); pdf.set_text_color(0, 0, 0); pdf.set_font("Arial", 'B', 12); pdf.set_fill_color(240, 240, 240)
+            pdf.cell(190, 10, pdf_safe(f"ATLETA: {r['nome'].upper()} {r['cognome'].upper()}"), 1, 1, 'L', True)
             pdf.set_font("Arial", '', 11); pdf.multi_cell(190, 8, pdf_safe(r['giudizio']), 1)
-            pdf.ln(5)
-
-            # Box Performance
-            pdf.set_font("Arial", 'B', 12); pdf.cell(190, 10, "PROIEZIONE PERFORMANCE IN SALITA", 1, 1, 'L', True)
-            pdf.set_font("Arial", 'B', 10); pdf.cell(190, 8, pdf_safe(f"SCENARIO: {r['dist']} km | Pendenza media: {r['grad']}% | Peso Bici: {r['bike']} kg"), 1, 1, 'C')
-            pdf.set_font("Arial", '', 11)
-            pdf.cell(63, 8, "Parametro", 1, 0, 'C'); pdf.cell(63, 8, "Attuale", 1, 0, 'C'); pdf.cell(64, 8, "Target", 1, 1, 'C')
+            pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(190, 10, "PERFORMANCE IN SCENARIO", 1, 1, 'L', True)
+            pdf.set_font("Arial", 'B', 10); pdf.cell(190, 8, pdf_safe(f"SCENARIO: {r['dist']} km | Pendenza media: {r['grad']}% | Bici: {r['bike']} kg"), 1, 1, 'C')
+            pdf.set_font("Arial", '', 11); pdf.cell(63, 8, "Parametro", 1, 0, 'C'); pdf.cell(63, 8, "Attuale", 1, 0, 'C'); pdf.cell(64, 8, "Target", 1, 1, 'C')
             pdf.cell(63, 8, "Peso Corporeo", 1, 0); pdf.cell(63, 8, f"{r['p_a']} kg", 1, 0, 'C'); pdf.cell(64, 8, f"{r['p_t']} kg", 1, 1, 'C')
             pdf.cell(63, 8, "Tempo Scalata", 1, 0); pdf.cell(63, 8, f"{r['t_a']:.2f} min", 1, 0, 'C'); pdf.cell(64, 8, f"{r['t_t']:.2f} min", 1, 1, 'C')
-            pdf.set_font("Arial", 'B', 12); pdf.set_text_color(200, 0, 0); pdf.cell(190, 12, pdf_safe(f"MIGLIORAMENTO STIMATO: -{r['t_a']-r['t_t']:.2f} MINUTI"), 1, 1, 'C')
-            
-            # Zone Allenamento
-            pdf.ln(5); pdf.set_text_color(0, 0, 0); pdf.set_font("Arial", 'B', 12); pdf.cell(190, 10, "ZONE DI ALLENAMENTO TARGET (WATT & BPM)", 1, 1, 'L', True)
-            pdf.set_font("Arial", 'B', 9); pdf.cell(60, 8, "Zona", 1, 0, 'C'); pdf.cell(65, 8, "Potenza (W)", 1, 0, 'C'); pdf.cell(65, 8, "Cardio (BPM)", 1, 1, 'C')
-            pdf.set_font("Arial", '', 10)
-            for z in r['zones']:
-                pdf.cell(60, 7, pdf_safe(z[0]), 1, 0); pdf.cell(65, 7, f"{z[1]}-{z[2]} W", 1, 0, 'C'); pdf.cell(65, 7, f"{z[3]}-{z[4]} bpm", 1, 1, 'C')
-
-            st.download_button("📄 SCARICA PDF PROFESSIONALE", data=pdf.output(dest='S').encode('latin-1', 'ignore'), file_name=f"Report_{r['cognome']}.pdf", use_container_width=True)
+            pdf.set_font("Arial", 'B', 12); pdf.set_text_color(200, 0, 0); pdf.cell(190, 12, pdf_safe(f"MIGLIORAMENTO SCALATA: -{r['t_a']-r['t_t']:.2f} MINUTI"), 1, 1, 'C')
+            pdf.ln(5); pdf.set_text_color(0, 0, 0); pdf.set_font("Arial", 'B', 12); pdf.cell(190, 10, "ZONE DI ALLENAMENTO TARGET", 1, 1, 'L', True)
+            for z, mi, ma in r['zp']: pdf.cell(190, 7, f"{z}: {mi} - {ma} Watt", 1, 1)
+            st.download_button("📄 SCARICA PDF", data=pdf.output(dest='S').encode('latin-1', 'ignore'), file_name=f"Report_{r['cognome']}.pdf", use_container_width=True)
 
 elif menu == "📂 Archivio Professionale":
-    st.header("🗄️ Database Atleti")
+    st.header("🗄️ Database Atleti e Storico")
     with get_connection() as conn:
         at = pd.read_sql_query("SELECT * FROM atleti", conn)
     if not at.empty:
-        sel = st.selectbox("Seleziona Atleta", at.apply(lambda x: f"{x['id']} - {x['cognome']} {x['nome']}", axis=1))
-        a_id = int(sel.split(" - ")[0])
+        sel_atleta = st.selectbox("Seleziona Atleta", at.apply(lambda x: f"{x['id']} - {x['cognome']} {x['nome']}", axis=1))
+        a_id = int(sel_atleta.split(" - ")[0])
+        curr = at[at['id'] == a_id].iloc[0]
+        with st.expander("⚙️ Modifica o Elimina Atleta"):
+            c1, c2, c3, c4 = st.columns(4)
+            un, uc = c1.text_input("Nome", curr['nome']), c2.text_input("Cognome", curr['cognome'])
+            ua = c3.number_input("Altezza", 120, 230, int(curr['altezza']))
+            up = c4.selectbox("Profilo", ["Scalatore", "Passista", "Triatleta", "Granfondista"], index=0)
+            if st.button("✅ SALVA MODIFICHE"):
+                with get_connection() as conn:
+                    conn.execute("UPDATE atleti SET nome=?, cognome=?, altezza=?, profilo=? WHERE id=?", (un, uc, ua, up, a_id))
+                    conn.commit()
+                st.success("Aggiornato!"); st.rerun()
         with get_connection() as conn:
             vi = pd.read_sql_query(f"SELECT * FROM visite WHERE atleta_id={a_id} ORDER BY data DESC", conn)
-        st.dataframe(vi.drop(columns=['atleta_id']), hide_index=True)
+        if not vi.empty:
+            st.dataframe(vi.drop(columns=['atleta_id']), hide_index=True)
+            if st.button("🗑️ ELIMINA ULTIMA VISITA"):
+                with get_connection() as conn:
+                    conn.execute(f"DELETE FROM visite WHERE id=(SELECT max(id) FROM visite WHERE atleta_id={a_id})")
+                    conn.commit()
+                st.rerun()
     else:
-        st.warning("Archivio ancora vuoto.")
+        st.warning("Archivio vuoto.")
