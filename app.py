@@ -6,7 +6,7 @@ from fpdf import FPDF
 import os
 
 # ---------------------------------------------------------
-# SETUP E DATABASE (CON MIGRAZIONE AUTOMATICA)
+# SETUP E DATABASE (CON RIPARAZIONE AUTOMATICA SCHEMA)
 # ---------------------------------------------------------
 st.set_page_config(page_title="DB Nutrition & Performance", layout="wide", page_icon="🧬")
 LOGO_PATH = "Logo NUTRITION AND PERFORMANCE.png"
@@ -17,22 +17,38 @@ def get_connection():
 def init_db():
     with get_connection() as conn:
         c = conn.cursor()
-        # Tabella Atleti
-        c.execute('''CREATE TABLE IF NOT EXISTS atleti 
-                     (id INTEGER PRIMARY KEY, nome TEXT, cognome TEXT, altezza REAL, sesso TEXT, profilo TEXT)''')
-        # Tabella Visite
-        c.execute('''CREATE TABLE IF NOT EXISTS visite 
-                     (id INTEGER PRIMARY KEY, atleta_id INTEGER, data TEXT, peso REAL, fm REAL, ftp REAL, 
-                      lthr INTEGER, peso_t REAL, fm_t REAL, ftp_t REAL, t_att REAL, t_tar REAL,
-                      dist_km REAL, grad REAL, bike_w REAL)''')
         
-        # MIGRAZIONE DINAMICA: Controllo colonne mancanti
+        # 1. Creazione tabelle base (se non esistono)
+        c.execute('''CREATE TABLE IF NOT EXISTS atleti 
+                     (id INTEGER PRIMARY KEY, nome TEXT, cognome TEXT)''')
+        c.execute('''CREATE TABLE IF NOT EXISTS visite 
+                     (id INTEGER PRIMARY KEY, atleta_id INTEGER, data TEXT)''')
+        
+        # 2. Migrazione Tabella ATLETI: aggiunta colonne mancanti
         c.execute("PRAGMA table_info(atleti)")
-        columns = [column[1] for column in c.fetchall()]
-        if 'altezza' not in columns:
-            c.execute("ALTER TABLE atleti ADD COLUMN altezza REAL")
-        if 'profilo' not in columns:
-            c.execute("ALTER TABLE atleti ADD COLUMN profilo TEXT")
+        cols_atleti = [column[1] for column in c.fetchall()]
+        migrazioni_atleti = {
+            'altezza': 'REAL',
+            'sesso': 'TEXT',
+            'profilo': 'TEXT'
+        }
+        for col, tipo in migrazioni_atleti.items():
+            if col not in cols_atleti:
+                c.execute(f"ALTER TABLE atleti ADD COLUMN {col} {tipo}")
+        
+        # 3. Migrazione Tabella VISITE: aggiunta colonne mancanti (Risolve dist_km, grad, ecc.)
+        c.execute("PRAGMA table_info(visite)")
+        cols_visite = [column[1] for column in c.fetchall()]
+        migrazioni_visite = {
+            'peso': 'REAL', 'fm': 'REAL', 'ftp': 'REAL', 'lthr': 'INTEGER',
+            'peso_t': 'REAL', 'fm_t': 'REAL', 'ftp_t': 'REAL', 
+            't_att': 'REAL', 't_tar': 'REAL', 
+            'dist_km': 'REAL', 'grad': 'REAL', 'bike_w': 'REAL'
+        }
+        for col, tipo in migrazioni_visite.items():
+            if col not in cols_visite:
+                c.execute(f"ALTER TABLE visite ADD COLUMN {col} {tipo}")
+        
         conn.commit()
 
 init_db()
@@ -43,7 +59,6 @@ init_db()
 class NutritionScience:
     @staticmethod
     def get_clinical_judgment(profilo, peso, altezza, fm, fm_t):
-        # Calcoli Biometrici
         bmi = peso / ((altezza/100)**2)
         ffm = peso * (1 - fm/100)  # Fat-Free Mass
         ffmi = ffm / ((altezza/100)**2)  # Fat-Free Mass Index
@@ -56,29 +71,27 @@ class NutritionScience:
         }
         low, high = ranges.get(profilo, (8, 15))
         
-        j = f"L'atleta presenta un BMI di {bmi:.1f} kg/m² e una Fat Mass (FM%) del {fm}%.\n"
-        j += f"La Fat-Free Mass attuale è di {ffm:.1f} kg (FFMI: {ffmi:.1f}).\n"
-        j += f"Per il profilo {profilo}, il range target è {low}-{high}%.\n"
+        j = f"BMI: {bmi:.1f} kg/m² | FM: {fm}% | FFM: {ffm:.1f} kg (FFMI: {ffmi:.1f}).\n"
+        j += f"Range ottimale per {profilo}: {low}-{high}%.\n"
         
         if fm > high:
-            j += f"La composizione attuale è superiore al set-point; il target del {fm_t}% è prioritario."
+            j += f"La composizione è superiore al target; la riduzione della FM al {fm_t}% è prioritaria."
         elif ffmi < 17:
-            j += "ATTENZIONE: FFMI ridotto. Possibile deplezione della massa magra (sarcopenia sportiva)."
+            j += "ATTENZIONE: FFMI basso. Rischio di deplezione della massa magra."
         else:
-            j += "La composizione è ottimale; focus su efficienza metabolica e potenza."
+            j += "Composizione ottimale; focus su efficienza e potenza."
         return j
 
     @staticmethod
     def estimate_time(watt, peso, km, pend, bike_w):
-        # Fisica applicata: resistenza gravitazionale + attrito volvente (Crrm ~ 0.005)
-        # g = 9.81 m/s²
+        # Fisica: Forza = m * g * (pendenza + attrito)
         f_res = (peso + bike_w) * 9.81 * ((pend/100) + 0.005)
         return (km / ((watt / f_res) * 3.6)) * 60 if f_res > 0 and watt > 0 else 0
 
 def pdf_safe(t): return str(t).encode('latin-1', 'replace').decode('latin-1')
 
 # ---------------------------------------------------------
-# UI SIDEBAR
+# UI STREAMLIT
 # ---------------------------------------------------------
 with st.sidebar:
     if os.path.exists(LOGO_PATH): st.image(LOGO_PATH, use_container_width=True)
@@ -126,7 +139,7 @@ if menu == "Nuova Analisi":
 
     if st.button("🚀 GENERA ANALISI"):
         if not final_cognome or not nome:
-            st.error("Inserire Nome e Cognome per procedere.")
+            st.error("Inserire Nome e Cognome.")
         else:
             t_att = NutritionScience.estimate_time(ftp, peso, dist_km, grad, bike_w)
             t_tar = NutritionScience.estimate_time(ftp_t, peso_t, dist_km, grad, bike_w)
@@ -144,21 +157,17 @@ if menu == "Nuova Analisi":
         r = st.session_state['res']
         st.divider()
         
-        # Zone di Allenamento
+        # Zone di Potenza e Cardio
         z_p = [("Z1 Recupero", 0, int(r['ftp_t']*0.55)), ("Z2 Endurance", int(r['ftp_t']*0.56), int(r['ftp_t']*0.75)), ("Z3 Tempo", int(r['ftp_t']*0.76), int(r['ftp_t']*0.90)), ("Z4 Soglia", int(r['ftp_t']*0.91), int(r['ftp_t']*1.05)), ("Z5 VO2max", int(r['ftp_t']*1.06), int(r['ftp_t']*1.20))]
         z_h = [("Z1 Rigenerante", 0, int(r['lthr']*0.81)), ("Z2 Fondo Lento", int(r['lthr']*0.82), int(r['lthr']*0.89)), ("Z3 Fondo Medio", int(r['lthr']*0.90), int(r['lthr']*0.93)), ("Z4 Soglia", int(r['lthr']*0.94), int(r['lthr']*1.00)), ("Z5 Fuorisoglia", int(r['lthr']*1.01), int(r['lthr']*1.10))]
         
         c_z1, c_z2 = st.columns(2)
-        with c_z1: 
-            st.write("### ⚡ Zone Potenza Target")
-            st.table(pd.DataFrame(z_p, columns=["Zona", "Min (W)", "Max (W)"]))
-        with c_z2: 
-            st.write("### ❤️ Zone Cardio Target")
-            st.table(pd.DataFrame(z_h, columns=["Zona", "Min (bpm)", "Max (bpm)"]))
+        with c_z1: st.write("### ⚡ Potenza Target"); st.table(pd.DataFrame(z_p, columns=["Zona", "Min (W)", "Max (W)"]))
+        with c_z2: st.write("### ❤️ Cardio Target"); st.table(pd.DataFrame(z_h, columns=["Zona", "Min (bpm)", "Max (bpm)"]))
 
         st.info(f"**Valutazione Clinica:**\n{r['giudizio']}")
 
-        st.write("### 🏔️ Analisi Performance in Salita")
+        st.write("### 🏔️ Analisi Performance")
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("W/kg Prima", f"{r['wkg_a']:.2f}")
         m2.metric("W/kg Dopo", f"{r['wkg_t']:.2f}", f"{r['wkg_t']-r['wkg_a']:.2f}")
@@ -185,9 +194,9 @@ if menu == "Nuova Analisi":
                                      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", 
                                   (a_id, r['data'], r['p'], r['fm'], r['ftp'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['t_a'], r['t_t'], r['d'], r['g'], r['b']))
                         conn.commit()
-                        st.success(f"Visita di {r['n']} {r['c']} salvata!")
+                        st.success(f"Dati di {r['n']} {r['c']} salvati!")
                 except Exception as e:
-                    st.error(f"Errore database: {e}")
+                    st.error(f"Errore DB: {e}")
 
         with sc2:
             pdf = FPDF()
@@ -199,7 +208,7 @@ if menu == "Nuova Analisi":
             st.download_button("📄 SCARICA PDF", data=pdf.output(dest='S').encode('latin-1', 'replace'), file_name=f"Report_{r['c']}.pdf")
 
 elif menu == "Archivio Atleti":
-    st.header("📂 Archivio Storico Visite")
+    st.header("📂 Archivio Storico")
     with get_connection() as conn:
         atleti = pd.read_sql_query("SELECT * FROM atleti", conn)
     
@@ -210,4 +219,4 @@ elif menu == "Archivio Atleti":
             visite_df = pd.read_sql_query(f"SELECT * FROM visite WHERE atleta_id={a_id} ORDER BY id DESC", conn)
         st.dataframe(visite_df, use_container_width=True)
     else:
-        st.info("Nessun atleta registrato in archivio.")
+        st.info("Archivio vuoto.")
