@@ -77,7 +77,7 @@ def create_pdf(atleta, dati_attuali, dati_target):
 # ... dentro "if st.button('🚀 Elabora Analisi Scientifica'):" ...
 
         # Generazione PDF (senza .encode('latin-1') esterno)
-        pdf_bytes = create_pdf(atleta_info, d_att, d_tar)
+pdf_bytes = create_pdf(atleta_info, d_att, d_tar)
         
         st.download_button(
             label="📄 Scarica Report PDF Professionale",
