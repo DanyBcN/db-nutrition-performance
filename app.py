@@ -6,7 +6,7 @@ from fpdf import FPDF
 import os
 
 # ---------------------------------------------------------
-# SETUP E DATABASE
+# SETUP E DATABASE (CON MIGRAZIONE AUTOMATICA)
 # ---------------------------------------------------------
 st.set_page_config(page_title="DB Nutrition & Performance", layout="wide", page_icon="🧬")
 LOGO_PATH = "Logo NUTRITION AND PERFORMANCE.png"
@@ -17,12 +17,21 @@ def get_connection():
 def init_db():
     conn = get_connection()
     c = conn.cursor()
+    # Tabella Atleti
     c.execute('''CREATE TABLE IF NOT EXISTS atleti 
                  (id INTEGER PRIMARY KEY, nome TEXT, cognome TEXT, altezza REAL, sesso TEXT, profilo TEXT)''')
+    # Tabella Visite
     c.execute('''CREATE TABLE IF NOT EXISTS visite 
                  (id INTEGER PRIMARY KEY, atleta_id INTEGER, data TEXT, peso REAL, fm REAL, ftp REAL, 
                   lthr INTEGER, peso_t REAL, fm_t REAL, ftp_t REAL, t_att REAL, t_tar REAL,
                   dist_km REAL, grad REAL, bike_w REAL)''')
+    
+    # MIGRAZIONE: Controllo se manca la colonna 'altezza' nella tabella atleti
+    c.execute("PRAGMA table_info(atleti)")
+    columns = [column[1] for column in c.fetchall()]
+    if 'altezza' not in columns:
+        c.execute("ALTER TABLE atleti ADD COLUMN altezza REAL")
+        
     conn.commit()
     conn.close()
 
@@ -63,22 +72,25 @@ with st.sidebar:
 if menu == "Nuova Analisi":
     st.header("📋 Valutazione Biometrica & Performance")
     
-    # 1. RICERCA / INSERIMENTO ATLETA
+    # Recupero cognomi per suggerimento
     conn = get_connection()
-    db_atleti = pd.read_sql_query("SELECT DISTINCT cognome FROM atleti", conn)
-    lista_cognomi = db_atleti['cognome'].tolist()
+    db_atleti = pd.read_sql_query("SELECT * FROM atleti", conn)
+    lista_cognomi = sorted(db_atleti['cognome'].unique().tolist())
     conn.close()
 
     with st.expander("👤 Anagrafica Atleta", expanded=True):
         c1, c2, c3, c4, c5 = st.columns(5)
-        # Cognome per primo con suggerimenti
-        cognome = c1.selectbox("Cognome (Cerca o scrivi nuovo)", [""] + lista_cognomi, index=0)
-        if not cognome: # Se non selezionato, permette inserimento manuale
-            cognome = c1.text_input("Inserisci nuovo Cognome")
         
-        nome = c2.text_input("Nome")
-        data_v = c3.date_input("Data Visita (GG/MM/AAAA)", date.today(), format="DD/MM/YYYY")
-        altezza = c4.number_input("Altezza (cm)", 120, 230, 175)
+        cognome_input = c1.selectbox("Cognome (Seleziona o scrivi)", [""] + lista_cognomi)
+        manual_cognome = c1.text_input("...oppure nuovo cognome")
+        final_cognome = manual_cognome if manual_cognome else cognome_input
+        
+        # Auto-compilazione se l'atleta esiste
+        atleta_esistente = db_atleti[db_atleti['cognome'] == final_cognome].iloc[0] if final_cognome in lista_cognomi else None
+        
+        nome = c2.text_input("Nome", value=atleta_esistente['nome'] if atleta_esistente is not None else "")
+        data_v = c3.date_input("Data Visita", date.today(), format="DD/MM/YYYY")
+        altezza = c4.number_input("Altezza (cm)", 120, 230, int(atleta_esistente['altezza']) if atleta_esistente is not None else 175)
         profilo = c5.selectbox("Specializzazione", ["Scalatore (Lightweight)", "Passista (Powerhouse)", "Triatleta", "Granfondista"])
 
     col1, col2, col3 = st.columns(3)
@@ -102,23 +114,26 @@ if menu == "Nuova Analisi":
         bike_w = st.number_input("Peso Bici (kg)", 5.0, 15.0, 8.0)
 
     if st.button("🚀 GENERA ANALISI"):
-        t_att = NutritionScience.estimate_time(ftp, peso, dist_km, grad, bike_w)
-        t_tar = NutritionScience.estimate_time(ftp_t, peso_t, dist_km, grad, bike_w)
-        giudizio = NutritionScience.get_clinical_judgment(profilo, peso, altezza, fm, fm_t)
-        
-        st.session_state['res'] = {
-            'n': nome, 'c': cognome, 'data': data_v.strftime("%d/%m/%Y"),
-            'p': peso, 'fm': fm, 'ftp': ftp, 'lthr': lthr,
-            'p_t': peso_t, 'fm_t': fm_t, 'ftp_t': ftp_t, 'prof': profilo,
-            't_a': t_att, 't_t': t_tar, 'd': dist_km, 'g': grad, 'b': bike_w,
-            'giudizio': giudizio, 'wkg_a': ftp/peso, 'wkg_t': ftp_t/peso_t
-        }
+        if not final_cognome or not nome:
+            st.error("Inserire Nome e Cognome per procedere.")
+        else:
+            t_att = NutritionScience.estimate_time(ftp, peso, dist_km, grad, bike_w)
+            t_tar = NutritionScience.estimate_time(ftp_t, peso_t, dist_km, grad, bike_w)
+            giudizio = NutritionScience.get_clinical_judgment(profilo, peso, altezza, fm, fm_t)
+            
+            st.session_state['res'] = {
+                'n': nome, 'c': final_cognome, 'data': data_v.strftime("%d/%m/%Y"),
+                'p': peso, 'fm': fm, 'ftp': ftp, 'lthr': lthr, 'alt': altezza,
+                'p_t': peso_t, 'fm_t': fm_t, 'ftp_t': ftp_t, 'prof': profilo,
+                't_a': t_att, 't_t': t_tar, 'd': dist_km, 'g': grad, 'b': bike_w,
+                'giudizio': giudizio, 'wkg_a': ftp/peso, 'wkg_t': ftp_t/peso_t
+            }
 
     if 'res' in st.session_state:
         r = st.session_state['res']
         st.divider()
         
-        # ZONE TARGET
+        # ZONE
         z_p = [("Z1 Recupero", 0, int(r['ftp_t']*0.55)), ("Z2 Endurance", int(r['ftp_t']*0.56), int(r['ftp_t']*0.75)), ("Z3 Tempo", int(r['ftp_t']*0.76), int(r['ftp_t']*0.90)), ("Z4 Soglia", int(r['ftp_t']*0.91), int(r['ftp_t']*1.05)), ("Z5 VO2max", int(r['ftp_t']*1.06), int(r['ftp_t']*1.20))]
         z_h = [("Z1 Rigenerante", 0, int(r['lthr']*0.81)), ("Z2 Fondo Lento", int(r['lthr']*0.82), int(r['lthr']*0.89)), ("Z3 Fondo Medio", int(r['lthr']*0.90), int(r['lthr']*0.93)), ("Z4 Soglia", int(r['lthr']*0.94), int(r['lthr']*1.00)), ("Z5 Fuorisoglia", int(r['lthr']*1.01), int(r['lthr']*1.10))]
         
@@ -130,7 +145,6 @@ if menu == "Nuova Analisi":
 
         
 
-        # PERFORMANCE
         st.write("### 🏔️ Analisi Performance in Salita")
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("W/kg Prima", f"{r['wkg_a']:.2f}")
@@ -143,8 +157,15 @@ if menu == "Nuova Analisi":
         with sc1:
             if st.button("💾 SALVA IN ARCHIVIO"):
                 conn = get_connection(); c = conn.cursor()
-                c.execute("INSERT INTO atleti (nome, cognome, profilo, altezza) VALUES (?,?,?,?)", (r['n'], r['c'], r['prof'], altezza))
-                a_id = c.lastrowid
+                # Controllo se l'atleta esiste già per non duplicarlo nell'anagrafica
+                c.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['c'], r['n']))
+                atleta_db = c.fetchone()
+                if atleta_db:
+                    a_id = atleta_db[0]
+                else:
+                    c.execute("INSERT INTO atleti (nome, cognome, profilo, altezza) VALUES (?,?,?,?)", (r['n'], r['c'], r['prof'], r['alt']))
+                    a_id = c.lastrowid
+                
                 c.execute("INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, t_att, t_tar, dist_km, grad, bike_w) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", (a_id, r['data'], r['p'], r['fm'], r['ftp'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['t_a'], r['t_t'], r['d'], r['g'], r['b']))
                 conn.commit(); conn.close(); st.success("Salvato!")
 
@@ -181,4 +202,4 @@ elif menu == "Archivio Atleti":
         sel = st.selectbox("Atleta", atleti.apply(lambda x: f"{x['id']} - {x['cognome']} {x['nome']}", axis=1))
         a_id = sel.split(" - ")[0]
         st.dataframe(pd.read_sql_query(f"SELECT * FROM visite WHERE atleta_id={a_id}", conn))
-    else: st.info("Vuoto.")
+    else: st.info("Archivio vuoto.")
