@@ -209,19 +209,19 @@ st.table(bench_df)
 
 # 5. SALVATAGGIO E PDF
 ca, cb = st.columns(2)
-    if ca.button("💾 SALVA IN ARCHIVIO"):
-        with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
-                row = cursor.fetchone()
-                a_id = row[0] if row else None
-                if not a_id:
-                    cursor.execute("INSERT INTO atleti (nome, cognome, altezza, profilo) VALUES (?,?,?,?)", (r['nome'], r['cognome'], r['alt'], r['prof']))
-                    a_id = cursor.lastrowid
-                cursor.execute("""INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, dist_km, grad, bike_w, t_att, t_tar) 
+if ca.button("💾 SALVA IN ARCHIVIO"):
+with get_connection() as conn:
+cursor = conn.cursor()
+cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
+row = cursor.fetchone()
+a_id = row[0] if row else None
+if not a_id:
+cursor.execute("INSERT INTO atleti (nome, cognome, altezza, profilo) VALUES (?,?,?,?)", (r['nome'], r['cognome'], r['alt'], r['prof']))
+a_id = cursor.lastrowid
+cursor.execute("""INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, dist_km, grad, bike_w, t_att, t_tar) 
                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (a_id, r['raw_data'], r['p_a'], r['fm_a'], r['ftp_a'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['dist'], r['grad'], r['bike'], r['t_a'], r['t_t']))
-                conn.commit()
-            st.success("Dati salvati!")
+conn.commit()
+st.success("Dati salvati!")
 
         # GENERAZIONE PDF COMPLETO
         pdf = FPDF()
