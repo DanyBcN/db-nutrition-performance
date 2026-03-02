@@ -57,7 +57,7 @@ class BioPerformance:
         ]
 
     @staticmethod
-    def get_category_benchmarks(peso_atleta, wkg_atleta):
+    def get_category_benchmarks():
         data = [
             ["World Tour", "5-7%", "6.0 - 6.5", 65],
             ["Pro Continental", "7-9%", "5.5 - 6.0", 68],
@@ -65,8 +65,7 @@ class BioPerformance:
             ["Amatore Top", "10-14%", "3.5 - 4.5", 72],
             ["Cicloturista", "> 15%", "< 3.0", 78]
         ]
-        df = pd.DataFrame(data, columns=["Categoria", "Range FM %", "W/kg (Soglia)", "Peso Medio (kg)"])
-        return df
+        return pd.DataFrame(data, columns=["Categoria", "Range FM %", "W/kg (Soglia)", "Peso Medio (kg)"])
 
 def pdf_safe(text):
     if not text: return ""
@@ -89,7 +88,6 @@ if menu == "➕ Nuova Valutazione":
     with get_connection() as conn:
         db_atleti = pd.read_sql_query("SELECT * FROM atleti", conn)
 
-    # DATI ANAGRAFICI CON AUTO-PROPOSTA
     with st.container(border=True):
         c1, c2, c3 = st.columns([2, 2, 1])
         exist_cog = c1.selectbox("Cerca Cognome Esistente", [""] + sorted(db_atleti['cognome'].unique().tolist()))
@@ -104,7 +102,6 @@ if menu == "➕ Nuova Valutazione":
         data_visita = col_an.date_input("Data Analisi", date.today())
         profilo = col_pr.selectbox("Profilo Atleta", ["Scalatore", "Passista", "Triatleta", "Granfondista"])
 
-    # INPUT STATO ATTUALE, TARGET E SCENARIO
     col1, col2, col3 = st.columns(3)
     with col1:
         st.subheader("📊 1. Stato Attuale")
@@ -141,169 +138,100 @@ if menu == "➕ Nuova Valutazione":
             'raw_data': data_visita.isoformat(), 'zones': BioPerformance.get_zones(ftp_tar, lthr)
         }
 
-    # --- AGGIORNAMENTO SEZIONE OUTPUT SCHERMO ---
-if 'rep' in st.session_state:
-    r = st.session_state['rep']
-    st.divider()
-    
-    # 1. ANALISI BIOMETRICA E FUNZIONALE COMPARATIVA
-    st.subheader("🧬 Analisi Biometrica e Funzionale")
-    
-    # Calcolo W/kg per il confronto
-    wkg_att = r['ftp_a'] / r['p_a']
-    wkg_tar = r['ftp_t'] / r['p_t']
-    
-    c1, c2, c3, c4 = st.columns(4)
-    with c1:
-        st.metric("Peso", f"{r['p_a']} kg", f"Target: {r['p_t']} kg")
-        st.write(f"**BMI:** {r['bmi_a']:.1f} → **{r['bmi_t']:.1f}**")
-    with c2:
-        st.metric("FM %", f"{r['fm_a']} %", f"Target: {r['fm_t']} %")
-        # Calcolo massa grassa in kg
-        mg_att = r['p_a'] * (r['fm_a']/100)
-        mg_tar = r['p_t'] * (r['fm_t']/100)
-        st.write(f"**Massa Grassa:** {mg_att:.1f}kg → **{mg_tar:.1f}kg**")
-    with c3:
-        st.metric("FTP (Potenza)", f"{int(r['ftp_a'])} W", f"Target: {int(r['ftp_t'])} W")
-        st.write(f"**Protocollo:** {r['test']}")
-    with c4:
-        st.metric("Rapporto W/kg", f"{wkg_att:.2f}", f"Target: {wkg_tar:.2f}")
-        st.write(f"**Delta:** {wkg_tar - wkg_att:+.2f} W/kg")
+    # --- OUTPUT SCHERMO (DENTRO L'IF MENU) ---
+    if 'rep' in st.session_state:
+        r = st.session_state['rep']
+        st.divider()
+        
+        st.subheader("🧬 Analisi Biometrica e Funzionale")
+        wkg_att = r['ftp_a'] / r['p_a']
+        wkg_tar = r['ftp_t'] / r['p_t']
+        
+        c1, c2, c3, c4 = st.columns(4)
+        with c1:
+            st.metric("Peso", f"{r['p_a']} kg", f"Target: {r['p_t']} kg")
+            st.write(f"**BMI:** {r['bmi_a']:.1f} → **{r['bmi_t']:.1f}**")
+        with c2:
+            st.metric("FM %", f"{r['fm_a']} %", f"Target: {r['fm_t']} %")
+            st.write(f"**Massa Grassa:** {r['p_a']*(r['fm_a']/100):.1f}kg → **{r['p_t']*(r['fm_t']/100):.1f}kg**")
+        with c3:
+            st.metric("FTP (Potenza)", f"{int(r['ftp_a'])} W", f"Target: {int(r['ftp_t'])} W")
+            st.write(f"**Protocollo:** {r['test']}")
+        with c4:
+            st.metric("Rapporto W/kg", f"{wkg_att:.2f}", f"Target: {wkg_tar:.2f}")
+            st.write(f"**Delta:** {wkg_tar - wkg_att:+.2f} W/kg")
 
-    # 2. SCENARIO SALITA (DETTAGLIO INPUT E OUTPUT)
-    st.subheader("🏔️ Analisi Scenario Salita")
-    cs1, cs2 = st.columns(2)
-    with cs1:
-        st.info(f"**Input Scenario:** Salita di {r['dist']} km | Pendenza {r['grad']}% | Peso Bici {r['bike']} kg")
-    with cs2:
-        st.success(f"**Tempo Attuale:** {r['t_a']:.2f} min  \n**Tempo Target:** {r['t_t']:.2f} min  \n**Differenza:** -{r['t_a']-r['t_t']:.2f} min")
+        st.subheader("🏔️ Analisi Scenario Salita")
+        cs1, cs2 = st.columns(2)
+        with cs1:
+            st.info(f"**Input:** {r['dist']} km | {r['grad']}% | Bici {r['bike']} kg")
+        with cs2:
+            st.success(f"**Tempo Attuale:** {r['t_a']:.2f} min  \n**Tempo Target:** {r['t_t']:.2f} min  \n**Differenza:** -{r['t_a']-r['t_t']:.2f} min")
 
-    # 3. ZONE DI ALLENAMENTO (CON FC SOGLIA)
-    st.subheader("⚡ Zone di Potenza & FC (basate su Target)")
-    st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
+        st.subheader("⚡ Zone di Potenza & FC (Target)")
+        st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
 
-    # 4. BENCHMARK CATEGORIE
-    st.subheader("🏁 Posizionamento Rispetto alle Categorie")
-    bench_df = BioPerformance.get_category_benchmarks(r['p_a'], wkg_att)
-    st.table(bench_df)
-    
-    # Inserisco il confronto grafico per l'atleta
-    st.caption(f"L'atleta attuale si posiziona con {wkg_att:.2f} W/kg e {r['fm_a']}% FM.")
+        st.subheader("🏁 Posizionamento Rispetto alle Categorie")
+        bench_df = BioPerformance.get_category_benchmarks()
+        st.table(bench_df)
 
-    # 2. PERFORMANCE SCENARIO
-    st.subheader("🏔️ Scenario Performance: Salita")
-    cp1, cp2, cp3 = st.columns(3)
-    cp1.write(f"**Dati Salita:** {r['dist']} km al {r['grad']}%")
-    cp2.write(f"**Tempo Attuale:** {r['t_a']:.2f} min ({r['ftp_a']/r['p_a']:.2f} W/kg)")
-    cp3.write(f"**Tempo Target:** {r['t_t']:.2f} min ({r['ftp_t']/r['p_t']:.2f} W/kg)")
-    st.metric("Variazione Tempo Stimata", f"{r['t_t']:.2f} min", f"-{r['t_a']-r['t_t']:.2f} min")
-
-    # 3. ZONE DI ALLENAMENTO
-    st.subheader("⚡ Zone di Potenza & FC (su Target)")
-    st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
-    
-# 4. BENCHMARK CATEGORIE
-    st.subheader("🏁 Confronto con Categorie Atleti")
-    bench_df = BioPerformance.get_category_benchmarks(r['p_a'], r['ftp_a']/r['p_a'])
-st.table(bench_df)
-
-# 5. SALVATAGGIO E PDF
-ca, cb = st.columns(2)
-if ca.button("💾 SALVA IN ARCHIVIO"):
-with get_connection() as conn:
-cursor = conn.cursor()
-cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
-row = cursor.fetchone()
-a_id = row[0] if row else None
-if not a_id:
-cursor.execute("INSERT INTO atleti (nome, cognome, altezza, profilo) VALUES (?,?,?,?)", (r['nome'], r['cognome'], r['alt'], r['prof']))
-a_id = cursor.lastrowid
-cursor.execute("""INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, dist_km, grad, bike_w, t_att, t_tar) 
+        ca, cb = st.columns(2)
+        if ca.button("💾 SALVA IN ARCHIVIO"):
+            with get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
+                row = cursor.fetchone()
+                a_id = row[0] if row else None
+                if not a_id:
+                    cursor.execute("INSERT INTO atleti (nome, cognome, altezza, profilo) VALUES (?,?,?,?)", (r['nome'], r['cognome'], r['alt'], r['prof']))
+                    a_id = cursor.lastrowid
+                cursor.execute("""INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, dist_km, grad, bike_w, t_att, t_tar) 
                                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (a_id, r['raw_data'], r['p_a'], r['fm_a'], r['ftp_a'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['dist'], r['grad'], r['bike'], r['t_a'], r['t_t']))
-conn.commit()
-st.success("Dati salvati!")
+                conn.commit()
+            st.success("Dati salvati!")
 
-        # GENERAZIONE PDF COMPLETO
+        # GENERAZIONE PDF
         pdf = FPDF()
         pdf.add_page()
         if os.path.exists(LOGO_PATH):
             pdf.image(LOGO_PATH, 10, 8, 40)
-        
         pdf.ln(35)
         pdf.set_font("Arial", 'B', 16); pdf.cell(0, 10, pdf_safe(f"REPORT: {r['nome']} {r['cognome']}"), 0, 1, 'C')
         pdf.set_font("Arial", '', 10); pdf.cell(0, 5, f"Data: {r['data']} | Profilo: {r['prof']} | Altezza: {r['alt']}cm", 0, 1, 'C')
         
-        # Sezione Input Stato Attuale
         pdf.ln(10); pdf.set_fill_color(230, 230, 230); pdf.set_font("Arial", 'B', 12)
         pdf.cell(0, 10, "1. STATO ATTUALE (INPUT)", 1, 1, 'L', True)
         pdf.set_font("Arial", '', 10)
         pdf.cell(63, 8, f"Peso: {r['p_a']} kg", 1); pdf.cell(63, 8, f"FM: {r['fm_a']}%", 1); pdf.cell(64, 8, f"BMI: {r['bmi_a']:.1f}", 1, 1)
         pdf.cell(63, 8, f"FTP: {r['ftp_a']} W ({r['test']})", 1); pdf.cell(63, 8, f"LTHR: {r['lthr']} bpm", 1); pdf.cell(64, 8, f"W/kg: {r['ftp_a']/r['p_a']:.2f}", 1, 1)
 
-        # Sezione Input Target
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "2. TARGET DEFINITI", 1, 1, 'L', True)
+        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "2. TARGET DEFINITI", 1, 1, 'L', True)
         pdf.set_font("Arial", '', 10)
         pdf.cell(63, 8, f"Peso Target: {r['p_t']} kg", 1); pdf.cell(63, 8, f"FM Target: {r['fm_t']}%", 1); pdf.cell(64, 8, f"FTP Target: {r['ftp_t']} W", 1, 1)
 
-        # Sezione Scenario
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "3. ANALISI PERFORMANCE (SCENARIO SALITA)", 1, 1, 'L', True)
+        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "3. ANALISI PERFORMANCE", 1, 1, 'L', True)
         pdf.set_font("Arial", '', 10)
-        pdf.cell(0, 8, pdf_safe(f"Salita di {r['dist']}km al {r['grad']}% (Peso Bici: {r['bike']}kg)"), 1, 1)
+        pdf.cell(0, 8, pdf_safe(f"Salita di {r['dist']}km al {r['grad']}%"), 1, 1)
         pdf.cell(95, 8, f"Tempo Attuale: {r['t_a']:.2f} min", 1); pdf.cell(95, 8, f"Tempo Target: {r['t_t']:.2f} min", 1, 1)
-        pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, f"DIFFERENZA CRONOMETRICA: -{r['t_a']-r['t_t']:.2f} min", 1, 1, 'C')
+        pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, f"DIFFERENZA: -{r['t_a']-r['t_t']:.2f} min", 1, 1, 'C')
 
-        # Sezione Zone
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "4. ZONE DI ALLENAMENTO TARGET", 1, 1, 'L', True)
-        pdf.set_font("Arial", '', 9)
-        for z in r['zones']:
-            pdf.cell(60, 7, pdf_safe(z[0]), 1); pdf.cell(65, 7, f"{z[1]}-{z[2]} W", 1); pdf.cell(65, 7, f"{z[3]}-{z[4]} bpm", 1, 1)
+        cb.download_button("📄 SCARICA PDF", data=pdf.output(dest='S').encode('latin-1', 'ignore'), file_name=f"Report_{r['cognome']}.pdf", use_container_width=True)
 
-        cb.download_button("📄 SCARICA REPORT COMPLETO PDF", data=pdf.output(dest='S').encode('latin-1', 'ignore'), file_name=f"Report_{r['cognome']}.pdf", use_container_width=True)
-
-# ---------------------------------------------------------
-# SEZIONE ARCHIVIO (STORICO, EDIT, COMPARAZIONE)
-# ---------------------------------------------------------
 elif menu == "📂 Archivio & Edit":
-    st.header("🗄️ Gestione Archivio e Comparazione Periodica")
+    st.header("🗄️ Gestione Archivio")
     with get_connection() as conn:
         at = pd.read_sql_query("SELECT * FROM atleti", conn)
     
     if not at.empty:
         sel_atl = st.selectbox("Seleziona l'atleta", at.apply(lambda x: f"{x['id']} - {x['cognome']} {x['nome']}", axis=1))
         a_id = int(sel_atl.split(" - ")[0])
-        
         with get_connection() as conn:
             vi = pd.read_sql_query(f"SELECT * FROM visite WHERE atleta_id={a_id} ORDER BY data DESC", conn)
-
-        st.subheader("🗓️ Storico Valutazioni")
         st.dataframe(vi, hide_index=True)
         
-        # COMPARAZIONE PERIODI
-        st.divider()
-        st.subheader("⚖️ Comparazione tra due periodi")
-        c_v1, c_v2 = st.columns(2)
-        v1_id = c_v1.selectbox("Visita Iniziale (A)", vi['id'], key="v1")
-        v2_id = c_v2.selectbox("Visita Finale (B)", vi['id'], key="v2")
-        
-        if st.button("📊 GENERA REPORT COMPARATIVO"):
-            v1_data = vi[vi['id']==v1_id].iloc[0]
-            v2_data = vi[vi['id']==v2_id].iloc[0]
-            
-            # Visualizzazione Comparativa
-            m1, m2, m3 = st.columns(3)
-            m1.metric("Variazione Peso", f"{v2_data['peso']} kg", f"{v2_data['peso']-v1_data['peso']:.1f} kg", delta_color="inverse")
-            m2.metric("Variazione FM", f"{v2_data['fm']} %", f"{v2_data['fm']-v1_data['fm']:.1f} %", delta_color="inverse")
-            m3.metric("Variazione FTP", f"{v2_data['ftp']} W", f"{v2_data['ftp']-v1_data['ftp']:.0f} W")
-
-        # CANCELLAZIONE
-        st.divider()
-        if st.button("🗑️ ELIMINA INTERO ARCHIVIO ATLETA"):
+        if st.button("🗑️ ELIMINA ATLETA"):
             with get_connection() as conn:
                 conn.execute(f"DELETE FROM visite WHERE atleta_id={a_id}")
                 conn.execute(f"DELETE FROM atleti WHERE id={a_id}")
                 conn.commit()
             st.rerun()
-    else:
-        st.info("Nessun atleta registrato.")
