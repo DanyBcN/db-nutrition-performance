@@ -190,13 +190,13 @@ if 'rep' in st.session_state:
     # Inserisco il confronto grafico per l'atleta
     st.caption(f"L'atleta attuale si posiziona con {wkg_att:.2f} W/kg e {r['fm_a']}% FM.")
 
-        # 2. PERFORMANCE SCENARIO
-        st.subheader("🏔️ Scenario Performance: Salita")
-        cp1, cp2, cp3 = st.columns(3)
-        cp1.write(f"**Dati Salita:** {r['dist']} km al {r['grad']}%")
-        cp2.write(f"**Tempo Attuale:** {r['t_a']:.2f} min ({r['ftp_a']/r['p_a']:.2f} W/kg)")
-        cp3.write(f"**Tempo Target:** {r['t_t']:.2f} min ({r['ftp_t']/r['p_t']:.2f} W/kg)")
-        st.metric("Variazione Tempo Stimata", f"{r['t_t']:.2f} min", f"-{r['t_a']-r['t_t']:.2f} min")
+    # 2. PERFORMANCE SCENARIO
+    st.subheader("🏔️ Scenario Performance: Salita")
+    cp1, cp2, cp3 = st.columns(3)
+    cp1.write(f"**Dati Salita:** {r['dist']} km al {r['grad']}%")
+    cp2.write(f"**Tempo Attuale:** {r['t_a']:.2f} min ({r['ftp_a']/r['p_a']:.2f} W/kg)")
+    cp3.write(f"**Tempo Target:** {r['t_t']:.2f} min ({r['ftp_t']/r['p_t']:.2f} W/kg)")
+    st.metric("Variazione Tempo Stimata", f"{r['t_t']:.2f} min", f"-{r['t_a']-r['t_t']:.2f} min")
 
         # 3. ZONE DI ALLENAMENTO
         st.subheader("⚡ Zone di Potenza & FC (su Target)")
