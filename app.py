@@ -141,19 +141,54 @@ if menu == "➕ Nuova Valutazione":
             'raw_data': data_visita.isoformat(), 'zones': BioPerformance.get_zones(ftp_tar, lthr)
         }
 
-    # ---------------------------------------------------------
-    # OUTPUT SCHERMO (RIASSUNTO COMPLETO)
-    # ---------------------------------------------------------
-    if 'rep' in st.session_state:
-        r = st.session_state['rep']
-        st.divider()
-        
-        # 1. ANALISI BIOMETRICA COMPARATIVA
-        st.subheader("🧬 Analisi Biometrica Comparativa")
-        c1, c2, c3 = st.columns(3)
-        c1.metric("Peso", f"{r['p_a']} kg", f"Target: {r['p_t']} kg")
-        c2.metric("FM %", f"{r['fm_a']} %", f"Target: {r['fm_t']} %")
-        c3.metric("BMI", f"{r['bmi_a']:.1f}", f"Target: {r['bmi_t']:.1f}")
+    # --- AGGIORNAMENTO SEZIONE OUTPUT SCHERMO ---
+if 'rep' in st.session_state:
+    r = st.session_state['rep']
+    st.divider()
+    
+    # 1. ANALISI BIOMETRICA E FUNZIONALE COMPARATIVA
+    st.subheader("🧬 Analisi Biometrica e Funzionale")
+    
+    # Calcolo W/kg per il confronto
+    wkg_att = r['ftp_a'] / r['p_a']
+    wkg_tar = r['ftp_t'] / r['p_t']
+    
+    c1, c2, c3, c4 = st.columns(4)
+    with c1:
+        st.metric("Peso", f"{r['p_a']} kg", f"Target: {r['p_t']} kg")
+        st.write(f"**BMI:** {r['bmi_a']:.1f} → **{r['bmi_t']:.1f}**")
+    with c2:
+        st.metric("FM %", f"{r['fm_a']} %", f"Target: {r['fm_t']} %")
+        # Calcolo massa grassa in kg
+        mg_att = r['p_a'] * (r['fm_a']/100)
+        mg_tar = r['p_t'] * (r['fm_t']/100)
+        st.write(f"**Massa Grassa:** {mg_att:.1f}kg → **{mg_tar:.1f}kg**")
+    with c3:
+        st.metric("FTP (Potenza)", f"{int(r['ftp_a'])} W", f"Target: {int(r['ftp_t'])} W")
+        st.write(f"**Protocollo:** {r['test']}")
+    with c4:
+        st.metric("Rapporto W/kg", f"{wkg_att:.2f}", f"Target: {wkg_tar:.2f}")
+        st.write(f"**Delta:** {wkg_tar - wkg_att:+.2f} W/kg")
+
+    # 2. SCENARIO SALITA (DETTAGLIO INPUT E OUTPUT)
+    st.subheader("🏔️ Analisi Scenario Salita")
+    cs1, cs2 = st.columns(2)
+    with cs1:
+        st.info(f"**Input Scenario:** Salita di {r['dist']} km | Pendenza {r['grad']}% | Peso Bici {r['bike']} kg")
+    with cs2:
+        st.success(f"**Tempo Attuale:** {r['t_a']:.2f} min  \n**Tempo Target:** {r['t_t']:.2f} min  \n**Differenza:** -{r['t_a']-r['t_t']:.2f} min")
+
+    # 3. ZONE DI ALLENAMENTO (CON FC SOGLIA)
+    st.subheader("⚡ Zone di Potenza & FC (basate su Target)")
+    st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
+
+    # 4. BENCHMARK CATEGORIE
+    st.subheader("🏁 Posizionamento Rispetto alle Categorie")
+    bench_df = BioPerformance.get_category_benchmarks(r['p_a'], wkg_att)
+    st.table(bench_df)
+    
+    # Inserisco il confronto grafico per l'atleta
+    st.caption(f"L'atleta attuale si posiziona con {wkg_att:.2f} W/kg e {r['fm_a']}% FM.")
 
         # 2. PERFORMANCE SCENARIO
         st.subheader("🏔️ Scenario Performance: Salita")
