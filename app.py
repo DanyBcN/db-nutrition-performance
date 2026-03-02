@@ -208,9 +208,9 @@ if 'rep' in st.session_state:
 st.table(bench_df)
 
 # 5. SALVATAGGIO E PDF
-    ca, cb = st.columns(2)
+ca, cb = st.columns(2)
     if ca.button("💾 SALVA IN ARCHIVIO"):
-            with get_connection() as conn:
+        with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
                 row = cursor.fetchone()
