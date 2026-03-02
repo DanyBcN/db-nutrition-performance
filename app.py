@@ -198,18 +198,18 @@ if 'rep' in st.session_state:
     cp3.write(f"**Tempo Target:** {r['t_t']:.2f} min ({r['ftp_t']/r['p_t']:.2f} W/kg)")
     st.metric("Variazione Tempo Stimata", f"{r['t_t']:.2f} min", f"-{r['t_a']-r['t_t']:.2f} min")
 
-        # 3. ZONE DI ALLENAMENTO
-        st.subheader("⚡ Zone di Potenza & FC (su Target)")
-        st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
+    # 3. ZONE DI ALLENAMENTO
+    st.subheader("⚡ Zone di Potenza & FC (su Target)")
+    st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
+    
+# 4. BENCHMARK CATEGORIE
+    st.subheader("🏁 Confronto con Categorie Atleti")
+    bench_df = BioPerformance.get_category_benchmarks(r['p_a'], r['ftp_a']/r['p_a'])
+st.table(bench_df)
 
-        # 4. BENCHMARK CATEGORIE
-        st.subheader("🏁 Confronto con Categorie Atleti")
-        bench_df = BioPerformance.get_category_benchmarks(r['p_a'], r['ftp_a']/r['p_a'])
-        st.table(bench_df)
-
-        # 5. SALVATAGGIO E PDF
-        ca, cb = st.columns(2)
-        if ca.button("💾 SALVA IN ARCHIVIO"):
+# 5. SALVATAGGIO E PDF
+    ca, cb = st.columns(2)
+    if ca.button("💾 SALVA IN ARCHIVIO"):
             with get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
