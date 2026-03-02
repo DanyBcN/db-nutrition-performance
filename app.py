@@ -167,50 +167,96 @@ if menu == "➕ Nuova Valutazione":
                 conn.commit()
             st.success("Atleta salvato con successo!")
 
-        # --- GENERAZIONE PDF INTEGRALE ---
+        # --- GENERAZIONE PDF INTEGRALE AGGIORNATA ---
         pdf = FPDF()
         pdf.add_page()
+        
+        # Inserimento Logo
         if os.path.exists(LOGO_PATH):
-            pdf.image(LOGO_PATH, 10, 8, 45)
+            pdf.image(LOGO_PATH, 10, 8, 45) # Logo ben visibile in alto a sinistra
         
-        pdf.ln(40)
-        pdf.set_font("Arial", 'B', 16); pdf.cell(0, 10, pdf_safe(f"REPORT PERFORMANCE: {r['nome']} {r['cognome']}"), 0, 1, 'C')
-        pdf.set_font("Arial", '', 11); pdf.cell(0, 6, f"Data Analisi: {r['data']} | Profilo: {r['prof']} | Altezza: {r['alt']} cm", 0, 1, 'C')
+        pdf.ln(35)
         
-        # 1. DATI INPUT E STATO ATTUALE
-        pdf.ln(10); pdf.set_fill_color(240, 240, 240); pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "1. STATO ATTUALE (INPUT)", 1, 1, 'L', True)
+        # Intestazione Report
+        pdf.set_font("Arial", 'B', 16)
+        pdf.cell(0, 10, pdf_safe(f"REPORT VALUTAZIONE: {r['nome']} {r['cognome']}"), 0, 1, 'C')
         pdf.set_font("Arial", '', 10)
-        pdf.cell(63, 8, f"Peso Attuale: {r['p_a']} kg", 1); pdf.cell(63, 8, f"FM %: {r['fm_a']}%", 1); pdf.cell(64, 8, f"BMI: {r['bmi_a']:.1f}", 1, 1)
-        pdf.cell(63, 8, f"FTP: {int(r['ftp_a'])} W ({r['test']})", 1); pdf.cell(63, 8, f"LTHR: {r['lthr']} bpm", 1); pdf.cell(64, 8, f"W/kg: {r['ftp_a']/r['p_a']:.2f}", 1, 1)
+        pdf.cell(0, 5, f"Data: {r['data']} | Profilo: {r['prof']} | Altezza: {r['alt']} cm", 0, 1, 'C')
+        
+        # 1. STATO ATTUALE (Tutti gli input stampati)
+        pdf.ln(10)
+        pdf.set_fill_color(230, 230, 230)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "1. STATO ATTUALE E DATI DI INPUT", 1, 1, 'L', True)
+        pdf.set_font("Arial", '', 10)
+        
+        # Riga Biometrica
+        pdf.cell(63, 8, f"Peso: {r['p_a']} kg", 1)
+        pdf.cell(63, 8, f"FM %: {r['fm_a']}%", 1)
+        pdf.cell(64, 8, f"BMI: {r['bmi_a']:.1f}", 1, 1)
+        
+        # Riga Performance
+        pdf.cell(63, 8, f"FTP: {int(r['ftp_a'])} W ({r['test']})", 1)
+        pdf.cell(63, 8, f"LTHR: {r['lthr']} bpm", 1)
+        pdf.cell(64, 8, f"W/kg: {r['ftp_a']/r['p_a']:.2f}", 1, 1)
 
         # 2. TARGET DEFINITI
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "2. OBIETTIVI TARGET", 1, 1, 'L', True)
+        pdf.ln(5)
+        pdf.set_fill_color(230, 230, 230)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "2. TARGET OBIETTIVO", 1, 1, 'L', True)
         pdf.set_font("Arial", '', 10)
-        pdf.cell(63, 8, f"Peso Target: {r['p_t']} kg", 1); pdf.cell(63, 8, f"FM Target: {r['fm_t']}%", 1); pdf.cell(64, 8, f"FTP Target: {int(r['ftp_t'])} W", 1, 1)
-        pdf.cell(0, 8, f"Rapporto W/kg Target: {r['ftp_t']/r['p_t']:.2f} W/kg", 1, 1)
+        pdf.cell(63, 8, f"Peso Target: {r['p_t']} kg", 1)
+        pdf.cell(63, 8, f"FM Target: {r['fm_t']}%", 1)
+        pdf.cell(64, 8, f"FTP Target: {int(r['ftp_t'])} W", 1, 1)
+        pdf.cell(0, 8, f"Target W/kg: {r['ftp_t']/r['p_t']:.2f}", 1, 1)
 
-        # 3. SCENARIO SALITA
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "3. SCENARIO SALITA", 1, 1, 'L', True)
+        # 3. SCENARIO SALITA (Input pendenza/km + Output tempi)
+        pdf.ln(5)
+        pdf.set_fill_color(230, 230, 230)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "3. SIMULAZIONE PERFORMANCE (SCENARIO SALITA)", 1, 1, 'L', True)
         pdf.set_font("Arial", '', 10)
-        pdf.cell(0, 8, pdf_safe(f"Parametri: {r['dist']} km | Pendenza {r['grad']}% | Peso Bici {r['bike']} kg"), 1, 1)
-        pdf.cell(95, 8, f"Tempo Situazione Attuale: {r['t_a']:.2f} min", 1); pdf.cell(95, 8, f"Tempo con Target: {r['t_t']:.2f} min", 1, 1)
-        pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, f"MIGLIORAMENTO STIMATO: -{r['t_a']-r['t_t']:.2f} minuti", 1, 1, 'C')
+        pdf.cell(0, 8, pdf_safe(f"Parametri impostati: {r['dist']} km | Pendenza {r['grad']}% | Peso Bici {r['bike']} kg"), 1, 1)
+        pdf.cell(95, 8, f"Tempo Situazione Attuale: {r['t_a']:.2f} min", 1)
+        pdf.cell(95, 8, f"Tempo Situazione Target: {r['t_t']:.2f} min", 1, 1)
+        pdf.set_font("Arial", 'B', 11)
+        pdf.cell(0, 10, f"DIFFERENZA CRONOMETRICA: -{r['t_a']-r['t_t']:.2f} min", 1, 1, 'C')
 
-        # 4. ZONE DI ALLENAMENTO
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "4. ZONE DI POTENZA E FC (TARGET)", 1, 1, 'L', True)
+        # 4. ZONE DI ALLENAMENTO (Potenza e FTHR)
+        pdf.ln(5)
+        pdf.set_fill_color(230, 230, 230)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "4. ZONE DI ALLENAMENTO (Su Target)", 1, 1, 'L', True)
         pdf.set_font("Arial", 'B', 9)
-        pdf.cell(60, 7, "Zona", 1); pdf.cell(65, 7, "Range Watt", 1); pdf.cell(65, 7, "Range BPM (LTHR)", 1, 1)
+        pdf.cell(60, 7, "Zona", 1); pdf.cell(65, 7, "Potenza (W)", 1); pdf.cell(65, 7, "Frequenza Card. (bpm)", 1, 1)
         pdf.set_font("Arial", '', 9)
         for z in r['zones']:
-            pdf.cell(60, 7, pdf_safe(z[0]), 1); pdf.cell(65, 7, f"{z[1]} - {z[2]} W", 1); pdf.cell(65, 7, f"{z[3]} - {z[4]} bpm", 1, 1)
+            pdf.cell(60, 7, pdf_safe(z[0]), 1)
+            pdf.cell(65, 7, f"{z[1]} - {z[2]} W", 1)
+            pdf.cell(65, 7, f"{z[3]} - {z[4]} bpm", 1, 1)
 
-        # 5. BENCHMARK
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "5. RIFERIMENTI CATEGORIE CICLISTICHE", 1, 1, 'L', True)
+        # 5. BENCHMARK CATEGORIE
+        pdf.ln(5)
+        pdf.set_fill_color(230, 230, 230)
+        pdf.set_font("Arial", 'B', 12)
+        pdf.cell(0, 10, "5. RIFERIMENTI CATEGORIE ATLETI", 1, 1, 'L', True)
         pdf.set_font("Arial", '', 9)
-        b_df = BioPerformance.get_category_benchmarks()
-        for index, row in b_df.iterrows():
-            pdf.cell(47, 7, row['Categoria'], 1); pdf.cell(47, 7, row['FM %'], 1); pdf.cell(47, 7, row['W/kg (Soglia)'], 1); pdf.cell(47, 7, row['Peso Medio'], 1, 1)
+        bench_df = BioPerformance.get_category_benchmarks()
+        # Header Tabella
+        pdf.set_font("Arial", 'B', 9)
+        pdf.cell(47, 7, "Categoria", 1); pdf.cell(47, 7, "FM %", 1); pdf.cell(47, 7, "W/kg (Soglia)", 1); pdf.cell(47, 7, "Peso (kg)", 1, 1)
+        pdf.set_font("Arial", '', 9)
+        for _, row in bench_df.iterrows():
+            pdf.cell(47, 7, pdf_safe(row['Categoria']), 1)
+            pdf.cell(47, 7, str(row['Range FM %']), 1)
+            pdf.cell(47, 7, str(row['W/kg (Soglia)']), 1)
+            pdf.cell(47, 7, str(row['Peso Medio (kg)']), 1, 1)
+
+        # Footer con nota professionale
+        pdf.ln(5)
+        pdf.set_font("Arial", 'I', 8)
+        pdf.cell(0, 5, pdf_safe("Analisi generata per scopi professionali di nutrizione e performance sportiva."), 0, 1, 'C')
 
         cb.download_button("📄 SCARICA REPORT PDF COMPLETO", data=pdf.output(dest='S').encode('latin-1', 'ignore'), file_name=f"Analisi_{r['cognome']}.pdf", use_container_width=True)
 
