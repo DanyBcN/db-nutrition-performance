@@ -1,259 +1,262 @@
-import streamlit as st
-import pandas as pd
-import sqlite3
-from datetime import date
-from fpdf import FPDF
-import os
+import { useState, useEffect, useCallback } from "react";
 
-# ---------------------------------------------------------
-# 1. CONFIGURAZIONE E DATABASE
-# ---------------------------------------------------------
-st.set_page_config(page_title="Performance Lab Pro v3", layout="wide", page_icon="🧬")
-DB_NAME = "performance_lab_pro.db"
-LOGO_PATH = "Logo NUTRITION AND PERFORMANCE.png"
+// ═══════════════════════════════════════════════════════════
+//  MOTORE SCIENTIFICO
+// ═══════════════════════════════════════════════════════════
+const FTP_FACTORS = { "Manuale": 1.0, "Test 20'": 0.95, "Test 8'": 0.90, "Incrementale": 0.75 };
 
-def get_connection():
-    return sqlite3.connect(DB_NAME)
+const Bio = {
+  calcFtp: (tipo, v) => Math.round(v * (FTP_FACTORS[tipo] ?? 1.0)),
+  estTime: (w, p, km, pend, bk) => {
+    const fr = (p + bk) * 9.81 * (pend / 100 + 0.005);
+    if (!fr || !w) return 0;
+    return (km * 1000 / (w / fr)) / 60;
+  },
+  zones: (ftp, lthr) => [
+    { name: "Z1 – Recupero",  wMin: 0,               wMax: Math.round(ftp * 0.55), hMin: 0,               hMax: Math.round(lthr * 0.68), color: "#64748b" },
+    { name: "Z2 – Endurance", wMin: Math.round(ftp * 0.56), wMax: Math.round(ftp * 0.75), hMin: Math.round(lthr * 0.69), hMax: Math.round(lthr * 0.83), color: "#3b82f6" },
+    { name: "Z3 – Tempo",     wMin: Math.round(ftp * 0.76), wMax: Math.round(ftp * 0.90), hMin: Math.round(lthr * 0.84), hMax: Math.round(lthr * 0.94), color: "#22c55e" },
+    { name: "Z4 – Soglia",    wMin: Math.round(ftp * 0.91), wMax: Math.round(ftp * 1.05), hMin: Math.round(lthr * 0.95), hMax: Math.round(lthr * 1.05), color: "#f59e0b" },
+    { name: "Z5 – VO₂max",   wMin: Math.round(ftp * 1.06), wMax: Math.round(ftp * 1.30), hMin: Math.round(lthr * 1.06), hMax: 220,                     color: "#ef4444" },
+  ],
+  benchmarks: [
+    { cat: "World Tour",      fm: "5–7%",   wkg: "6.0 – 6.5", peso: 65 },
+    { cat: "Pro Continental", fm: "7–9%",   wkg: "5.5 – 6.0", peso: 68 },
+    { cat: "Elite / U23",     fm: "8–11%",  wkg: "4.5 – 5.5", peso: 70 },
+    { cat: "Amatore Top",     fm: "10–14%", wkg: "3.5 – 4.5", peso: 72 },
+    { cat: "Cicloturista",    fm: "> 15%",  wkg: "< 3.0",     peso: 78 },
+  ],
+};
 
-def init_db():
-    with get_connection() as conn:
-        c = conn.cursor()
-        c.execute('''CREATE TABLE IF NOT EXISTS atleti 
-                     (id INTEGER PRIMARY KEY, nome TEXT, cognome TEXT, altezza REAL, profilo TEXT)''')
-        c.execute('''CREATE TABLE IF NOT EXISTS visite 
-                     (id INTEGER PRIMARY KEY, atleta_id INTEGER, data TEXT, 
-                      peso REAL, fm REAL, ftp REAL, lthr INTEGER, 
-                      peso_t REAL, fm_t REAL, ftp_t REAL, 
-                      dist_km REAL, grad REAL, bike_w REAL,
-                      t_att REAL, t_tar REAL, FOREIGN KEY(atleta_id) REFERENCES atleti(id))''')
-        conn.commit()
+// ═══════════════════════════════════════════════════════════
+//  HELPERS UI
+// ═══════════════════════════════════════════════════════════
+const fmt1 = (n) => Number(n).toFixed(1);
+const fmt2 = (n) => Number(n).toFixed(2);
 
-init_db()
+function Card({ children, className = "" }) {
+  return (
+    <div className={`bg-gray-900 border border-gray-700 rounded-2xl p-5 ${className}`}>
+      {children}
+    </div>
+  );
+}
 
-# ---------------------------------------------------------
-# 2. MOTORE SCIENTIFICO
-# ---------------------------------------------------------
-class BioPerformance:
-    @staticmethod
-    def calculate_ftp(tipo, valore):
-        mapping = {"Manuale": 1.0, "Test 20'": 0.95, "Test 8'": 0.90, "Incrementale": 0.75}
-        return valore * mapping.get(tipo, 1.0)
+function SectionTitle({ icon, children }) {
+  return (
+    <div className="flex items-center gap-2 mb-4">
+      <span className="text-xl">{icon}</span>
+      <h3 className="text-sm font-bold uppercase tracking-widest text-cyan-400">{children}</h3>
+    </div>
+  );
+}
 
-    @staticmethod
-    def estimate_time(watt, peso, km, pend, bike_w):
-        f_res = (float(peso) + float(bike_w)) * 9.81 * ((float(pend)/100) + 0.005)
-        if f_res <= 0 or watt <= 0: return 0
-        speed_ms = float(watt) / f_res
-        return (float(km) * 1000 / speed_ms) / 60
+function MetricBlock({ label, current, target, unit = "", delta = null, color = "text-white" }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs text-gray-400 uppercase tracking-wider">{label}</span>
+      <span className={`text-2xl font-extrabold ${color}`}>{current}{unit}</span>
+      {target !== undefined && (
+        <span className="text-xs text-cyan-400">
+          Target: <strong>{target}{unit}</strong>
+          {delta !== null && (
+            <span className={`ml-2 ${delta >= 0 ? "text-green-400" : "text-red-400"}`}>
+              ({delta >= 0 ? "+" : ""}{fmt2(delta)})
+            </span>
+          )}
+        </span>
+      )}
+    </div>
+  );
+}
 
-    @staticmethod
-    def get_zones(ftp, lthr):
-        return [
-            ("Z1 Recupero", 0, int(ftp*0.55), 0, int(lthr*0.68)),
-            ("Z2 Endurance", int(ftp*0.56), int(ftp*0.75), int(lthr*0.69), int(lthr*0.83)),
-            ("Z3 Tempo", int(ftp*0.76), int(ftp*0.90), int(lthr*0.84), int(lthr*0.94)),
-            ("Z4 Soglia", int(ftp*0.91), int(ftp*1.05), int(lthr*0.95), int(lthr*1.05)),
-            ("Z5 VO₂max", int(ftp*1.06), int(ftp*1.30), int(lthr*1.06), 220)
-        ]
+function NumInput({ label, value, onChange, min, max, step = 0.1, unit = "" }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs text-gray-400">{label}{unit ? ` (${unit})` : ""}</span>
+      <input
+        type="number"
+        min={min} max={max} step={step}
+        value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value) || 0)}
+        className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+      />
+    </label>
+  );
+}
 
-    @staticmethod
-    def get_category_benchmarks():
-        data = [
-            ["World Tour", "5-7%", "6.0 - 6.5", 65],
-            ["Pro Continental", "7-9%", "5.5 - 6.0", 68],
-            ["Elite/U23", "8-11%", "4.5 - 5.5", 70],
-            ["Amatore Top", "10-14%", "3.5 - 4.5", 72],
-            ["Cicloturista", "> 15%", "< 3.0", 78]
-        ]
-        return pd.DataFrame(data, columns=["Categoria", "Range FM %", "W/kg (Soglia)", "Peso Medio (kg)"])
+function SelectInput({ label, value, onChange, options }) {
+  return (
+    <label className="flex flex-col gap-1">
+      <span className="text-xs text-gray-400">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors"
+      >
+        {options.map((o) => <option key={o}>{o}</option>)}
+      </select>
+    </label>
+  );
+}
 
-def pdf_safe(text):
-    if not text: return ""
-    rep = {"à": "a", "è": "e", "é": "e", "ì": "i", "ò": "o", "ù": "u", "²": "2", "₂": "2", "VO₂": "VO2"}
-    for k, v in rep.items(): text = text.replace(k, v)
-    return str(text).encode('latin-1', 'replace').decode('latin-1')
+function Tab({ active, onClick, children }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-6 py-2 rounded-xl text-sm font-semibold transition-all ${
+        active
+          ? "bg-cyan-500 text-gray-950 shadow-lg shadow-cyan-500/30"
+          : "text-gray-400 hover:text-white hover:bg-gray-800"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
 
-# ---------------------------------------------------------
-# 3. INTERFACCIA
-# ---------------------------------------------------------
-with st.sidebar:
-    if os.path.exists(LOGO_PATH):
-        st.image(LOGO_PATH, use_container_width=True)
-    st.markdown("---")
-    menu = st.radio("NAVIGAZIONE", ["➕ Nuova Valutazione", "📂 Archivio & Edit"])
+// ═══════════════════════════════════════════════════════════
+//  COMPONENTE PRINCIPALE
+// ═══════════════════════════════════════════════════════════
+export default function PerformanceLab() {
+  const [tab, setTab] = useState("new");
+  const [result, setResult] = useState(null);
+  const [athletes, setAthletes] = useState([]);
+  const [saved, setSaved] = useState(false);
+  const [selectedAthlete, setSelectedAthlete] = useState(null);
 
-if menu == "➕ Nuova Valutazione":
-    st.header("📋 Inserimento Protocollo Valutazione")
-    
-    with get_connection() as conn:
-        db_atleti = pd.read_sql_query("SELECT * FROM atleti", conn)
+  // Form state
+  const [cognome, setCognome] = useState("");
+  const [nome, setNome] = useState("");
+  const [altezza, setAltezza] = useState(175);
+  const [profilo, setProfilo] = useState("Scalatore");
+  const [pAtt, setPAtt] = useState(70.0);
+  const [fmAtt, setFmAtt] = useState(15.0);
+  const [tipoTest, setTipoTest] = useState("Manuale");
+  const [valTest, setValTest] = useState(250);
+  const [lthr, setLthr] = useState(160);
+  const [pTar, setPTar] = useState(68.0);
+  const [fmTar, setFmTar] = useState(10.0);
+  const [ftpTar, setFtpTar] = useState(280);
+  const [dist, setDist] = useState(10.0);
+  const [grad, setGrad] = useState(7.0);
+  const [bike, setBike] = useState(7.5);
 
-    with st.container(border=True):
-        c1, c2, c3 = st.columns([2, 2, 1])
-        exist_cog = c1.selectbox("Cerca Cognome Esistente", [""] + sorted(db_atleti['cognome'].unique().tolist()))
-        new_cog = c2.text_input("...o Inserisci Nuovo")
-        cog = new_cog if new_cog else exist_cog
-        
-        atl_data = db_atleti[db_atleti['cognome'] == cog].iloc[0] if cog in db_atleti['cognome'].values else None
-        nome = st.text_input("Nome", value=atl_data['nome'] if atl_data is not None else "")
-        
-        col_an, col_pr = st.columns(2)
-        altezza = col_an.number_input("Altezza (cm)", 120, 230, int(atl_data['altezza']) if atl_data is not None else 175)
-        data_visita = col_an.date_input("Data Analisi", date.today())
-        profilo = col_pr.selectbox("Profilo Atleta", ["Scalatore", "Passista", "Triatleta", "Granfondista"])
+  // Load from storage
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await window.storage.get("plp_athletes");
+        if (r) setAthletes(JSON.parse(r.value));
+      } catch (_) {}
+    })();
+  }, []);
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.subheader("📊 1. Stato Attuale")
-        p_att = st.number_input("Peso (kg)", 40.0, 150.0, 70.0, step=0.1)
-        fm_att = st.number_input("FM %", 3.0, 45.0, 15.0, step=0.1)
-        tipo_test = st.selectbox("Tipo Test FTP", ["Manuale", "Test 20'", "Test 8'", "Incrementale"])
-        val_test = st.number_input("Watt Test", 50, 700, 250)
-        ftp_att = BioPerformance.calculate_ftp(tipo_test, val_test)
-        lthr = st.number_input("LTHR (bpm)", 80, 220, 160)
-        bmi_att = p_att / ((altezza/100)**2)
+  const ftpAtt = Bio.calcFtp(tipoTest, valTest);
+  const bmiAtt = pAtt / Math.pow(altezza / 100, 2);
+  const bmiTar = pTar / Math.pow(altezza / 100, 2);
 
-    with col2:
-        st.subheader("🎯 2. Target")
-        p_tar = st.number_input("Peso Target (kg)", 40.0, 150.0, 68.0, step=0.1)
-        fm_tar = st.number_input("FM Target %", 3.0, 40.0, 10.0, step=0.1)
-        ftp_tar = st.number_input("FTP Target (W)", 50, 700, 280)
-        bmi_tar = p_tar / ((altezza/100)**2)
+  const handleElabora = () => {
+    const tA = Bio.estTime(ftpAtt, pAtt, dist, grad, bike);
+    const tT = Bio.estTime(ftpTar, pTar, dist, grad, bike);
+    setResult({
+      nome, cognome, altezza, profilo,
+      data: new Date().toLocaleDateString("it-IT"),
+      pA: pAtt, fmA: fmAtt, ftpA: ftpAtt, lthr, bmiA: bmiAtt, test: tipoTest,
+      pT: pTar, fmT: fmTar, ftpT: ftpTar, bmiT: bmiTar,
+      dist, grad, bike, tA, tT,
+      zones: Bio.zones(ftpTar, lthr),
+      wkgA: ftpAtt / pAtt,
+      wkgT: ftpTar / pTar,
+    });
+    setSaved(false);
+  };
 
-    with col3:
-        st.subheader("🏔️ 3. Scenario Salita")
-        dist = st.number_input("Km Salita", 0.1, 50.0, 10.0)
-        grad = st.number_input("Pendenza %", 0.0, 20.0, 7.0)
-        bike = st.number_input("Peso Bici (kg)", 5.0, 15.0, 7.5)
+  const handleSalva = async () => {
+    if (!result) return;
+    const record = {
+      id: Date.now(),
+      nome: result.nome,
+      cognome: result.cognome,
+      altezza: result.altezza,
+      profilo: result.profilo,
+      data: result.data,
+      peso: result.pA, fm: result.fmA, ftp: result.ftpA, lthr: result.lthr,
+      peso_t: result.pT, fm_t: result.fmT, ftp_t: result.ftpT,
+      dist: result.dist, grad: result.grad, bike: result.bike,
+      t_att: result.tA, t_tar: result.tT,
+      wkgA: result.wkgA, wkgT: result.wkgT,
+    };
+    const updated = [...athletes, record];
+    setAthletes(updated);
+    try {
+      await window.storage.set("plp_athletes", JSON.stringify(updated));
+    } catch (_) {}
+    setSaved(true);
+  };
 
-    if st.button("🚀 ELABORA E STAMPA OUTPUT", use_container_width=True):
-        t_a = BioPerformance.estimate_time(ftp_att, p_att, dist, grad, bike)
-        t_t = BioPerformance.estimate_time(ftp_tar, p_tar, dist, grad, bike)
-        
-        st.session_state['rep'] = {
-            'nome': nome, 'cognome': cog, 'alt': altezza, 'prof': profilo, 'data': data_visita.strftime("%d/%m/%Y"),
-            'p_a': p_att, 'fm_a': fm_att, 'ftp_a': ftp_att, 'lthr': lthr, 'bmi_a': bmi_att, 'test': tipo_test,
-            'p_t': p_tar, 'fm_t': fm_tar, 'ftp_t': ftp_tar, 'bmi_t': bmi_tar,
-            'dist': dist, 'grad': grad, 'bike': bike, 't_a': t_a, 't_t': t_t,
-            'raw_data': data_visita.isoformat(), 'zones': BioPerformance.get_zones(ftp_tar, lthr)
-        }
+  const handleDelete = async (id) => {
+    const updated = athletes.filter((a) => a.id !== id);
+    setAthletes(updated);
+    try { await window.storage.set("plp_athletes", JSON.stringify(updated)); } catch (_) {}
+    if (selectedAthlete?.id === id) setSelectedAthlete(null);
+  };
 
-    if 'rep' in st.session_state:
-        r = st.session_state['rep']
-        st.divider()
-        
-        # --- OUTPUT SCHERMO ---
-        st.subheader("🧬 Analisi Biometrica e Funzionale")
-        wkg_att = r['ftp_a'] / r['p_a']
-        wkg_tar = r['ftp_t'] / r['p_t']
-        
-        c1, c2, c3, c4 = st.columns(4)
-        with c1:
-            st.metric("Peso", f"{r['p_a']} kg", f"Target: {r['p_t']} kg")
-            st.write(f"**BMI:** {r['bmi_a']:.1f} → **{r['bmi_t']:.1f}**")
-        with c2:
-            st.metric("FM %", f"{r['fm_a']} %", f"Target: {r['fm_t']} %")
-            st.write(f"**Massa Grassa:** {r['p_a']*(r['fm_a']/100):.1f}kg → **{r['p_t']*(r['fm_t']/100):.1f}kg**")
-        with c3:
-            st.metric("FTP (Potenza)", f"{int(r['ftp_a'])} W", f"Target: {int(r['ftp_t'])} W")
-            st.write(f"**Protocollo:** {r['test']}")
-        with c4:
-            st.metric("Rapporto W/kg", f"{wkg_att:.2f}", f"Target: {wkg_tar:.2f}")
-            st.write(f"**Delta:** {wkg_tar - wkg_att:+.2f} W/kg")
+  return (
+    <div className="min-h-screen bg-gray-950 text-white font-sans">
+      {/* ── HEADER ── */}
+      <div className="border-b border-gray-800 bg-gray-900/80 sticky top-0 z-10 backdrop-blur">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <span className="text-3xl">🧬</span>
+            <div>
+              <h1 className="text-lg font-extrabold tracking-tight text-white">Performance Lab Pro</h1>
+              <p className="text-xs text-gray-400">Nutrition & Performance Analysis</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Tab active={tab === "new"} onClick={() => setTab("new")}>➕ Nuova Valutazione</Tab>
+            <Tab active={tab === "archive"} onClick={() => setTab("archive")}>
+              📂 Archivio {athletes.length > 0 && <span className="ml-1 bg-cyan-500 text-gray-950 rounded-full text-xs px-1.5">{athletes.length}</span>}
+            </Tab>
+          </div>
+        </div>
+      </div>
 
-        st.subheader("🏔️ Analisi Scenario Salita")
-        cs1, cs2 = st.columns(2)
-        with cs1:
-            st.info(f"**Input:** {r['dist']} km | {r['grad']}% | Bici {r['bike']} kg")
-        with cs2:
-            st.success(f"**Tempo Attuale:** {r['t_a']:.2f} min  \n**Tempo Target:** {r['t_t']:.2f} min  \n**Differenza:** -{r['t_a']-r['t_t']:.2f} min")
+      <div className="max-w-6xl mx-auto px-6 py-8">
 
-        st.subheader("⚡ Zone di Potenza & FC (Target)")
-        st.table(pd.DataFrame(r['zones'], columns=["Zona", "Watt Min", "Watt Max", "BPM Min", "BPM Max"]))
+        {/* ══════════════ TAB: NUOVA VALUTAZIONE ══════════════ */}
+        {tab === "new" && (
+          <div className="space-y-6">
 
-        st.subheader("🏁 Posizionamento Rispetto alle Categorie")
-        bench_df = BioPerformance.get_category_benchmarks()
-        st.table(bench_df)
+            {/* Anagrafica */}
+            <Card>
+              <SectionTitle icon="👤">Anagrafica Atleta</SectionTitle>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-gray-400">Cognome</span>
+                  <input value={cognome} onChange={e => setCognome(e.target.value)}
+                    placeholder="Rossi"
+                    className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors" />
+                </label>
+                <label className="flex flex-col gap-1">
+                  <span className="text-xs text-gray-400">Nome</span>
+                  <input value={nome} onChange={e => setNome(e.target.value)}
+                    placeholder="Mario"
+                    className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500 transition-colors" />
+                </label>
+                <NumInput label="Altezza" unit="cm" value={altezza} onChange={setAltezza} min={120} max={230} step={1} />
+                <SelectInput label="Profilo Atleta" value={profilo} onChange={setProfilo}
+                  options={["Scalatore", "Passista", "Triatleta", "Granfondista"]} />
+              </div>
+            </Card>
 
-        ca, cb = st.columns(2)
-        if ca.button("💾 SALVA IN ARCHIVIO"):
-            with get_connection() as conn:
-                cursor = conn.cursor()
-                cursor.execute("SELECT id FROM atleti WHERE cognome=? AND nome=?", (r['cognome'], r['nome']))
-                row = cursor.fetchone()
-                a_id = row[0] if row else None
-                if not a_id:
-                    cursor.execute("INSERT INTO atleti (nome, cognome, altezza, profilo) VALUES (?,?,?,?)", (r['nome'], r['cognome'], r['alt'], r['prof']))
-                    a_id = cursor.lastrowid
-                cursor.execute("""INSERT INTO visite (atleta_id, data, peso, fm, ftp, lthr, peso_t, fm_t, ftp_t, dist_km, grad, bike_w, t_att, t_tar) 
-                               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (a_id, r['raw_data'], r['p_a'], r['fm_a'], r['ftp_a'], r['lthr'], r['p_t'], r['fm_t'], r['ftp_t'], r['dist'], r['grad'], r['bike'], r['t_a'], r['t_t']))
-                conn.commit()
-            st.success("Dati salvati!")
+            {/* 3 colonne: Attuale / Target / Salita */}
+            <div className="grid md:grid-cols-3 gap-6">
 
-        # --- GENERAZIONE PDF INTEGRALE ---
-        pdf = FPDF()
-        pdf.add_page()
-        if os.path.exists(LOGO_PATH):
-            pdf.image(LOGO_PATH, 10, 8, 45)
-        
-        pdf.ln(35)
-        pdf.set_font("Arial", 'B', 16); pdf.cell(0, 10, pdf_safe(f"REPORT PERFORMANCE: {r['nome']} {r['cognome']}"), 0, 1, 'C')
-        pdf.set_font("Arial", '', 11); pdf.cell(0, 6, f"Data: {r['data']} | Profilo: {r['prof']} | Altezza: {r['alt']} cm", 0, 1, 'C')
-        
-        # 1. BIOMETRIA E INPUT
-        pdf.ln(10); pdf.set_fill_color(230, 230, 230); pdf.set_font("Arial", 'B', 12)
-        pdf.cell(0, 10, "1. STATO ATTUALE", 1, 1, 'L', True)
-        pdf.set_font("Arial", '', 10)
-        pdf.cell(63, 8, f"Peso: {r['p_a']} kg", 1); pdf.cell(63, 8, f"FM %: {r['fm_a']}%", 1); pdf.cell(64, 8, f"BMI: {r['bmi_a']:.1f}", 1, 1)
-        pdf.cell(63, 8, f"FTP: {int(r['ftp_a'])} W", 1); pdf.cell(63, 8, f"LTHR: {r['lthr']} bpm", 1); pdf.cell(64, 8, f"W/kg: {r['ftp_a']/r['p_a']:.2f}", 1, 1)
-
-        # 2. TARGET
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "2. OBIETTIVI TARGET", 1, 1, 'L', True)
-        pdf.set_font("Arial", '', 10)
-        pdf.cell(63, 8, f"Peso: {r['p_t']} kg", 1); pdf.cell(63, 8, f"FM %: {r['fm_t']}%", 1); pdf.cell(64, 8, f"FTP: {int(r['ftp_t'])} W", 1, 1)
-        pdf.cell(0, 8, f"W/kg Target: {r['ftp_t']/r['p_t']:.2f} W/kg", 1, 1)
-
-        # 3. SCENARIO SALITA
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "3. SCENARIO SALITA", 1, 1, 'L', True)
-        pdf.set_font("Arial", '', 10)
-        pdf.cell(0, 8, pdf_safe(f"Parametri: {r['dist']} km | {r['grad']}% pendenza | Bici {r['bike']} kg"), 1, 1)
-        pdf.cell(95, 8, f"Tempo Attuale: {r['t_a']:.2f} min", 1); pdf.cell(95, 8, f"Tempo Target: {r['t_t']:.2f} min", 1, 1)
-        pdf.set_font("Arial", 'B', 11); pdf.cell(0, 10, f"DIFFERENZA: -{r['t_a']-r['t_t']:.2f} min", 1, 1, 'C')
-
-        # 4. ZONE
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "4. ZONE ALLENAMENTO TARGET", 1, 1, 'L', True)
-        pdf.set_font("Arial", 'B', 9)
-        pdf.cell(60, 7, "Zona", 1); pdf.cell(65, 7, "Potenza (W)", 1); pdf.cell(65, 7, "Freq. Card. (bpm)", 1, 1)
-        pdf.set_font("Arial", '', 9)
-        for z in r['zones']:
-            pdf.cell(60, 7, pdf_safe(z[0]), 1); pdf.cell(65, 7, f"{z[1]} - {z[2]} W", 1); pdf.cell(65, 7, f"{z[3]} - {z[4]} bpm", 1, 1)
-
-        # 5. BENCHMARK
-        pdf.ln(5); pdf.set_font("Arial", 'B', 12); pdf.cell(0, 10, "5. RIFERIMENTI CATEGORIE", 1, 1, 'L', True)
-        pdf.set_font("Arial", 'B', 9)
-        pdf.cell(47, 7, "Categoria", 1); pdf.cell(47, 7, "FM %", 1); pdf.cell(47, 7, "W/kg Soglia", 1); pdf.cell(47, 7, "Peso Medio", 1, 1)
-        pdf.set_font("Arial", '', 9)
-        bench_df = BioPerformance.get_category_benchmarks()
-        for _, row in bench_df.iterrows():
-            pdf.cell(47, 7, pdf_safe(row['Categoria']), 1); pdf.cell(47, 7, row['Range FM %'], 1); pdf.cell(47, 7, str(row['W/kg (Soglia)']), 1); pdf.cell(47, 7, f"{row['Peso Medio (kg)']} kg", 1, 1)
-
-        cb.download_button("📄 SCARICA PDF COMPLETO", data=pdf.output(dest='S').encode('latin-1', 'ignore'), file_name=f"Analisi_{r['cognome']}.pdf", use_container_width=True)
-
-elif menu == "📂 Archivio & Edit":
-    st.header("🗄️ Gestione Archivio")
-    with get_connection() as conn:
-        at = pd.read_sql_query("SELECT * FROM atleti", conn)
-    
-    if not at.empty:
-        sel_atl = st.selectbox("Seleziona l'atleta", at.apply(lambda x: f"{x['id']} - {x['cognome']} {x['nome']}", axis=1))
-        a_id = int(sel_atl.split(" - ")[0])
-        with get_connection() as conn:
-            vi = pd.read_sql_query(f"SELECT * FROM visite WHERE atleta_id={a_id} ORDER BY data DESC", conn)
-        st.dataframe(vi, hide_index=True)
-        
-        if st.button("🗑️ ELIMINA ATLETA"):
-            with get_connection() as conn:
-                conn.execute(f"DELETE FROM visite WHERE atleta_id={a_id}")
-                conn.execute(f"DELETE FROM atleti WHERE id={a_id}")
-                conn.commit()
-            st.rerun()
+              {/* Stato Attuale */}
+              <Card>
+                <SectionTitle icon="📊">1. Stato Attuale</SectionTitle>
+                <div className="space-y-3">
+                  <NumInput label="Peso" unit="kg" value={pAtt} onChange={setPAtt} min={40} max={150} />
+                  <NumInp
