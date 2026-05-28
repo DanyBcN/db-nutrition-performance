@@ -554,46 +554,44 @@ elif menu == "📂 Archivio & Edit":
         st.info("Nessun atleta presente in archivio.")
         st.stop()
 
-           atleti = atleti.copy()
+    atleti = atleti.copy()
 
-        atleti["label"] = atleti.apply(
-            lambda x: f"{x['id']} - {x['cognome']} {x['nome']}",
-            axis=1
-        )
+    atleti["label"] = atleti.apply(
+        lambda x: f"{x['id']} - {x['cognome']} {x['nome']}",
+        axis=1
+    )
 
-        st.subheader("🔎 Ricerca atleta")
+    st.subheader("🔎 Ricerca atleta")
 
-        ricerca_atleta = st.text_input(
-            "Digita nome o cognome",
-            value="",
-            placeholder="Es. Rossi, Mario, Bramard...",
-            key="ricerca_atleta_archivio"
-        ).strip().lower()
+    ricerca_atleta = st.text_input(
+        "Digita nome o cognome",
+        value="",
+        placeholder="Es. Rossi, Mario, Bramard...",
+        key="ricerca_atleta_archivio"
+    ).strip().lower()
 
-        if ricerca_atleta:
-            atleti_filtrati = atleti[
-                atleti["nome"].str.lower().str.contains(ricerca_atleta, na=False) |
-                atleti["cognome"].str.lower().str.contains(ricerca_atleta, na=False) |
-                atleti["label"].str.lower().str.contains(ricerca_atleta, na=False)
-            ]
-        else:
-            atleti_filtrati = atleti
+    if ricerca_atleta:
+        atleti_filtrati = atleti[
+            atleti["nome"].astype(str).str.lower().str.contains(ricerca_atleta, na=False) |
+            atleti["cognome"].astype(str).str.lower().str.contains(ricerca_atleta, na=False) |
+            atleti["label"].astype(str).str.lower().str.contains(ricerca_atleta, na=False)
+        ]
+    else:
+        atleti_filtrati = atleti
 
-        if atleti_filtrati.empty:
-            st.warning("Nessun atleta trovato con questa ricerca.")
-            st.stop()
+    if atleti_filtrati.empty:
+        st.warning("Nessun atleta trovato con questa ricerca.")
+        st.stop()
 
-        selected = st.selectbox(
-            "Seleziona atleta",
-            atleti_filtrati["label"].tolist(),
-            key="select_atleta_archivio"
-        )
+    selected = st.selectbox(
+        "Seleziona atleta",
+        atleti_filtrati["label"].tolist(),
+        key="select_atleta_archivio"
+    )
 
-        atleta_id = int(selected.split(" - ")[0])
+    atleta_id = int(selected.split(" - ")[0])
 
-        atleta_row = atleti[atleti["id"] == atleta_id].iloc[0]
-
-    st.subheader(f"👤 {atleta_row['cognome']} {atleta_row['nome']}")
+    atleta_row = atleti[atleti["id"] == atleta_id].iloc[0]
     st.write(f"**Altezza:** {atleta_row['altezza']} cm  \n**Profilo:** {atleta_row['profilo']}")
 
     st.divider()
