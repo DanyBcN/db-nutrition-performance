@@ -56,11 +56,19 @@ def init_db():
                 bike_w REAL,
                 t_att REAL,
                 t_tar REAL,
-                wkg_att REAL,
-                wkg_tar REAL,
                 FOREIGN KEY(atleta_id) REFERENCES atleti(id)
             )
         """)
+
+        # Aggiornamento automatico del database vecchio
+        c.execute("PRAGMA table_info(visite)")
+        colonne_visite = [col[1] for col in c.fetchall()]
+
+        if "wkg_att" not in colonne_visite:
+            c.execute("ALTER TABLE visite ADD COLUMN wkg_att REAL")
+
+        if "wkg_tar" not in colonne_visite:
+            c.execute("ALTER TABLE visite ADD COLUMN wkg_tar REAL")
 
         conn.commit()
 
