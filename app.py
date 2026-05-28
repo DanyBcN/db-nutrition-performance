@@ -1198,6 +1198,223 @@ elif menu == "📂 Archivio & Edit":
                 mime="application/pdf",
                 use_container_width=True
             )
+                # ---------------------------------------------------------
+        # COMPARAZIONE TRA DUE VISITE DELLO STESSO ATLETA
+        # ---------------------------------------------------------
+        if not visite.empty and len(visite) >= 2:
+
+            st.divider()
+            st.subheader("📈 Comparazione tra due analisi")
+
+            st.write(
+                "Seleziona due visite dello stesso atleta e imposta una salita comune. "
+                "Il programma ricalcola la prestazione teorica sulla stessa salita e confronta l'evoluzione."
+            )
+
+            comp_col1, comp_col2 = st.columns(2)
+
+            with comp_col1:
+                visita_1_id = st.selectbox(
+                    "Analisi iniziale",
+                    visite["id"].tolist(),
+                    key="comparazione_visita_1"
+                )
+
+            with comp_col2:
+                visita_2_id = st.selectbox(
+                    "Analisi successiva",
+                    visite["id"].tolist(),
+                    key="comparazione_visita_2"
+                )
+
+            if visita_1_id == visita_2_id:
+                st.warning("Selezionare due visite diverse per effettuare la comparazione.")
+
+            else:
+                v1 = visite[visite["id"] == visita_1_id].iloc[0]
+                v2 = visite[visite["id"] == visita_2_id].iloc[0]
+
+                st.markdown("### 🏔️ Salita comune per la comparazione")
+
+                sal_col1, sal_col2, sal_col3 = st.columns(3)
+
+                with sal_col1:
+                    comp_dist = st.number_input(
+                        "Km salita comparativa",
+                        min_value=0.1,
+                        max_value=100.0,
+                        value=float(v2["dist_km"]) if pd.notna(v2["dist_km"]) else 10.0,
+                        step=0.1,
+                        key="comp_dist"
+                    )
+
+                with sal_col2:
+                    comp_grad = st.number_input(
+                        "Pendenza media comparativa (%)",
+                        min_value=0.0,
+                        max_value=25.0,
+                        value=float(v2["grad"]) if pd.notna(v2["grad"]) else 7.0,
+                        step=0.1,
+                        key="comp_grad"
+                    )
+
+                with sal_col3:
+                    comp_bike = st.number_input(
+                        "Peso bici comparativo (kg)",
+                        min_value=5.0,
+                        max_value=20.0,
+                        value=float(v2["bike_w"]) if pd.notna(v2["bike_w"]) else 7.5,
+                        step=0.1,
+                        key="comp_bike"
+                    )
+
+                # Valori visita 1
+                peso_1 = float(v1["peso"])
+                fm_1 = float(v1["fm"])
+                ftp_1 = float(v1["ftp"])
+                lthr_1 = int(v1["lthr"]) if pd.notna(v1["lthr"]) else 0
+                wkg_1 = ftp_1 / peso_1 if peso_1 > 0 else 0
+
+                # Valori visita 2
+                peso_2 = float(v2["peso"])
+                fm_2 = float(v2["fm"])
+                ftp_2 = float(v2["ftp"])
+                lthr_2 = int(v2["lthr"]) if pd.notna(v2["lthr"]) else 0
+                wkg_2 = ftp_2 / peso_2 if peso_2 > 0 else 0
+
+                # Tempi sulla stessa salita
+                tempo_1 = BioPerformance.estimate_time(
+                    ftp_1,
+                    peso_1,
+                    comp_dist,
+                    comp_grad,
+                    comp_bike
+                )
+
+                tempo_2 = BioPerformance.estimate_time(
+                    ftp_2,
+                    peso_2,
+                    comp_dist,
+                    comp_grad,
+                    comp_bike
+                )
+
+                # Differenze
+                delta_peso = peso_2 - peso_1
+                delta_fm = fm_2 - fm_1
+                delta_ftp = ftp_2 - ftp_1
+                delta_wkg = wkg_2 - wkg_1
+                delta_tempo = tempo_2 - tempo_1
+
+                perc_ftp = (delta_ftp / ftp_1 * 100) if ftp_1 > 0 else 0
+                perc_wkg = (delta_wkg / wkg_1 * 100) if wkg_1 > 0 else 0
+                perc_tempo = (delta_tempo / tempo_1 * 100) if tempo_1 > 0 else 0
+
+                st.markdown("### 📊 Risultato comparativo")
+
+                met1, met2, met3, met4 = st.columns(4)
+
+                with met1:
+                    st.metric(
+                        "Peso",
+                        f"{peso_2:.1f} kg",
+                        f"{delta_peso:+.1f} kg"
+                    )
+
+                with met2:
+                    st.metric(
+                        "FM %",
+                        f"{fm_2:.1f} %",
+                        f"{delta_fm:+.1f} %"
+                    )
+
+                with met3:
+                    st.metric(
+                        "FTP",
+                        f"{ftp_2:.0f} W",
+                        f"{delta_ftp:+.0f} W / {perc_ftp:+.1f}%"
+                    )
+
+                with met4:
+                    st.metric(
+                        "W/kg",
+                        f"{wkg_2:.2f}",
+                        f"{delta_wkg:+.2f} / {perc_wkg:+.1f}%"
+                    )
+
+                st.markdown("### 🏔️ Comparazione sulla stessa salita")
+
+                salita_col1, salita_col2, salita_col3 = st.columns(3)
+
+                with salita_col1:
+                    st.info(
+                        f"**Analisi iniziale**  \n"
+                        f"Data: {v1['data']}  \n"
+                        f"Peso: {peso_1:.1f} kg  \n"
+                        f"FTP: {ftp_1:.0f} W  \n"
+                        f"W/kg: {wkg_1:.2f}  \n"
+                        f"Tempo stimato: **{tempo_1:.2f} min**"
+                    )
+
+                with salita_col2:
+                    st.success(
+                        f"**Analisi successiva**  \n"
+                        f"Data: {v2['data']}  \n"
+                        f"Peso: {peso_2:.1f} kg  \n"
+                        f"FTP: {ftp_2:.0f} W  \n"
+                        f"W/kg: {wkg_2:.2f}  \n"
+                        f"Tempo stimato: **{tempo_2:.2f} min**"
+                    )
+
+                with salita_col3:
+                    if delta_tempo < 0:
+                        esito = "MIGLIORAMENTO"
+                        messaggio = f"Tempo ridotto di {abs(delta_tempo):.2f} min ({abs(perc_tempo):.1f}%)."
+                        st.success(f"**Esito:** {esito}  \n{messaggio}")
+
+                    elif delta_tempo > 0:
+                        esito = "PEGGIORAMENTO"
+                        messaggio = f"Tempo aumentato di {delta_tempo:.2f} min ({perc_tempo:.1f}%)."
+                        st.error(f"**Esito:** {esito}  \n{messaggio}")
+
+                    else:
+                        esito = "INVARIATO"
+                        messaggio = "Tempo stimato invariato."
+                        st.info(f"**Esito:** {esito}  \n{messaggio}")
+
+                st.markdown("### 🧬 Interpretazione sintetica")
+
+                if delta_tempo < 0 and delta_wkg > 0:
+                    st.success(
+                        "La seconda analisi mostra un miglioramento prestativo coerente: "
+                        "incremento del rapporto W/kg e riduzione del tempo stimato sulla salita comparativa."
+                    )
+
+                elif delta_tempo < 0 and delta_wkg <= 0:
+                    st.warning(
+                        "La seconda analisi mostra un miglioramento del tempo stimato, "
+                        "ma senza incremento del rapporto W/kg. Verificare l'influenza della riduzione ponderale "
+                        "o dei parametri della simulazione."
+                    )
+
+                elif delta_tempo > 0 and delta_wkg < 0:
+                    st.error(
+                        "La seconda analisi evidenzia un peggioramento prestativo: "
+                        "riduzione del rapporto W/kg e aumento del tempo stimato sulla salita comparativa."
+                    )
+
+                else:
+                    st.info(
+                        "La variazione è contenuta o mista. Interpretare il dato considerando peso, FTP, "
+                        "massa grassa e coerenza del protocollo di test."
+                    )
+
+        elif not visite.empty and len(visite) < 2:
+            st.info(
+                "Per effettuare una comparazione sono necessarie almeno due visite salvate per lo stesso atleta."
+            )
+        
+        
         st.divider()
         st.subheader("🗑️ Eliminazione dati")
 
