@@ -1140,7 +1140,64 @@ elif menu == "📂 Archivio & Edit":
 
                 st.success("Visita aggiornata e sovrascritta correttamente.")
                 st.rerun()
+            # ---------------------------------------------------------
+            # RISTAMPA PDF DELLA VISITA SELEZIONATA
+            # ---------------------------------------------------------
+            data_pdf = pd.to_datetime(visita_sel["data"]).strftime("%d/%m/%Y")
 
+            bmi_att_pdf = nuovo_peso / ((edit_altezza / 100) ** 2)
+            bmi_tar_pdf = nuovo_peso_t / ((edit_altezza / 100) ** 2)
+
+            wkg_delta_pdf = nuovo_wkg_tar - nuovo_wkg_att
+
+            tempo_delta_pdf = nuovo_t_tar - nuovo_t_att
+
+            r_pdf = {
+                "nome": edit_nome,
+                "cognome": edit_cognome,
+                "altezza": edit_altezza,
+                "profilo": edit_profilo,
+                "data": data_pdf,
+                "data_iso": visita_sel["data"],
+
+                "peso_att": nuovo_peso,
+                "fm_att": nuova_fm,
+                "ftp_att": nuova_ftp,
+                "lthr": nuova_lthr,
+                "bmi_att": bmi_att_pdf,
+                "tipo_test": "Archivio",
+
+                "peso_tar": nuovo_peso_t,
+                "fm_tar": nuova_fm_t,
+                "ftp_tar": nuova_ftp_t,
+                "bmi_tar": bmi_tar_pdf,
+
+                "dist": nuova_dist,
+                "grad": nuova_grad,
+                "bike": nuova_bike,
+
+                "tempo_att": nuovo_t_att,
+                "tempo_tar": nuovo_t_tar,
+                "tempo_delta": tempo_delta_pdf,
+
+                "wkg_att": nuovo_wkg_att,
+                "wkg_tar": nuovo_wkg_tar,
+                "wkg_delta": wkg_delta_pdf,
+
+                "zones_power_att": BioPerformance.get_power_zones_coggan(nuova_ftp),
+                "zones_power_tar": BioPerformance.get_power_zones_coggan(nuova_ftp_t),
+                "zones_hr": BioPerformance.get_hr_zones_fthr(nuova_lthr)
+            }
+
+            pdf_archivio = create_pdf(r_pdf)
+
+            st.download_button(
+                "📄 RISTAMPA PDF VISITA SELEZIONATA",
+                data=pdf_archivio,
+                file_name=f"Analisi_{edit_cognome}_{edit_nome}_visita_{visita_id}.pdf",
+                mime="application/pdf",
+                use_container_width=True
+            )
         st.divider()
         st.subheader("🗑️ Eliminazione dati")
 
