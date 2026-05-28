@@ -661,16 +661,14 @@ if menu == "➕ Nuova Valutazione":
             "zones_hr": BioPerformance.get_hr_zones_fthr(lthr)
         }
 
-       if "rep" in st.session_state:
+    if "rep" in st.session_state:
         r = st.session_state["rep"]
-
         if "peso_att" not in r:
             del st.session_state["rep"]
             st.warning("Memoria precedente eliminata. Reinserire i dati e premere nuovamente ELABORA.")
             st.stop()
 
         st.divider()
-
         st.subheader("🧬 Analisi Biometrica e Funzionale")
 
         c1, c2, c3, c4 = st.columns(4)
