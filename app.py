@@ -661,13 +661,13 @@ if menu == "➕ Nuova Valutazione":
             "zones_hr": BioPerformance.get_hr_zones_fthr(lthr)
         }
 
-    if "rep" in st.session_state and "peso_att" not in st.session_state["rep"]:
-    del st.session_state["rep"]
-    st.warning("Memoria precedente eliminata. Reinserire i dati e premere nuovamente ELABORA.")
-
-if "rep" in st.session_state:
-
+       if "rep" in st.session_state:
         r = st.session_state["rep"]
+
+        if "peso_att" not in r:
+            del st.session_state["rep"]
+            st.warning("Memoria precedente eliminata. Reinserire i dati e premere nuovamente ELABORA.")
+            st.stop()
 
         st.divider()
 
