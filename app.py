@@ -618,7 +618,12 @@ elif menu == "📂 Archivio & Edit":
     if visite.empty:
         st.warning("Nessuna visita registrata per questo atleta.")
     else:
-        st.dataframe(visite, hide_index=True, use_container_width=True)
+        for _, v in visite.iterrows():
+            with st.expander(f"📅 {v['data']}  —  FTP: {int(v['ftp'])} W  |  W/kg: {v['wkg_att']:.2f}  |  ID: {int(v['id'])}"):
+                c1, c2, c3 = st.columns(3)
+                c1.markdown(f"**Peso:** {v['peso']:.1f} kg  \n**FM:** {v['fm']:.1f} %  \n**FTP:** {int(v['ftp'])} W  \n**LTHR:** {int(v['lthr'])} bpm")
+                c2.markdown(f"**Peso target:** {v['peso_t']:.1f} kg  \n**FM target:** {v['fm_t']:.1f} %  \n**FTP target:** {int(v['ftp_t'])} W  \n**W/kg:** {v['wkg_att']:.2f}  →  {v['wkg_tar']:.2f}")
+                c3.markdown(f"**Km salita:** {v['dist_km']:.1f}  \n**Pendenza:** {v['grad']:.1f} %  \n**Peso bici:** {v['bike_w']:.1f} kg  \n**Tempo att/tar:** {v['t_att']:.1f} / {v['t_tar']:.1f} min")
 
         st.divider()
         st.subheader("✏️ Modifica visita salvata e sovrascrivi")
